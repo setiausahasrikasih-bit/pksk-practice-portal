@@ -12,3 +12,5 @@ Import this repository into Vercel as a static project. No build command is requ
 - Install command: leave blank
 
 The app uses hash routing and `vercel.json` rewrites to `index.html`.
+
+Git deployment connected.
