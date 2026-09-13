@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#6d45d6">
+<title>PKSK Practice Portal</title>
+<style>:root{--bg:#f5f7fb;--surface:#fff;--text:#18212f;--muted:#667085;--primary:#6d45d6;--primary2:#5232aa;--answered:#2e9d64;--flagged:#d89b1d;--unanswered:#d6d9df;--danger:#c53d3d;--border:#e4e7ec;--radius:16px;--shadow:0 12px 40px rgba(31,39,54,.08)}*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}a{color:var(--primary);text-decoration:none}button,input{font:inherit}.topbar,.exam-top{height:68px;background:#141826;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 max(22px,calc((100vw - 1180px)/2));position:sticky;top:0;z-index:5}.brand{display:flex;gap:10px;align-items:center;font-weight:800}.brandmark{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--primary)}nav{display:flex;gap:20px}nav a{color:#d9dceb}.page{max-width:1180px;margin:auto;padding:32px 22px 80px}.page-head,.hero{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:26px}.hero{padding:32px;background:linear-gradient(130deg,#1b2135,#6d45d6);color:#fff;border-radius:24px}.hero h1,.page-head h1{font-size:clamp(1.7rem,4vw,2.6rem);margin:.3rem 0}.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:.75rem;font-weight:800;opacity:.75}.muted{color:var(--muted)}.small{font-size:.8rem}.btn{border:0;border-radius:11px;padding:11px 16px;font-weight:750;cursor:pointer}.btn:disabled{opacity:.45;cursor:not-allowed}.btn.primary{background:var(--primary);color:#fff}.btn.primary:hover{background:var(--primary2)}.btn.ghost{background:#eef0f4;color:var(--text)}.topbar .btn.ghost{background:#ffffff14;color:#fff}.btn.flag-on{background:#fff4d5;color:#8a5d00}.stats,.subject-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin:20px 0 30px}.stat,.card,.sim-card,.review-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}.stat{padding:18px}.stat b{font-size:1.35rem;display:block;margin-bottom:5px}.stat span{color:var(--muted);font-size:.85rem}.sim-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:30px}.sim-card{padding:22px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px}.card{padding:22px;margin-bottom:20px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:680px}th,td{text-align:left;padding:13px;border-bottom:1px solid var(--border)}th{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}.login-wrap,.center{min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(circle at 80% 10%,#7654df 0,transparent 30%),#101422}.login-card{width:min(430px,100%);background:#fff;padding:34px;border-radius:24px;box-shadow:0 30px 80px #0005}.logo-large{width:74px;height:74px;border-radius:20px;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:900;margin-bottom:20px}.login-card h1{margin-bottom:6px}.login-card form,.modal form,.profile-card form{display:grid;gap:15px;margin-top:24px}label{display:grid;gap:7px;font-weight:650}input{border:1px solid var(--border);border-radius:10px;padding:12px 13px;background:#fff}.form-error{color:var(--danger);min-height:1.2em}.exam-top>div{display:flex;flex-direction:column;gap:3px}.timer{font-size:1.4rem;font-weight:900;background:#ffffff18;padding:9px 14px;border-radius:10px}.exam-page{max-width:1180px;margin:auto;padding:26px 22px 70px;display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:20px}.question-panel,.navigator{background:#fff;border:1px solid var(--border);border-radius:18px;padding:24px}.navigator{align-self:start;position:sticky;top:90px}.question-meta{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:.85rem;margin-bottom:24px}.subject-pill{background:#eee9ff;color:var(--primary);padding:6px 9px;border-radius:8px;font-weight:800}.question-text{font-size:1.08rem;line-height:1.65;font-weight:650}.translation{font-weight:450;color:var(--muted);font-style:italic}.options{display:grid;gap:11px;margin:24px 0}.option{display:flex;align-items:flex-start;gap:14px;text-align:left;border:1px solid var(--border);background:#fff;border-radius:12px;padding:15px;cursor:pointer}.option:hover,.option.selected{border-color:var(--primary);background:#f7f4ff}.option-key{width:30px;height:30px;flex:0 0 30px;display:grid;place-items:center;border-radius:9px;background:#eee9ff;color:var(--primary);font-weight:800}.option-line{display:block}.answer-input{margin:24px 0}.exam-actions{display:flex;justify-content:space-between;gap:12px;margin-top:28px}.save-status{min-height:20px;color:var(--muted);font-size:.85rem}.nav-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}.nav-q{aspect-ratio:1;border:0;border-radius:8px;cursor:pointer;font-weight:750}.nav-q.current{background:var(--primary);color:#fff}.nav-q.answered{background:var(--answered);color:#fff}.nav-q.flagged{background:var(--flagged);color:#fff}.nav-q.unanswered{background:var(--unanswered)}.legend{display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:.72rem;color:var(--muted);margin-top:14px}.review-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}.review-list{display:grid;gap:16px}.review-card{padding:20px;border-left:5px solid}.correct-card{border-left-color:var(--answered)}.wrong-card{border-left-color:var(--danger)}.review-head{display:flex;justify-content:space-between;gap:15px}.answer-review,.explanation{background:#f8f9fb;border-radius:12px;padding:12px 15px;margin-top:12px}.profile-card dl{display:grid;grid-template-columns:140px 1fr;gap:12px}.profile-card dt{color:var(--muted)}.profile-card dd{font-weight:700;margin:0}.modal-backdrop{position:fixed;inset:0;background:#0008;display:grid;place-items:center;padding:20px;z-index:20}.modal{width:min(500px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:18px;padding:24px}.modal-actions{display:flex;justify-content:flex-end;gap:10px}.link-btn{border:0;background:none;color:var(--primary);padding:0;cursor:pointer}.error{max-width:520px}.empty{padding:30px;color:var(--muted)}.loader{width:34px;height:34px;border:4px solid #ffffff40;border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@media(max-width:780px){.topbar nav{display:none}.exam-page{grid-template-columns:1fr}.navigator{position:static}.hero{padding:24px}.sim-card{align-items:stretch;flex-direction:column}.page-head{align-items:stretch;flex-direction:column}.exam-actions{flex-wrap:wrap}.exam-actions .btn{flex:1}.review-head{flex-direction:column}.profile-card dl{grid-template-columns:1fr;gap:4px}.profile-card dd{margin-bottom:12px}}@media(max-width:420px){.page,.exam-page{padding-left:14px;padding-right:14px}.question-panel,.navigator,.card{padding:17px}.nav-grid{grid-template-columns:repeat(5,1fr)}.topbar,.exam-top{padding:0 14px}.topbar .brand span:last-child{display:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>function formatDuration(totalSeconds = 0) {
+  const safe = Math.max(0, Number(totalSeconds) || 0);
+  const minutes = Math.floor(safe / 60);
+  const seconds = Math.floor(safe % 60);
+  return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+}
+
+function navigatorState({ current, answered, flagged }) {
+  if (current) return 'current';
+  if (flagged) return 'flagged';
+  if (answered) return 'answered';
+  return 'unanswered';
+}
+
+function simulationAction(status) {
+  return ({ not_started: 'Start Simulation', in_progress: 'Resume Simulation', completed: 'Try Again' })[status] || 'Start Simulation';
+}
+
+function languageBlocks(question) {
+  const mode = question.language_mode;
+  if (mode === 'bilingual') return [
+    question.prompt_ms && { lang: 'ms', text: question.prompt_ms },
+    question.prompt_en && { lang: 'en', text: question.prompt_en },
+  ].filter(Boolean);
+  if (mode === 'en') return question.prompt_en ? [{ lang: 'en', text: question.prompt_en }] : [];
+  return question.prompt_ms ? [{ lang: 'ms', text: question.prompt_ms }] : [];
+}
+
+function optionLanguageBlocks(mode, option) {
+  if (mode === 'bilingual') return [
+    option.text_ms && { lang: 'ms', text: option.text_ms },
+    option.text_en && { lang: 'en', text: option.text_en },
+  ].filter(Boolean);
+  if (mode === 'en') return option.text_en ? [{ lang: 'en', text: option.text_en }] : [];
+  return option.text_ms ? [{ lang: 'ms', text: option.text_ms }] : [];
+}
+
+function filterReviewQuestions(rows = [], filter = 'all') {
+  if (filter === 'wrong') return rows.filter((q) => !q.is_correct);
+  if (filter === 'correct') return rows.filter((q) => q.is_correct);
+  if (filter === 'flagged') return rows.filter((q) => q.flagged);
+  return rows;
+}
+
+function isAnswered(question) {
+  const a = question.saved_answer || {};
+  if (question.question_type === 'mcq_single') return Boolean(a.selected_option_id);
+  if (question.question_type === 'numeric') return a.answer_numeric !== null && a.answer_numeric !== undefined && a.answer_numeric !== '';
+  if (question.question_type === 'short_text') return Boolean(String(a.answer_text ?? '').trim());
+  return false;
+}
+
+function countUnanswered(questions = []) {
+  return questions.filter((q) => !isAnswered(q)).length;
+}
+
+function remainingSeconds(expiresAt, now = Date.now()) {
+  return Math.max(0, Math.floor((new Date(expiresAt).getTime() - now) / 1000));
+}
+
+function escapeHtml(value = '') {
+  return String(value).replace(/[&<>'"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[c]);
+}
+
+window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml };
+</script>
+<script>(() => {
+  const SUPABASE_URL = 'https://wwjtpfexvqaipvvupsai.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_lsaVuFvTx6QlkMEb8a_nvQ_94YGD3F1';
+  const SESSION_KEY = 'pksk_session_v1';
+
+  function makeError(payload, status) {
+    const message = payload?.message || payload?.error_description || payload?.msg || payload?.error || payload?.hint || `Request failed (${status})`;
+    const err = new Error(String(message));
+    err.status = status;
+    return err;
+  }
+
+  async function parseResponse(response) {
+    const text = await response.text();
+    let payload = null;
+    if (text) {
+      try { payload = JSON.parse(text); }
+      catch { payload = text; }
+    }
+    if (!response.ok) throw makeError(payload, response.status);
+    return payload;
+  }
+
+  async function rawJson(url, options = {}) {
+    return parseResponse(await fetch(url, options));
+  }
+
+  function loadSession() {
+    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
+    catch { return null; }
+  }
+
+  function saveSession(data) {
+    if (!data?.access_token) return null;
+    const expiresAtMs = data.expires_at
+      ? Number(data.expires_at) * 1000
+      : Date.now() + Number(data.expires_in || 3600) * 1000;
+    const session = { ...data, expires_at_ms: expiresAtMs };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    return session;
+  }
+
+  function clearSession() { localStorage.removeItem(SESSION_KEY); }
+
+  async function refreshSession(session) {
+    if (!session?.refresh_token) { clearSession(); return null; }
+    try {
+      const data = await rawJson(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ refresh_token: session.refresh_token }),
+      });
+      return saveSession(data);
+    } catch (err) {
+      clearSession();
+      throw err;
+    }
+  }
+
+  async function validSession() {
+    const session = loadSession();
+    if (!session?.access_token) return null;
+    const expiry = Number(session.expires_at_ms || 0);
+    if (expiry && expiry > Date.now() + 60_000) return session;
+    return refreshSession(session);
+  }
+
+  async function authedJson(path, options = {}) {
+    const session = await validSession();
+    if (!session) throw new Error('Authentication required. Please log in again.');
+    const headers = {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${session.access_token}`,
+      ...(options.body ? { 'content-type': 'application/json' } : {}),
+      ...(options.headers || {}),
+    };
+    try {
+      return await rawJson(`${SUPABASE_URL}${path}`, { ...options, headers });
+    } catch (err) {
+      if (err?.status === 401 && loadSession()?.refresh_token) {
+        const refreshed = await refreshSession(loadSession());
+        const retryHeaders = { ...headers, Authorization: `Bearer ${refreshed.access_token}` };
+        return rawJson(`${SUPABASE_URL}${path}`, { ...options, headers: retryHeaders });
+      }
+      throw err;
+    }
+  }
+
+  async function rpc(name, args = {}) {
+    return authedJson(`/rest/v1/rpc/${name}`, {
+      method: 'POST',
+      body: JSON.stringify(args),
+    });
+  }
+
+  async function invoke(name, body = {}) {
+    return authedJson(`/functions/v1/${name}`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  async function currentUser() {
+    const session = await validSession();
+    if (!session) return null;
+    return authedJson('/auth/v1/user', { method: 'GET' });
+  }
+
+  const auth = {
+    signIn: async (email, password) => {
+      const data = await rawJson(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_PUBLISHABLE_KEY,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      return saveSession(data);
+    },
+    signOut: async () => {
+      const session = loadSession();
+      try {
+        if (session?.access_token) {
+          await rawJson(`${SUPABASE_URL}/auth/v1/logout`, {
+            method: 'POST',
+            headers: {
+              apikey: SUPABASE_PUBLISHABLE_KEY,
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          });
+        }
+      } finally { clearSession(); }
+    },
+    session: validSession,
+    profile: async () => {
+      const user = await currentUser();
+      if (!user?.id) return null;
+      const select = 'user_id,display_name,role,school_year,is_active,created_at,last_activity_at';
+      const rows = await authedJson(`/rest/v1/profiles?select=${encodeURIComponent(select)}&user_id=eq.${encodeURIComponent(user.id)}`, { method: 'GET' });
+      return Array.isArray(rows) ? rows[0] || null : rows;
+    },
+    changePassword: (password) => authedJson('/auth/v1/user', {
+      method: 'PUT',
+      body: JSON.stringify({ password }),
+    }),
+  };
+
+  const studentApi = {
+    touch: () => rpc('touch_my_activity'),
+    dashboard: () => rpc('get_my_dashboard'),
+    history: () => rpc('get_my_attempt_history'),
+    start: (setVersionId) => rpc('start_simulation', { p_set_version_id: setVersionId }),
+    payload: (attemptId) => rpc('get_attempt_payload', { p_attempt_id: attemptId }),
+    save: ({ attemptQuestionId, selectedOptionId = null, answerNumeric = null, answerText = null, flagged = false }) => rpc('save_attempt_answer', {
+      p_attempt_question_id: attemptQuestionId,
+      p_selected_option_id: selectedOptionId,
+      p_answer_numeric: answerNumeric,
+      p_answer_text: answerText,
+      p_flagged: flagged,
+    }),
+    submit: (attemptId) => rpc('submit_attempt', { p_attempt_id: attemptId }),
+    review: (attemptId) => rpc('get_attempt_review', { p_attempt_id: attemptId }),
+  };
+
+  const adminApi = {
+    summary: () => rpc('admin_dashboard_summary'),
+    studentHistory: (userId) => rpc('admin_get_student_history', { p_user_id: userId }),
+    attemptReview: (attemptId) => rpc('admin_get_attempt_review', { p_attempt_id: attemptId }),
+    listStudents: () => invoke('admin-list-students'),
+    createStudent: (body) => invoke('admin-create-student', body),
+    resetPassword: (userId, temporaryPassword) => invoke('admin-reset-student-password', { userId, temporaryPassword }),
+    setActive: (userId, active) => invoke('admin-set-student-active', { userId, active }),
+  };
+
+  window.PKSK_API = { auth, studentApi, adminApi };
+})();
+</script>
+<script>(() => {
+const { auth, studentApi, adminApi } = window.PKSK_API;
+const { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered } = window.PKSK_CORE;
+
+const root = document.querySelector('#app');
+let profile = null;
+let quizTimer = null;
+
+const ROUTES = ['/student/history', '/student/quiz/', '/student/review/', '/admin/students'];
+void ROUTES;
+
+const pct = (v) => v == null ? '—' : `${Number(v).toFixed(1)}%`;
+const date = (v) => v ? new Date(v).toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+const go = (path) => { const next = `#${path}`; if (location.hash === next) render(); else location.hash = next; };
+const button = (label, cls='primary', attrs='') => `<button class="btn ${cls}" ${attrs}>${escapeHtml(label)}</button>`;
+
+function shell(content, role = profile?.role) {
+  const nav = role === 'admin'
+    ? `<a href="/admin" data-link>Dashboard</a><a href="/admin/students" data-link>Students</a>`
+    : `<a href="/student" data-link>Dashboard</a><a href="/student/history" data-link>My History</a><a href="/student/profile" data-link>Profile</a>`;
+  root.innerHTML = `<header class="topbar"><div class="brand"><span class="brandmark">P</span><span>PKSK Practice</span></div><nav>${nav}</nav><button id="logout" class="btn ghost">Logout</button></header><main class="page">${content}</main>`;
+  document.querySelector('#logout')?.addEventListener('click', async () => { await auth.signOut(); profile = null; go('/'); });
+  bindLinks();
+}
+function bindLinks() { document.querySelectorAll('[data-link]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); go(a.getAttribute('href')); })); }
+function loading(text='Loading…') { root.innerHTML = `<main class="center"><div class="loader"></div><p>${escapeHtml(text)}</p></main>`; }
+function errorView(err) { root.innerHTML = `<main class="center"><div class="card error"><h2>Something went wrong</h2><p>${escapeHtml(err?.message || String(err))}</p><button class="btn primary" onclick="location.reload()">Try Again</button></div></main>`; }
+
+async function requireProfile(role) {
+  const session = await auth.session();
+  if (!session) { if (location.pathname !== '/') go('/'); return false; }
+  profile = await auth.profile();
+  if (!profile?.is_active) { await auth.signOut(); throw new Error('This account is inactive. Please contact the administrator.'); }
+  await studentApi.touch().catch(() => {});
+  if (role && profile.role !== role) { go(profile.role === 'admin' ? '/admin' : '/student'); return false; }
+  return true;
+}
+
+async function loginPage() {
+  const session = await auth.session();
+  if (session) { profile = await auth.profile(); return go(profile?.role === 'admin' ? '/admin' : '/student'); }
+  root.innerHTML = `<main class="login-wrap"><section class="login-card"><div class="logo-large">PKSK</div><h1>Practice Portal</h1><p class="muted">Log in using the email and password provided by your administrator.</p><form id="login"><label>Email<input id="email" type="email" autocomplete="username" required></label><label>Password<input id="password" type="password" autocomplete="current-password" required></label><div id="login-error" class="form-error" aria-live="polite"></div>${button('Log In','primary','type="submit"')}</form></section></main>`;
+  document.querySelector('#login').addEventListener('submit', async e => {
+    e.preventDefault(); const msg = document.querySelector('#login-error'); msg.textContent='';
+    try { await auth.signIn(document.querySelector('#email').value.trim(), document.querySelector('#password').value); profile=await auth.profile(); go(profile.role==='admin'?'/admin':'/student'); }
+    catch (err) { msg.textContent = err.message || 'Unable to log in.'; }
+  });
+}
+
+async function studentDashboard() {
+  if (!await requireProfile('student')) return; loading();
+  const d = await studentApi.dashboard();
+  const cards = (d.simulations||[]).map(s => `<article class="sim-card"><div><span class="eyebrow">Simulation</span><h3>${escapeHtml(s.title)}</h3><p>${s.questionCount} questions · ${Math.round(s.timeLimitSeconds/60)} min</p><p class="muted">Best: ${pct(s.bestPercentage)} · Last: ${pct(s.lastPercentage)}</p></div><button class="btn primary sim-action" data-set="${s.setVersionId}" data-attempt="${s.activeAttemptId||''}" data-status="${s.status}">${simulationAction(s.status)}</button></article>`).join('') || `<div class="empty">No published simulations yet.</div>`;
+  shell(`<section class="hero"><div><span class="eyebrow">Student Dashboard</span><h1>Hi, ${escapeHtml(d.profile.displayName)} 👋</h1><p>Ready for your next PKSK practice?</p></div></section><section class="stats"><div class="stat"><b>${d.progress.totalAttempts}</b><span>Attempts</span></div><div class="stat"><b>${pct(d.progress.bestPercentage)}</b><span>Best Score</span></div><div class="stat"><b>${pct(d.progress.averagePercentage)}</b><span>Average</span></div><div class="stat"><b>${escapeHtml(d.progress.strongestSubject||'—')}</b><span>Strongest</span></div></section><h2>Simulations</h2><section class="sim-grid">${cards}</section><section class="card"><h2>Recent History</h2>${historyTable(d.recentHistory||[])}</section>`);
+  document.querySelectorAll('.sim-action').forEach(b => b.addEventListener('click', async () => { b.disabled=true; try { const id=b.dataset.attempt || await studentApi.start(b.dataset.set); go(`/student/quiz/${id}`); } catch(e){ alert(e.message); b.disabled=false; } }));
+}
+function historyTable(rows) { if(!rows.length) return `<p class="muted">No completed attempts yet.</p>`; return `<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle||r.set_title)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'—')}</td><td>${formatDuration(r.elapsedSeconds??r.elapsed_seconds)}</td><td>${date(r.submittedAt??r.submitted_at)}</td><td><a href="/student/review/${r.attemptId??r.attempt_id}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`; }
+
+async function studentHistory() { if(!await requireProfile('student'))return; loading(); const rows=await studentApi.history(); shell(`<div class="page-head"><div><span class="eyebrow">Progress</span><h1>My History</h1></div></div><section class="card">${historyTable(rows||[])}</section>`); }
+async function studentProfile() { if(!await requireProfile('student'))return; shell(`<div class="page-head"><div><span class="eyebrow">Account</span><h1>My Profile</h1></div></div><section class="card profile-card"><dl><dt>Name</dt><dd>${escapeHtml(profile.display_name)}</dd><dt>School Year</dt><dd>${escapeHtml(profile.school_year||'—')}</dd><dt>Member Since</dt><dd>${date(profile.created_at)}</dd></dl><h3>Change Password <span class="muted small">(optional)</span></h3><form id="password-form"><label>New password<input id="new-password" type="password" minlength="6" required></label><div id="password-msg" aria-live="polite"></div>${button('Update Password','primary','type="submit"')}</form></section>`); document.querySelector('#password-form').addEventListener('submit',async e=>{e.preventDefault();const msg=document.querySelector('#password-msg');try{await auth.changePassword(document.querySelector('#new-password').value);msg.textContent='Password updated.';}catch(err){msg.textContent=err.message;}}); }
+
+function renderQuestion(q) { const blocks=languageBlocks(q).map((b,i)=>`<p class="question-text ${i?'translation':''}" lang="${b.lang}">${escapeHtml(b.text)}</p>`).join(''); const img=q.prompt_image_path?`<div class="question-image"><img src="${escapeHtml(q.prompt_image_path)}" alt="Question diagram"></div>`:''; let answer=''; if(q.question_type==='mcq_single') answer=`<div class="options">${(q.options||[]).map(o=>`<button class="option ${q.saved_answer?.selected_option_id===o.id?'selected':''}" data-option="${o.id}"><span class="option-key">${escapeHtml(o.key)}</span><span>${optionLanguageBlocks(q.language_mode,o).map((b,i)=>`<span class="option-line ${i?'translation':''}" lang="${b.lang}">${escapeHtml(b.text)}</span>`).join('')}</span></button>`).join('')}</div>`; else if(q.question_type==='numeric') answer=`<label class="answer-input">Your answer<input id="free-answer" type="number" inputmode="decimal" value="${escapeHtml(q.saved_answer?.answer_numeric??'')}"></label>`; else answer=`<label class="answer-input">Your answer<input id="free-answer" type="text" value="${escapeHtml(q.saved_answer?.answer_text??'')}"></label>`; return `${blocks}${img}${answer}`; }
+
+async function quizPage(attemptId) {
+  if(!await requireProfile('student'))return; loading('Loading simulation…');
+  let payload=await studentApi.payload(attemptId); if(payload.status!=='in_progress') return go(`/student/results/${attemptId}`);
+  let index=0, saving=false, autoSubmitted=false;
+  const draw=()=>{ const q=payload.questions[index]; const unanswered=countUnanswered(payload.questions); root.innerHTML=`<header class="exam-top"><div><b>${escapeHtml(payload.title)}</b><span>Question ${index+1}/${payload.question_count}</span></div><div id="timer" class="timer"></div></header><main class="exam-page"><section class="question-panel"><div class="question-meta"><span class="subject-pill">${escapeHtml(q.subject_name)}</span><span>${escapeHtml(q.topic_name||'')}</span></div>${renderQuestion(q)}<div id="save-status" class="save-status" aria-live="polite"></div><div class="exam-actions">${button('Previous','ghost',index===0?'disabled':'')}<button id="flag" class="btn ${q.saved_answer?.flagged?'flag-on':'ghost'}">${q.saved_answer?.flagged?'★ Flagged':'☆ Flag for Review'}</button>${button(index===payload.questions.length-1?'Review / Submit':'Next','primary')}</div></section><aside class="navigator"><h3>Jump to Question</h3><div class="nav-grid">${payload.questions.map((x,i)=>`<button class="nav-q ${navigatorState({current:i===index,answered:isAnswered(x),flagged:x.saved_answer?.flagged})}" data-i="${i}" aria-label="Question ${i+1}${isAnswered(x)?', answered':', unanswered'}${x.saved_answer?.flagged?', flagged':''}">${i+1}</button>`).join('')}</div><div class="legend"><span>● Current</span><span>● Answered</span><span>● Flagged</span><span>● Unanswered</span></div><p class="muted">${unanswered} unanswered</p></aside></main>`;
+    const actions=document.querySelector('.exam-actions').querySelectorAll('button'); actions[0].onclick=()=>{if(index>0){index--;draw();}}; actions[1].onclick=async()=>{q.saved_answer={...(q.saved_answer||{}),flagged:!q.saved_answer?.flagged}; await saveQ(q); draw();}; actions[2].onclick=()=>{if(index<payload.questions.length-1){index++;draw();}else submitFlow();}; document.querySelectorAll('.nav-q').forEach(b=>b.onclick=()=>{index=Number(b.dataset.i);draw();}); document.querySelectorAll('.option').forEach(b=>b.onclick=async()=>{q.saved_answer={...(q.saved_answer||{}),selected_option_id:b.dataset.option}; draw(); await saveQ(q);}); const input=document.querySelector('#free-answer'); if(input){let t; input.addEventListener('input',()=>{clearTimeout(t); const v=input.value; if(q.question_type==='numeric')q.saved_answer={...(q.saved_answer||{}),answer_numeric:v===''?null:Number(v)}; else q.saved_answer={...(q.saved_answer||{}),answer_text:v}; t=setTimeout(()=>saveQ(q),400);}); input.addEventListener('blur',()=>saveQ(q));} updateTimer(); };
+  async function saveQ(q){ if(saving)return; saving=true; const el=document.querySelector('#save-status'); if(el)el.textContent='Saving…'; try{await studentApi.save({attemptQuestionId:q.attempt_question_id,selectedOptionId:q.saved_answer?.selected_option_id,answerNumeric:q.saved_answer?.answer_numeric,answerText:q.saved_answer?.answer_text,flagged:!!q.saved_answer?.flagged}); if(el)el.textContent='Saved';}catch(e){if(el)el.textContent='Save failed — please try again.';}finally{saving=false;}}
+  async function submitFlow(){const n=countUnanswered(payload.questions);if(n&&!confirm(`You still have ${n} unanswered questions.\n\nPress OK to submit anyway, or Cancel to return.`))return;await finish();}
+  async function finish(){if(autoSubmitted)return;autoSubmitted=true;clearInterval(quizTimer);try{await studentApi.submit(attemptId);go(`/student/results/${attemptId}`);}catch(e){autoSubmitted=false;alert(e.message);}}
+  function updateTimer(){const el=document.querySelector('#timer');if(!el)return;const r=remainingSeconds(payload.expires_at);el.textContent=`${String(Math.floor(r/60)).padStart(2,'0')}:${String(r%60).padStart(2,'0')}`;if(r<=0)finish();}
+  clearInterval(quizTimer);quizTimer=setInterval(updateTimer,1000);draw();
+}
+
+function answerLabel(q,id){const o=(q.options||[]).find(x=>x.id===id);if(!o)return 'No answer';return `${o.key}. ${(o.text_ms||o.text_en||'')}`;}
+async function reviewPage(attemptId, admin=false) { if(!await requireProfile(admin?'admin':'student'))return; loading(); const r=admin?await adminApi.attemptReview(attemptId):await studentApi.review(attemptId); let filter='all'; const draw=()=>{const qs=filterReviewQuestions(r.questions||[],filter); const body=`<div class="page-head"><div><span class="eyebrow">${escapeHtml(r.title)}</span><h1>${Number(r.raw_score||0)} / ${Number(r.max_score||0)} · ${pct(r.percentage)} · Grade ${escapeHtml(r.grade||'—')}</h1><p>${formatDuration(r.elapsed_seconds)}</p></div></div><section class="subject-grid">${(r.subject_scores||[]).map(s=>`<div class="stat"><b>${s.correct_count}/${s.total_count}</b><span>${escapeHtml(s.subject_name)}</span></div>`).join('')}</section><div class="review-tabs">${['all','wrong','correct','flagged'].map(f=>`<button class="btn ${filter===f?'primary':'ghost'}" data-filter="${f}">${f[0].toUpperCase()+f.slice(1)}</button>`).join('')}</div><section class="review-list">${qs.map(q=>`<article class="review-card ${q.is_correct?'correct-card':'wrong-card'}"><div class="review-head"><b>Question ${q.position} · ${escapeHtml(q.subject_name)}</b><span>${q.is_correct?'✓ Correct':'✕ Incorrect'}${q.flagged?' · ★ Flagged':''}</span></div>${languageBlocks(q).map((b,i)=>`<p class="question-text ${i?'translation':''}">${escapeHtml(b.text)}</p>`).join('')}<div class="answer-review"><p><b>Your answer:</b> ${q.question_type==='mcq_single'?escapeHtml(answerLabel(q,q.selected_option_id)):escapeHtml(q.answer_numeric??q.answer_text??'No answer')}</p><p><b>Correct answer:</b> ${q.question_type==='mcq_single'?escapeHtml(answerLabel(q,q.correct_option_id)):escapeHtml(q.correct_numeric??(q.accepted_text_answers||[]).join(' / '))}</p></div><div class="explanation"><b>Explanation</b>${q.explanation_ms?`<p>${escapeHtml(q.explanation_ms)}</p>`:''}${q.explanation_en?`<p class="translation">${escapeHtml(q.explanation_en)}</p>`:''}</div></article>`).join('')}</section>`; if(admin)shell(body,'admin');else shell(body,'student'); document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;draw();});};draw(); }
+async function resultsPage(id){return reviewPage(id,false);}
+
+async function adminDashboard(){if(!await requireProfile('admin'))return;loading();const s=await adminApi.summary();shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>Dashboard</h1></div><a class="btn primary" href="/admin/students" data-link>Manage Students</a></div><section class="stats"><div class="stat"><b>${s.totalStudents}</b><span>Total Students</span></div><div class="stat"><b>${s.activeToday}</b><span>Active Today</span></div><div class="stat"><b>${s.activeThisWeek}</b><span>Active This Week</span></div><div class="stat"><b>${s.totalAttempts}</b><span>Total Attempts</span></div><div class="stat"><b>${pct(s.averageScore)}</b><span>Average Score</span></div></section><section class="card"><h2>Monitoring</h2><p>Students inactive for 14 days: <b>${s.inactive14Days}</b></p></section>`,'admin');}
+async function studentsPage(){if(!await requireProfile('admin'))return;loading();const students=await adminApi.listStudents();shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>Students</h1></div>${button('Add Student','primary','id="add-student"')}</div><section class="card"><div class="table-wrap"><table><thead><tr><th>Student</th><th>Email</th><th>Status</th><th>Last Activity</th><th></th></tr></thead><tbody>${(students||[]).map(s=>`<tr><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.email)}</td><td>${s.active?'Active':'Inactive'}</td><td>${date(s.lastActivityAt||s.lastSignInAt)}</td><td><a href="/admin/students/${s.userId}" data-link>View</a> · <button class="link-btn reset" data-id="${s.userId}">Reset password</button> · <button class="link-btn active" data-id="${s.userId}" data-active="${s.active}">${s.active?'Deactivate':'Activate'}</button></td></tr>`).join('')}</tbody></table></div></section>`,'admin'); document.querySelector('#add-student').onclick=()=>studentModal(); document.querySelectorAll('.reset').forEach(b=>b.onclick=async()=>{const p=prompt('Enter a new temporary password (minimum 6 characters):');if(p){await adminApi.resetPassword(b.dataset.id,p);alert('Password reset.');}}); document.querySelectorAll('.active').forEach(b=>b.onclick=async()=>{await adminApi.setActive(b.dataset.id,b.dataset.active!=='true');location.reload();});}
+function studentModal(){const wrap=document.createElement('div');wrap.className='modal-backdrop';wrap.innerHTML=`<div class="modal"><h2>Add Student</h2><form id="student-form"><label>Name<input name="name" required></label><label>Email<input name="email" type="email" required></label><label>Temporary Password<input name="temporaryPassword" type="password" minlength="6" required></label><label>School Year / Level<input name="schoolYear" value="Year 6"></label><div id="modal-error" class="form-error"></div><div class="modal-actions">${button('Cancel','ghost','type="button" id="cancel"')}${button('Create Student','primary','type="submit"')}</div></form></div>`;document.body.append(wrap);wrap.querySelector('#cancel').onclick=()=>wrap.remove();wrap.querySelector('#student-form').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target);try{await adminApi.createStudent(Object.fromEntries(fd));wrap.remove();location.reload();}catch(err){wrap.querySelector('#modal-error').textContent=err.message;}};}
+async function studentDetail(userId){if(!await requireProfile('admin'))return;loading();const d=await adminApi.studentHistory(userId);shell(`<div class="page-head"><div><span class="eyebrow">Student</span><h1>${escapeHtml(d.profile.displayName)}</h1><p>${escapeHtml(d.profile.email)} · ${d.profile.active?'Active':'Inactive'} · ${escapeHtml(d.profile.schoolYear||'')}</p></div></div><section class="stats"><div class="stat"><b>${d.summary.totalAttempts}</b><span>Attempts</span></div><div class="stat"><b>${pct(d.summary.bestPercentage)}</b><span>Best</span></div><div class="stat"><b>${pct(d.summary.averagePercentage)}</b><span>Average</span></div><div class="stat"><b>${pct(d.summary.latestPercentage)}</b><span>Latest</span></div></section><section class="card"><h2>Subject Performance</h2><div class="subject-grid">${(d.subjectPerformance||[]).map(s=>`<div class="stat"><b>${pct(s.percentage)}</b><span>${escapeHtml(s.name)}</span></div>`).join('')}</div></section><section class="card"><h2>Attempt History</h2>${adminHistoryTable(d.attempts||[])}</section>`,'admin');}
+function adminHistoryTable(rows){if(!rows.length)return'<p class="muted">No completed attempts yet.</p>';return`<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'')}</td><td>${formatDuration(r.elapsedSeconds)}</td><td>${date(r.submittedAt)}</td><td><a href="/admin/review/${r.attemptId}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`;}
+
+async function render(){clearInterval(quizTimer);try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
+window.addEventListener('hashchange', render);render();})();
+</script>
+</body>
+</html>
