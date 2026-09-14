@@ -781,6 +781,7 @@ async function questionEditorPage(questionId){
       const saved=await adminApi.saveQuestionDraft(payload);
       draft=saved;editorDirty=false;
       if(location.hash==='#/admin/questions/new') history.replaceState(null,'',`#/admin/questions/${draft.questionId}/edit`);
+      renderEditor();
       if(showToast) showEditorErrors(['Draft saved.']);
       return saved;
     }
