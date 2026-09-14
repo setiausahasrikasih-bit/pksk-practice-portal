@@ -92,6 +92,11 @@ select,textarea{font:inherit;border:1px solid var(--border);border-radius:10px;p
 <style>
 .generator-progress-grid{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:10px;margin-top:14px}.generator-progress-grid .stat{box-shadow:none}.generator-candidate-list{display:grid;gap:12px}.generator-candidate-list .reference-source-card{box-shadow:none}.generator-candidate-list details{margin:12px 0;padding:10px;border-radius:10px;background:#f8f9fc}.generator-candidate-list summary{cursor:pointer;font-weight:800}@media(max-width:760px){.generator-progress-grid{grid-template-columns:1fr 1fr}}@media(max-width:430px){.generator-progress-grid{grid-template-columns:1fr}}
 </style>
+
+<style>
+.generator-review-filters{display:grid;grid-template-columns:minmax(180px,1.5fr) repeat(6,minmax(125px,1fr));gap:9px;align-items:end}.generator-review-filters label{font-size:.76rem}.generator-review-filters input,.generator-review-filters select{width:100%}.generator-review-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0}.generator-review-actions{display:flex;gap:8px;flex-wrap:wrap}.generator-review-card{position:relative}.generator-review-card.selected{box-shadow:0 0 0 2px rgba(109,69,214,.22)}.generator-review-select{display:flex!important;grid-template-columns:auto 1fr;align-items:center;gap:8px;font-size:.82rem}.generator-review-select input{width:auto}.generator-review-question-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:850}.generator-review-result{margin:10px 0}.generator-review-card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}.generator-review-source{padding:9px 11px;border-radius:10px;background:#f8f9fc;margin:10px 0}.generator-review-empty{padding:30px;text-align:center;color:var(--muted)}@media(max-width:1100px){.generator-review-filters{grid-template-columns:1fr 1fr 1fr}}@media(max-width:650px){.generator-review-filters{grid-template-columns:1fr}.generator-review-toolbar{align-items:stretch}.generator-review-actions .btn{flex:1}}
+</style>
+
 </head>
 <body>
 <div id="app"></div>
@@ -475,7 +480,29 @@ function validateGenerationPlanClient(job,items=[]) {
   return [...new Set(errors)];
 }
 
-window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, REFERENCE_MAX_BYTES, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient };
+
+const GENERATION_REVIEW_STATUSES = Object.freeze(['pass','needs_review','rejected','failed','accepted']);
+
+function filterGeneratedCandidates(candidates=[],filters={}) {
+  const term=String(filters.search||'').trim().toLowerCase();
+  return (candidates||[]).filter(candidate=>{
+    if(!GENERATION_REVIEW_STATUSES.includes(String(candidate?.status||'')))return false;
+    if(filters.qaStatus&&candidate.status!==filters.qaStatus)return false;
+    if(filters.subjectCode&&candidate.subjectCode!==filters.subjectCode)return false;
+    if(filters.topicId&&candidate.topicId!==filters.topicId)return false;
+    if(filters.difficulty&&candidate.difficulty!==filters.difficulty)return false;
+    if(filters.sourceDocumentId&&(candidate.sourceRef?.documentId||'')!==filters.sourceDocumentId)return false;
+    if(filters.variationMode&&candidate.variationMode!==filters.variationMode)return false;
+    if(term){
+      const optionText=Array.isArray(candidate.generated?.options)?candidate.generated.options.flatMap(o=>[o?.textMs,o?.textEn]).filter(Boolean).join(' '):'';
+      const hay=[candidate.questionCode,candidate.subjectName,candidate.topicName,candidate.generated?.promptMs,candidate.generated?.promptEn,optionText,candidate.qa?.notes,candidate.sourceRef?.documentTitle,candidate.sourceRef?.sourceLabel].filter(Boolean).join(' ').toLowerCase();
+      if(!hay.includes(term))return false;
+    }
+    return true;
+  });
+}
+
+window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, REFERENCE_MAX_BYTES, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES };
 </script>
 <script>(() => {
   const SUPABASE_URL = 'https://wwjtpfexvqaipvvupsai.supabase.co';
@@ -715,6 +742,9 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
     approveGenerationPlan: (jobId) => rpc('admin_approve_ai_generation_plan', { p_job_id: jobId }),
     generationProgress: (jobId) => rpc('admin_ai_generation_progress', { p_job_id: jobId }),
     generateQuestionBatch: (jobId) => invoke('admin-generate-question-batch', { jobId }),
+    acceptGeneratedCandidate: (itemId) => rpc('admin_accept_generated_candidate', { p_item_id: itemId }),
+    rejectGeneratedCandidate: (itemId) => rpc('admin_reject_generated_candidate', { p_item_id: itemId }),
+    regenerateGeneratedCandidate: (itemId) => rpc('admin_regenerate_generated_candidate', { p_item_id: itemId }),
     simulationSets: () => rpc('admin_simulation_set_list'),
     setCandidates: (filters = {}) => rpc('admin_simulation_set_candidates', {
       p_subject_id: filters.subjectId || null,
@@ -759,7 +789,7 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
 </script>
 <script>(() => {
 const { auth, studentApi, adminApi } = window.PKSK_API;
-const { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient } = window.PKSK_CORE;
+const { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES } = window.PKSK_CORE;
 
 const root = document.querySelector('#app');
 let profile = null;
@@ -1264,6 +1294,7 @@ async function generationJobPage(jobId){
   const stateNotice=status==='planning'?'<div class="reference-notice warning">AI planning is in progress. Refresh this page after a moment if you reopened it during processing.</div>':status==='failed'?`<div class="reference-notice error"><b>Planning failed.</b><div>${escapeHtml(job.planningError||'AI planning failed.')}</div></div>`:status==='approved'?'<div class="reference-notice neutral">Plan approved. Question generation will be enabled in Milestone 3C. You are now using Milestone 3C — start generation below.</div>':status==='generating'?'<div class="reference-notice warning">Generation is resumable. Leaving this page pauses browser-driven batching after the current server request; reopen this job and choose Resume Generation.</div>':status==='review_ready'?'<div class="reference-notice neutral"><b>Generation finished.</b> Candidates are staged for Admin review and are not in the Question Bank yet.</div>':'';
   const planningAction=status==='draft'?'<button id="gen-build-plan" class="btn primary">Build AI Plan</button>':status==='failed'?'<button id="gen-build-plan" class="btn primary">Retry Plan</button>':status==='planning'?'<button id="gen-refresh-plan" class="btn primary">Refresh</button>':'';
   const generationAction=status==='approved'?'<button id="gen-start-generation" class="btn primary">Start Generation</button>':status==='generating'?'<button id="gen-start-generation" class="btn primary">Resume Generation</button>':'';
+  const reviewAction=['review_ready','completed'].includes(status)?`<a href="/admin/generator/${jobId}/review" class="btn primary" data-link>Review Queue</a>`:'';
 
   const planRows=items.length?items.map((item,i)=>{
     const topics=(taxonomy.topics||[]).filter(t=>t.subject_id===item.subjectId);
@@ -1274,7 +1305,7 @@ async function generationJobPage(jobId){
 
   const generationSection=planLocked?`<section class="card"><div class="set-total"><div><span class="eyebrow">Milestone 3C</span><h2>Question Generation + QA</h2></div><div class="generator-actions">${generationAction}<button id="gen-pause-generation" class="btn ghost" disabled>Pause After Current Batch</button></div></div><div class="reference-notice warning"><b>Paid API.</b> The portal processes up to <b>10 questions per batch</b>; each batch uses <b>generation + independent QA</b> API calls. You can pause after the current batch and resume later.</div><p class="muted small">You can <b>View Approved Plan</b> below at any time. Generated candidates remain Admin-only and are never published automatically.</p><div id="gen-progress"></div></section><section class="card"><div class="set-total"><div><span class="eyebrow">Staging Queue</span><h2>Generated Candidates</h2></div><strong id="gen-candidate-count"></strong></div><div class="reference-notice neutral">Read-only in 3C. <b>Bulk Review in Milestone 3D</b> will add accept, reject, regenerate and edit actions.</div><div id="gen-candidates" class="generator-candidate-list"></div></section>`:'';
 
-  shell(`<div class="page-head"><div><span class="eyebrow">AI Generation Plan</span><h1>${escapeHtml(job.name||'Generation Job')}</h1><p class="muted">${Number(job.totalQuestions||0)} planned questions · ${job.topicMode==='manual'?'Manual topic allocation':'AI-balanced topics'} · <span id="gen-job-status" class="status-pill ${escapeHtml(statusMeta.tone)}">${escapeHtml(statusMeta.label)}</span></p></div><div class="generator-actions">${planningAction}<a href="/admin/generator" class="btn ghost" data-link>Back to Generator</a></div></div>${stateNotice}
+  shell(`<div class="page-head"><div><span class="eyebrow">AI Generation Plan</span><h1>${escapeHtml(job.name||'Generation Job')}</h1><p class="muted">${Number(job.totalQuestions||0)} planned questions · ${job.topicMode==='manual'?'Manual topic allocation':'AI-balanced topics'} · <span id="gen-job-status" class="status-pill ${escapeHtml(statusMeta.tone)}">${escapeHtml(statusMeta.label)}</span></p></div><div class="generator-actions">${planningAction}${reviewAction}<a href="/admin/generator" class="btn ghost" data-link>Back to Generator</a></div></div>${stateNotice}
   <div class="generator-grid"><main>${generationSection}<section class="card"><span class="eyebrow">Plan Summary</span><h2>Plan Summary</h2><div class="generator-summary"><div class="stat"><b id="gen-plan-total">${summary.total}</b><span>Total</span></div><div class="stat"><b id="gen-plan-pdf">${summary.pdfInspiredCount}</b><span>PDF-inspired</span></div><div class="stat"><b id="gen-plan-fresh">${summary.freshAiCount}</b><span>Fresh AI</span></div><div class="stat"><b id="gen-plan-external">${summary.externalKnowledgeCount}</b><span>External knowledge</span></div></div>${job.planSummary?.notes?`<div class="reference-notice warning"><b>Source shortages / notes:</b> ${escapeHtml(job.planSummary.notes)}</div>`:''}</section><section class="card"><span class="eyebrow">Allocation</span><h2>Question Allocation</h2><div id="gen-plan-errors"></div><div id="gen-plan-list" class="generator-plan-list">${planRows}</div>${items.length&&!planLocked?'<div class="generator-actions" style="margin-top:14px"><button id="gen-save-plan" class="btn ghost">Save Plan</button><button id="gen-validate-plan" class="btn ghost">Validate Plan</button><button id="gen-approve-plan" class="btn primary" disabled>Approve Plan</button></div>':''}</section></main><aside class="card generator-sticky"><span class="eyebrow">Reference Coverage</span><h2>Reference Coverage</h2><div class="generator-source-coverage">${sourceRows}</div><div class="generator-section"><b>Generation controls</b><p class="muted small">Variation: ${escapeHtml(job.variationMode||'mixed')}<br>Creativity: ${escapeHtml(job.creativityLevel||'balanced')}<br>Avoid already-used concepts: ${job.avoidUsedConcepts?'Yes':'No'}<br>Similarity: ${escapeHtml(job.similarityPolicy||'balanced')}</p></div></aside></div>`,'admin');
   bindLinks();
 
@@ -1374,6 +1405,137 @@ async function generationJobPage(jobId){
   document.querySelector('#gen-save-plan').onclick=async e=>{const btn=e.currentTarget;const errors=renderClientSummary();if(errors.length)return;btn.disabled=true;try{job=await adminApi.saveGenerationPlan(jobId,generationPlanPayload(job,items));items=(job.planItems||[]).map(x=>({...x}));errorBox.innerHTML='<div class="set-alert success">Plan saved.</div>';}catch(err){errorBox.innerHTML=`<div class="set-alert error">${escapeHtml(err.message||'Unable to save plan.')}</div>`;}finally{btn.disabled=false;}};
   document.querySelector('#gen-validate-plan').onclick=async e=>{const btn=e.currentTarget;const errors=renderClientSummary();if(errors.length)return;btn.disabled=true;try{job=await adminApi.saveGenerationPlan(jobId,generationPlanPayload(job,items));items=(job.planItems||[]).map(x=>({...x}));const validation=await adminApi.validateGenerationPlan(jobId);const serverErrors=validation?.errors||[];serverValidated=!!validation?.canApprove&&!serverErrors.length;approveBtn.disabled=!serverValidated;errorBox.innerHTML=serverValidated?'<div class="set-alert success">Server validation passed. Plan is ready for approval.</div>':serverErrors.map(x=>`<div class="set-alert error">${escapeHtml(x)}</div>`).join('');}catch(err){serverValidated=false;approveBtn.disabled=true;errorBox.innerHTML=`<div class="set-alert error">${escapeHtml(err.message||'Unable to validate plan.')}</div>`;}finally{btn.disabled=false;}};
   approveBtn.onclick=async()=>{if(!serverValidated)return;if(!confirm('Approve this generation plan? Approved plans are immutable.'))return;approveBtn.disabled=true;try{await adminApi.approveGenerationPlan(jobId);await generationJobPage(jobId);}catch(err){errorBox.innerHTML=`<div class="set-alert error">${escapeHtml(err.message||'Unable to approve plan.')}</div>`;}};
+}
+
+
+async function generationReviewPage(jobId){
+  if(!await requireProfile('admin'))return;
+  loading('Loading Generated Candidates…');
+  let progress=await adminApi.generationProgress(jobId);
+  let candidates=(progress.candidates||[]).map(c=>({...c}));
+  const filters={search:'',subjectCode:'',topicId:'',difficulty:'',qaStatus:'',sourceDocumentId:'',variationMode:''};
+  const selected=new Set();
+
+  const uniq=(values)=>[...new Set(values.filter(Boolean))];
+  const subjects=uniq(candidates.map(c=>c.subjectCode)).sort();
+  const topics=uniq(candidates.map(c=>c.topicId)).map(id=>({id,name:candidates.find(c=>c.topicId===id)?.topicName||'AI skill'})).sort((a,b)=>a.name.localeCompare(b.name));
+  const sources=uniq(candidates.map(c=>c.sourceRef?.documentId)).map(id=>({id,title:candidates.find(c=>c.sourceRef?.documentId===id)?.sourceRef?.documentTitle||'Reference PDF'})).sort((a,b)=>a.title.localeCompare(b.title));
+
+  shell(`<div class="page-head"><div><span class="eyebrow">Milestone 3D</span><h1>${escapeHtml(progress.name||'Generation Job')} · Review Queue</h1><p class="muted">Review staged AI candidates before they enter the Question Bank.</p></div><div class="generator-actions"><a href="/admin/generator/${jobId}" class="btn ghost" data-link>Back to Job</a><a href="/admin/questions" class="btn ghost" data-link>Question Bank</a></div></div>
+  <div class="reference-notice neutral"><b>Staged review.</b> <b>Accept as Draft</b> creates a canonical <b>Question Bank Draft</b>. This review queue <b>never publishes automatically</b>; normal Question Bank publish validation still applies.</div>
+  <section class="card"><div class="generator-review-filters">
+    <label>Search<input id="gr-search" type="search" placeholder="Question, QA note, source…"></label>
+    <label>Subject<select id="gr-subject"><option value="">All subjects</option>${subjects.map(code=>`<option value="${escapeHtml(code)}">${escapeHtml(SUBJECT_LABELS[code]||code)}</option>`).join('')}</select></label>
+    <label>Topic<select id="gr-topic"><option value="">All topics</option>${topics.map(t=>`<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`).join('')}</select></label>
+    <label>Difficulty<select id="gr-difficulty"><option value="">All levels</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+    <label>QA status<select id="gr-status"><option value="">All review statuses</option><option value="pass">QA Pass</option><option value="needs_review">Needs Review</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option><option value="failed">Failed</option></select></label>
+    <label>Source document<select id="gr-source"><option value="">All sources</option><option value="__fresh__">Fresh AI</option>${sources.map(d=>`<option value="${escapeHtml(d.id)}">${escapeHtml(d.title)}</option>`).join('')}</select></label>
+    <label>Variation mode<select id="gr-variation"><option value="">All modes</option><option value="close_variant">Close Variant</option><option value="fresh_variant">Fresh Variant</option><option value="mixed">Mixed</option></select></label>
+  </div>
+  <div class="generator-review-toolbar"><div><b id="gr-count"></b> <span class="muted small" id="gr-selected-count"></span></div><div class="generator-review-actions"><button id="gr-accept-selected" class="btn ghost" disabled>Accept Selected</button><button id="gr-regenerate-selected" class="btn ghost" disabled>Regenerate Selected</button><button id="gr-reject-selected" class="btn ghost" disabled>Reject Selected</button></div></div><div id="gr-result" class="generator-review-result"></div></section>
+  <section id="gr-list" class="generator-candidate-list"></section>`,'admin');
+  bindLinks();
+
+  const qaLabel=status=>({pass:'QA Pass',needs_review:'Needs Review',rejected:'Rejected',failed:'Failed',accepted:'Accepted'})[status]||String(status||'Unknown');
+  const score=(label,value)=>`<div class="reference-analysis-item"><span>${escapeHtml(label)}</span><b>${escapeHtml(value?String(value).replace(/^./,c=>c.toUpperCase()):'—')}</b></div>`;
+  const sourceSummary=c=>c.sourceRef?`${c.sourceRef.documentTitle||'Reference PDF'} · page ${Number(c.sourceRef.pageNo||0)}${c.sourceRef.sourceLabel?` · ${c.sourceRef.sourceLabel}`:''}`:'Fresh AI / no direct PDF source';
+  const actionEligible=(c,action)=>action==='accept'?['pass','needs_review'].includes(c.status):action==='regenerate'?['pass','needs_review','rejected','failed'].includes(c.status):action==='reject'?['pass','needs_review','failed','rejected'].includes(c.status):false;
+
+  function effectiveFilter(){
+    return {...filters,sourceDocumentId:filters.sourceDocumentId==='__fresh__'?null:filters.sourceDocumentId,_freshOnly:filters.sourceDocumentId==='__fresh__'};
+  }
+  function visibleCandidates(){
+    const f=effectiveFilter();
+    let rows=filterGeneratedCandidates(candidates,f);
+    if(f._freshOnly)rows=rows.filter(c=>!c.sourceRef?.documentId);
+    return rows;
+  }
+  function card(c){
+    const g=c.generated||{},qa=c.qa||{},scores=qa.scores||{};
+    const canSelect=c.status!=='accepted';
+    const statusTone=c.status==='needs_review'?'warning':c.status==='rejected'||c.status==='failed'?'error':'';
+    const options=Array.isArray(g.options)?g.options.map(o=>`<div class="reference-option"><b>${escapeHtml(o.key||'')}</b>. ${escapeHtml(o.textMs||o.textEn||'')}${o.textMs&&o.textEn?`<div class="translation">${escapeHtml(o.textEn)}</div>`:''}</div>`).join(''):'';
+    const answer=g.correctKey?`<details><summary>Admin answer + explanation</summary><p><b>Correct:</b> ${escapeHtml(g.correctKey)}</p>${g.explanationMs?`<p>${escapeHtml(g.explanationMs)}</p>`:''}${g.explanationEn?`<p class="translation">${escapeHtml(g.explanationEn)}</p>`:''}</details>`:'';
+    const accepted=c.status==='accepted';
+    const acceptButton=actionEligible(c,'accept')?`<button class="btn primary gr-action" data-action="accept" data-id="${escapeHtml(c.itemId)}">Accept as Draft</button>`:'';
+    const editButton=accepted?`<a class="btn ghost" href="/admin/questions/${escapeHtml(c.questionId)}/edit" data-link>Edit Draft</a>`:actionEligible(c,'accept')?`<button class="btn ghost gr-action" data-action="edit" data-id="${escapeHtml(c.itemId)}">Edit as Draft</button>`:'';
+    const regenerateButton=c.status==='accepted'?'':actionEligible(c,'regenerate')?`<button class="btn ghost gr-action" data-action="regenerate" data-id="${escapeHtml(c.itemId)}">Regenerate</button>`:'';
+    const rejectButton=c.status==='accepted'?'':actionEligible(c,'reject')?`<button class="btn ghost gr-action" data-action="reject" data-id="${escapeHtml(c.itemId)}">Reject</button>`:'';
+    return `<article class="reference-source-card generator-review-card ${selected.has(c.itemId)?'selected':''}" data-item="${escapeHtml(c.itemId)}"><div class="reference-source-head"><div><label class="generator-review-select">${canSelect?`<input class="gr-select" type="checkbox" data-id="${escapeHtml(c.itemId)}" ${selected.has(c.itemId)?'checked':''}>`:''}<span><span class="generator-review-question-code">${escapeHtml(c.questionCode||`Candidate #${Number(c.slotNo||0)}`)}</span> · ${escapeHtml(c.subjectName||c.subjectCode||'')}</span></label><div class="reference-source-meta"><span>${escapeHtml(c.topicName||'AI skill')}</span><span>·</span><span>${escapeHtml(String(c.difficulty||'').replace(/^./,x=>x.toUpperCase()))}</span><span>·</span><span>${escapeHtml(String(c.variationMode||'mixed').replaceAll('_',' '))}</span></div></div><span class="reference-chip ${statusTone}">QA status: ${escapeHtml(qaLabel(c.status))}</span></div>${g.promptMs?`<p class="question-text">${escapeHtml(g.promptMs)}</p>`:''}${g.promptEn?`<p class="question-text translation">${escapeHtml(g.promptEn)}</p>`:''}<div class="reference-options">${options}</div>${answer}<div class="reference-source-analysis">${score('Correctness',scores.correctness)}${score('Uniqueness',scores.uniqueness)}${score('Difficulty',scores.difficulty)}${score('Distractor quality',scores.distractorQuality)}${score('Source alignment',scores.sourceAlignment)}${score('Clarity',scores.clarity)}</div><div class="generator-review-source"><b>Source:</b> ${escapeHtml(sourceSummary(c))}</div>${qa.notes?`<p class="muted"><b>QA note:</b> ${escapeHtml(qa.notes)}</p>`:''}${c.failureReason?`<div class="set-alert ${c.status==='rejected'||c.status==='failed'?'error':'warning'}">${escapeHtml(c.failureReason)}</div>`:''}${accepted?`<div class="set-alert success">Accepted as Question Bank Draft ${escapeHtml(c.questionCode||'')}.</div>`:''}<div class="generator-review-card-actions">${acceptButton}${editButton}${regenerateButton}${rejectButton}</div></article>`;
+  }
+
+  function updateBulkButtons(){
+    const count=selected.size;document.querySelector('#gr-selected-count').textContent=count?`· ${count} selected`:'';
+    document.querySelector('#gr-accept-selected').disabled=!count;
+    document.querySelector('#gr-regenerate-selected').disabled=!count;
+    document.querySelector('#gr-reject-selected').disabled=!count;
+  }
+  function renderList(){
+    const rows=visibleCandidates();
+    document.querySelector('#gr-count').textContent=`${rows.length} candidate${rows.length===1?'':'s'}`;
+    document.querySelector('#gr-list').innerHTML=rows.length?rows.map(card).join(''):'<div class="card generator-review-empty">No candidates match these filters.</div>';
+    bindLinks();
+    document.querySelectorAll('.gr-select').forEach(input=>input.addEventListener('change',()=>{if(input.checked)selected.add(input.dataset.id);else selected.delete(input.dataset.id);renderList();updateBulkButtons();}));
+    document.querySelectorAll('.gr-action').forEach(btn=>btn.addEventListener('click',()=>runSingleAction(btn.dataset.action,btn.dataset.id,btn)));
+    updateBulkButtons();
+  }
+  async function refreshReview(){
+    progress=await adminApi.generationProgress(jobId);
+    candidates=(progress.candidates||[]).map(c=>({...c}));
+    for(const id of [...selected])if(!candidates.some(c=>c.itemId===id&&c.status!=='accepted'))selected.delete(id);
+    renderList();
+  }
+  function showResult(message,type='success'){document.querySelector('#gr-result').innerHTML=message?`<div class="set-alert ${escapeHtml(type)}">${escapeHtml(message)}</div>`:'';}
+
+  async function runCandidateBulkAction(itemIds,action){
+    const succeeded=[];const failed=[];
+    for (const itemId of itemIds) {
+      try{
+        let result;
+        if(action==='accept')result=await adminApi.acceptGeneratedCandidate(itemId);
+        else if(action==='regenerate')result=await adminApi.regenerateGeneratedCandidate(itemId);
+        else if(action==='reject')result=await adminApi.rejectGeneratedCandidate(itemId);
+        else throw new Error('Unsupported review action');
+        succeeded.push({itemId,result});
+      }catch(error){failed.push({itemId,error:error?.message||String(error)});}
+    }
+    return {succeeded,failed};
+  }
+  async function runSingleAction(action,itemId,button){
+    const candidate=candidates.find(c=>c.itemId===itemId);if(!candidate)return;
+    if(action==='regenerate'&&!confirm('Regenerate this candidate? This uses the paid AI API and replaces the staged candidate after generation + QA.'))return;
+    if(action==='reject'&&!confirm('Reject this candidate? The generated content stays in audit history but will not enter the Question Bank.'))return;
+    button.disabled=true;showResult('');
+    try{
+      if(action==='edit'){
+        const result=await adminApi.acceptGeneratedCandidate(itemId);
+        go(`/admin/questions/${result.questionId}/edit`);
+        return;
+      }
+      const result=action==='accept'?await adminApi.acceptGeneratedCandidate(itemId):action==='regenerate'?await adminApi.regenerateGeneratedCandidate(itemId):await adminApi.rejectGeneratedCandidate(itemId);
+      selected.delete(itemId);
+      await refreshReview();
+      showResult(action==='accept'?`Accepted as Question Bank Draft ${result.questionCode||''}.`:action==='regenerate'?'Candidate queued for regeneration. Return to the job page and Resume Generation.':'Candidate rejected.');
+    }catch(error){showResult(error.message||'Review action failed.','error');button.disabled=false;}
+  }
+  async function runBulk(action){
+    const ids=[...selected].filter(id=>{const c=candidates.find(x=>x.itemId===id);return c&&actionEligible(c,action);});
+    if(!ids.length){showResult(`None of the selected candidates can be ${action==='accept'?'accepted':action==='regenerate'?'regenerated':'rejected'}.`,'warning');return;}
+    if(action==='regenerate'&&!confirm(`Regenerate ${ids.length} selected candidate(s)? This uses the paid AI API when you Resume Generation.`))return;
+    if(action==='reject'&&!confirm(`Reject ${ids.length} selected candidate(s)?`))return;
+    const result=await runCandidateBulkAction(ids,action);
+    selected.clear();await refreshReview();
+    const summary=`${result.succeeded.length} succeeded, ${result.failed.length} failed.`;
+    const failures=result.failed.map(x=>`${x.itemId}: ${x.error}`).join(' · ');
+    showResult(failures?`${summary} ${failures}`:summary,result.failed.length?'warning':'success');
+  }
+
+  const bindings=[['#gr-search','search','input'],['#gr-subject','subjectCode','change'],['#gr-topic','topicId','change'],['#gr-difficulty','difficulty','change'],['#gr-status','qaStatus','change'],['#gr-source','sourceDocumentId','change'],['#gr-variation','variationMode','change']];
+  for(const [selector,key,event] of bindings)document.querySelector(selector).addEventListener(event,e=>{filters[key]=e.target.value.trim();renderList();});
+  document.querySelector('#gr-accept-selected').onclick=()=>runBulk('accept');
+  document.querySelector('#gr-regenerate-selected').onclick=()=>runBulk('regenerate');
+  document.querySelector('#gr-reject-selected').onclick=()=>runBulk('reject');
+  renderList();
 }
 
 async function simulationSetsPage(){
@@ -1836,7 +1998,7 @@ function studentModal(){const wrap=document.createElement('div');wrap.className=
 async function studentDetail(userId){if(!await requireProfile('admin'))return;loading();const d=await adminApi.studentHistory(userId);shell(`<div class="page-head"><div><span class="eyebrow">Student</span><h1>${escapeHtml(d.profile.displayName)}</h1><p>${escapeHtml(d.profile.email)} · ${d.profile.active?'Active':'Inactive'} · ${escapeHtml(d.profile.schoolYear||'')}</p></div></div><section class="stats"><div class="stat"><b>${d.summary.totalAttempts}</b><span>Attempts</span></div><div class="stat"><b>${pct(d.summary.bestPercentage)}</b><span>Best</span></div><div class="stat"><b>${pct(d.summary.averagePercentage)}</b><span>Average</span></div><div class="stat"><b>${pct(d.summary.latestPercentage)}</b><span>Latest</span></div></section><section class="card"><h2>Subject Performance</h2><div class="subject-grid">${(d.subjectPerformance||[]).map(s=>`<div class="stat"><b>${pct(s.percentage)}</b><span>${escapeHtml(s.name)}</span></div>`).join('')}</div></section><section class="card"><h2>Attempt History</h2>${adminHistoryTable(d.attempts||[])}</section>`,'admin');}
 function adminHistoryTable(rows){if(!rows.length)return'<p class="muted">No completed attempts yet.</p>';return`<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'')}</td><td>${formatDuration(r.elapsedSeconds)}</td><td>${date(r.submittedAt)}</td><td><a href="/admin/review/${r.attemptId}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`;}
 
-async function render(){clearInterval(quizTimer);try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/references')return referenceLibraryPage();if(/^\/admin\/references\/[^/]+$/.test(p))return referenceDocumentPage(p.split('/')[3]);if(p==='/admin/ai')return go('/admin/generator');if(p==='/admin/generator')return generationJobsPage();if(p==='/admin/generator/new')return generationJobNewPage();if(/^\/admin\/generator\/[^/]+$/.test(p))return generationJobPage(p.split('/')[3]);if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return simulationSetsPage();if(p==='/admin/sets/new')return simulationSetNewPage();if(/^\/admin\/sets\/[^/]+\/edit$/.test(p))return simulationSetBuilderPage(p.split('/')[3]);if(/^\/admin\/sets\/[^/]+\/preview$/.test(p))return simulationSetPreviewPage(p.split('/')[3]);if(p==='/admin/results')return adminPlaceholder('Results');if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
+async function render(){clearInterval(quizTimer);try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/references')return referenceLibraryPage();if(/^\/admin\/references\/[^/]+$/.test(p))return referenceDocumentPage(p.split('/')[3]);if(p==='/admin/ai')return go('/admin/generator');if(p==='/admin/generator')return generationJobsPage();if(p==='/admin/generator/new')return generationJobNewPage();if(/^\/admin\/generator\/[^/]+\/review$/.test(p))return generationReviewPage(p.split('/')[3]);if(/^\/admin\/generator\/[^/]+$/.test(p))return generationJobPage(p.split('/')[3]);if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return simulationSetsPage();if(p==='/admin/sets/new')return simulationSetNewPage();if(/^\/admin\/sets\/[^/]+\/edit$/.test(p))return simulationSetBuilderPage(p.split('/')[3]);if(/^\/admin\/sets\/[^/]+\/preview$/.test(p))return simulationSetPreviewPage(p.split('/')[3]);if(p==='/admin/results')return adminPlaceholder('Results');if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
 window.addEventListener('beforeunload',e=>{if(editorDirty){e.preventDefault();e.returnValue='';}});window.addEventListener('hashchange', render);render();})();
 </script>
 </body>
