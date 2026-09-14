@@ -97,6 +97,23 @@ select,textarea{font:inherit;border:1px solid var(--border);border-radius:10px;p
 .generator-review-filters{display:grid;grid-template-columns:minmax(180px,1.5fr) repeat(6,minmax(125px,1fr));gap:9px;align-items:end}.generator-review-filters label{font-size:.76rem}.generator-review-filters input,.generator-review-filters select{width:100%}.generator-review-toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0}.generator-review-actions{display:flex;gap:8px;flex-wrap:wrap}.generator-review-card{position:relative}.generator-review-card.selected{box-shadow:0 0 0 2px rgba(109,69,214,.22)}.generator-review-select{display:flex!important;grid-template-columns:auto 1fr;align-items:center;gap:8px;font-size:.82rem}.generator-review-select input{width:auto}.generator-review-question-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:850}.generator-review-result{margin:10px 0}.generator-review-card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}.generator-review-source{padding:9px 11px;border-radius:10px;background:#f8f9fc;margin:10px 0}.generator-review-empty{padding:30px;text-align:center;color:var(--muted)}@media(max-width:1100px){.generator-review-filters{grid-template-columns:1fr 1fr 1fr}}@media(max-width:650px){.generator-review-filters{grid-template-columns:1fr}.generator-review-toolbar{align-items:stretch}.generator-review-actions .btn{flex:1}}
 </style>
 
+
+<style>
+/* Student Quiz Hub — playful block-style experience; Admin remains untouched. */
+body[data-role="student"] .student-page{max-width:1240px;padding-top:26px}
+.student-top-actions{display:flex;align-items:center;gap:10px}.student-identity{display:flex;align-items:center;gap:9px;color:#273248;font-weight:850;background:#f7f2ff;border:1px solid #eadfff;border-radius:999px;padding:6px 11px 6px 7px}.student-avatar{width:34px;height:34px;display:grid;place-items:center;background:#fff;border-radius:50%;font-size:1.15rem;box-shadow:0 4px 12px rgba(78,62,130,.12)}.student-mobile-nav{display:none}
+.quiz-hub-hero{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;padding:34px 36px;border-radius:26px;background:linear-gradient(120deg,#ffe3ef,#fff0cf 35%,#dff8eb 68%,#e0efff);border:1px solid #f0e8ff;box-shadow:0 18px 45px rgba(99,80,151,.12);margin-bottom:24px}.quiz-hub-hero:after{content:"";position:absolute;width:190px;height:190px;border-radius:42px;right:-55px;bottom:-85px;background:linear-gradient(135deg,#ceb9ff,#9ddcf6);transform:rotate(18deg);opacity:.58}.quiz-hub-copy{position:relative;z-index:1}.quiz-hub-copy h1{margin:.2rem 0 .45rem;font-size:clamp(2rem,5vw,3.6rem);letter-spacing:-.045em}.quiz-hub-copy p{font-size:1.03rem;color:#58647a;margin:.2rem 0}.quiz-hub-avatar{position:relative;z-index:1;width:112px;height:112px;border-radius:28px;display:grid;place-items:center;font-size:3.5rem;background:#fff;border:4px solid rgba(255,255,255,.86);box-shadow:0 14px 32px rgba(74,73,120,.13);transform:rotate(3deg)}
+.hub-section{margin:28px 0}.hub-section-head{display:flex;justify-content:space-between;gap:14px;align-items:end;margin-bottom:13px}.hub-section-head h2{margin:0;font-size:1.35rem}.hub-section-head p{margin:3px 0 0}.hub-link{font-weight:850}
+.student-sim-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:15px}.student-sim-card{min-height:190px;border-radius:22px;padding:22px;background:#fff;border:1px solid #ece6f8;box-shadow:0 12px 28px rgba(77,75,112,.08);display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}.student-sim-card:before{content:"";position:absolute;left:0;top:0;right:0;height:8px;background:linear-gradient(90deg,#f7a9c9,#ffd198,#f8e778,#9fe0c4,#8bcdf1,#b9a1f2)}.student-sim-card h3{margin:8px 0 6px}.sim-metrics{display:flex;gap:8px;flex-wrap:wrap;margin:11px 0}.mini-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:999px;background:#f4f5f8;color:#596376;font-size:.76rem;font-weight:800}
+.practice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}.practice-card{position:relative;overflow:hidden;min-height:205px;padding:19px;border-radius:22px;background:#fff;border:1px solid #ebe7f4;box-shadow:0 11px 26px rgba(74,76,106,.075);display:flex;flex-direction:column;justify-content:space-between}.practice-card:after{content:"";position:absolute;width:82px;height:82px;border-radius:24px;right:-30px;top:-28px;background:var(--subject-accent,#e8ddff);opacity:.7;transform:rotate(20deg)}.practice-card[data-subject="MATH"]{--subject-accent:#cfe4ff}.practice-card[data-subject="SCI"]{--subject-accent:#ccf3dc}.practice-card[data-subject="EN"]{--subject-accent:#ffe0a8}.practice-card[data-subject="BM"]{--subject-accent:#ffd3df}.practice-card[data-subject="IQ"]{--subject-accent:#dfd4ff}.practice-card[data-subject="GK"]{--subject-accent:#cdeef0}.practice-card[data-subject="INSANIAH"]{--subject-accent:#fff0b7}.practice-card.disabled{opacity:.72;background:#fafafa}.practice-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;position:relative;z-index:1}.subject-icon{width:43px;height:43px;display:grid;place-items:center;border-radius:14px;background:var(--subject-accent,#e8ddff);font-size:1.45rem}.practice-card h3{margin:12px 0 5px}.practice-card .mode-copy{font-size:.8rem;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:#7359a7}.practice-card-meta{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}.practice-best{font-size:.84rem;color:#667085;min-height:20px}.practice-card .btn{width:100%}.practice-card .btn:disabled{background:#ececf1;color:#858b98;box-shadow:none}
+.hub-lower-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}.hub-panel{background:#fff;border:1px solid #ece8f3;border-radius:22px;padding:20px;box-shadow:0 10px 25px rgba(73,77,106,.065)}.leaderboard-mini-list,.activity-list{display:grid;gap:9px}.leaderboard-mini-row,.activity-row{display:grid;align-items:center;gap:10px;border-radius:14px;padding:11px 12px;background:#f9fafc}.leaderboard-mini-row{grid-template-columns:44px 1fr auto}.rank-bubble{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:#eee7ff;color:#5c45a1;font-weight:900}.activity-row{grid-template-columns:auto minmax(0,1fr) auto}.activity-badge{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:.7rem;font-weight:900;text-transform:uppercase;background:#eef1f6}.activity-badge.quick{background:#def4ff;color:#23627d}.activity-badge.speed{background:#ffe9cb;color:#8d5713}.activity-badge.simulation{background:#eadfff;color:#5c4398}.activity-main b{display:block}.activity-main span{font-size:.78rem;color:#70798c}.activity-score{text-align:right;font-weight:900}.empty-playful{padding:24px;border:2px dashed #e2dced;border-radius:18px;text-align:center;color:#737c8f;background:#fcfbff}
+.practice-top{height:auto;min-height:70px}.practice-progress{height:7px;border-radius:999px;background:#eceef3;overflow:hidden;margin-top:8px}.practice-progress>span{display:block;height:100%;background:linear-gradient(90deg,#7158d1,#e88ab5);transition:width .2s ease}.practice-mode-note{padding:10px 12px;border-radius:12px;background:#f5f2ff;color:#5c4b90;font-size:.83rem;margin-bottom:14px}.speed-question-panel{max-width:780px;margin:0 auto}.speed-next-note{text-align:center;color:#7a8190;font-size:.8rem;margin-top:12px}
+.practice-result-card{max-width:760px;margin:0 auto;text-align:center;padding:34px}.result-avatar{font-size:3.4rem}.result-score{font-size:clamp(2.4rem,8vw,4.7rem);font-weight:950;letter-spacing:-.05em;margin:.25rem 0}.result-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:22px}.review-answer.correct{border-left:4px solid #2e9d64}.review-answer.wrong{border-left:4px solid #c53d3d}
+.leaderboard-controls{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:16px}.leaderboard-controls select{min-width:220px}.leaderboard-tabs{display:flex;gap:7px;flex-wrap:wrap}.leaderboard-table .you-row td{background:#f3efff}.leaderboard-avatar{font-size:1.25rem;margin-right:7px}.my-position-card{margin-top:14px;padding:14px;border-radius:14px;background:#f3efff;border:1px solid #e4d9ff}.profile-hero-card{display:flex;gap:18px;align-items:center;padding:24px;border-radius:22px;background:linear-gradient(135deg,#fff1f6,#f0f8ff);margin-bottom:18px}.profile-avatar-large{width:86px;height:86px;border-radius:24px;display:grid;place-items:center;background:#fff;font-size:2.8rem;box-shadow:0 9px 24px rgba(70,72,105,.1)}
+@media(max-width:900px){.hub-lower-grid{grid-template-columns:1fr}.quiz-hub-hero{padding:27px}.quiz-hub-avatar{width:88px;height:88px;font-size:2.8rem}}
+@media(max-width:780px){body[data-role="student"] .student-topbar nav{display:none}.student-identity-name{display:none}.student-mobile-nav{position:sticky;top:68px;z-index:4;display:flex;gap:4px;overflow-x:auto;background:#fff;border-bottom:1px solid #ece8f3;padding:7px 10px}.student-mobile-nav a{white-space:nowrap;padding:8px 10px;border-radius:10px;color:#566075;font-size:.8rem;font-weight:800}.quiz-hub-hero{grid-template-columns:1fr auto}.practice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.student-sim-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.student-top-actions .btn{padding:9px 10px}.quiz-hub-hero{padding:22px;grid-template-columns:1fr}.quiz-hub-avatar{display:none}.practice-grid{grid-template-columns:1fr}.hub-section{margin:22px 0}.activity-row{grid-template-columns:auto minmax(0,1fr)}.activity-score{grid-column:2;text-align:left}.practice-result-card{padding:24px 18px}.result-actions .btn{width:100%}.profile-hero-card{align-items:flex-start}.leaderboard-controls select{min-width:0;width:100%}}
+</style>
 </head>
 <body>
 <div id="app"></div>
@@ -116,6 +133,12 @@ function navigatorState({ current, answered, flagged }) {
 
 function simulationAction(status) {
   return ({ not_started: 'Start Simulation', in_progress: 'Resume Simulation', completed: 'Try Again' })[status] || 'Start Simulation';
+}
+
+function practiceModeConfig(mode) {
+  if (mode === 'quick') return { label: 'Quick Quiz', questionLimit: 10, timeLimitSeconds: 600, allowBacktrack: true, lockOnAnswer: false };
+  if (mode === 'speed') return { label: 'Speed Quiz', questionLimit: 20, timeLimitSeconds: 300, allowBacktrack: false, lockOnAnswer: true };
+  throw new Error('Unsupported practice mode');
 }
 
 function languageBlocks(question) {
@@ -549,7 +572,7 @@ function applySetSuggestions(selected=[],suggestions=[],quotas={}) {
   return out;
 }
 
-window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, REFERENCE_MAX_BYTES, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES, allocateGapDifficulty, buildGapGenerationDraft, applySetSuggestions };
+window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceModeConfig, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, REFERENCE_MAX_BYTES, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES, allocateGapDifficulty, buildGapGenerationDraft, applySetSuggestions };
 </script>
 <script>(() => {
   const SUPABASE_URL = 'https://wwjtpfexvqaipvvupsai.supabase.co';
@@ -693,7 +716,7 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
     profile: async () => {
       const user = await currentUser();
       if (!user?.id) return null;
-      const select = 'user_id,display_name,role,school_year,is_active,created_at,last_activity_at';
+      const select = 'user_id,display_name,display_nickname,avatar_id,role,school_year,is_active,created_at,last_activity_at';
       const rows = await authedJson(`/rest/v1/profiles?select=${encodeURIComponent(select)}&user_id=eq.${encodeURIComponent(user.id)}`, { method: 'GET' });
       return Array.isArray(rows) ? rows[0] || null : rows;
     },
@@ -707,6 +730,8 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
     touch: () => rpc('touch_my_activity'),
     dashboard: () => rpc('get_my_dashboard'),
     history: () => rpc('get_my_attempt_history'),
+    quizHub: () => rpc('get_my_quiz_hub'),
+    combinedHistory: () => rpc('get_my_combined_history'),
     start: (setVersionId) => rpc('start_simulation', { p_set_version_id: setVersionId }),
     payload: (attemptId) => rpc('get_attempt_payload', { p_attempt_id: attemptId }),
     save: ({ attemptQuestionId, selectedOptionId = null, answerNumeric = null, answerText = null, flagged = false }) => rpc('save_attempt_answer', {
@@ -718,6 +743,13 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
     }),
     submit: (attemptId) => rpc('submit_attempt', { p_attempt_id: attemptId }),
     review: (attemptId) => rpc('get_attempt_review', { p_attempt_id: attemptId }),
+    startPractice: (subjectCode, mode) => rpc('start_practice_quiz', { p_subject_code: subjectCode, p_mode: mode }),
+    practicePayload: (attemptId) => rpc('get_practice_attempt_payload', { p_attempt_id: attemptId }),
+    savePracticeAnswer: (attemptId, challengeQuestionId, selectedOptionId) => rpc('save_practice_answer', { p_attempt_id: attemptId, p_challenge_question_id: challengeQuestionId, p_selected_option_id: selectedOptionId }),
+    submitPractice: (attemptId) => rpc('submit_practice_attempt', { p_attempt_id: attemptId }),
+    practiceReview: (attemptId) => rpc('get_practice_attempt_review', { p_attempt_id: attemptId }),
+    practiceLeaderboard: (challengeId) => rpc('get_practice_leaderboard', { p_challenge_id: challengeId }),
+    simulationLeaderboard: (setVersionId) => rpc('get_simulation_leaderboard', { p_set_version_id: setVersionId }),
   };
 
   const encodeStoragePath = (path='') => String(path).split('/').map(encodeURIComponent).join('/');
@@ -838,10 +870,11 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
 </script>
 <script>(() => {
 const { auth, studentApi, adminApi } = window.PKSK_API;
-const { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES, allocateGapDifficulty, buildGapGenerationDraft, applySetSuggestions } = window.PKSK_CORE;
+const { formatDuration, navigatorState, simulationAction, practiceModeConfig, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES, allocateGapDifficulty, buildGapGenerationDraft, applySetSuggestions } = window.PKSK_CORE;
 
 const root = document.querySelector('#app');
 let profile = null;
+let studentIdentity = null;
 let quizTimer = null;
 let editorDirty = false;
 
@@ -861,11 +894,16 @@ const button = (label, cls='primary', attrs='') => `<button class="btn ${cls}" $
 
 function shell(content, role = profile?.role) {
   document.body.dataset.role = role || '';
-  const nav = role === 'admin'
-    ? `<a href="/admin" data-link>Dashboard</a><a href="/admin/students" data-link>Students</a><a href="/admin/questions" data-link>Question Bank</a><a href="/admin/references" data-link>Reference Library</a><a href="/admin/generator" data-link>AI Generator</a><a href="/admin/sets" data-link>Simulation Sets</a><a href="/admin/results" data-link>Results</a>`
-    : `<a href="/student" data-link>Dashboard</a><a href="/student/history" data-link>My History</a><a href="/student/profile" data-link>Profile</a>`;
-  root.innerHTML = `<header class="topbar"><div class="brand"><span class="brandmark">P</span><span>PKSK Practice</span></div><nav>${nav}</nav><button id="logout" class="btn ghost">Logout</button></header><main class="page">${content}</main>`;
-  document.querySelector('#logout')?.addEventListener('click', async () => { await auth.signOut(); profile = null; go('/'); });
+  if (role === 'admin') {
+    const nav = `<a href="/admin" data-link>Dashboard</a><a href="/admin/students" data-link>Students</a><a href="/admin/questions" data-link>Question Bank</a><a href="/admin/references" data-link>Reference Library</a><a href="/admin/generator" data-link>AI Generator</a><a href="/admin/sets" data-link>Simulation Sets</a><a href="/admin/results" data-link>Results</a>`;
+    root.innerHTML = `<header class="topbar"><div class="brand"><span class="brandmark">P</span><span>PKSK Practice</span></div><nav>${nav}</nav><button id="logout" class="btn ghost">Logout</button></header><main class="page">${content}</main>`;
+  } else {
+    const nav = `<a href="/student" data-link>Quiz Hub</a><a href="/student/history" data-link>My Results</a><a href="/student/leaderboard" data-link>Leaderboard</a><a href="/student/profile" data-link>Profile</a>`;
+    const displayName = studentIdentity?.displayNickname || profile?.display_nickname || profile?.display_name || 'Student';
+    const avatar = studentIdentity?.avatarSymbol || '🎓';
+    root.innerHTML = `<header class="topbar student-topbar"><div class="brand"><span class="brandmark">P</span><span>PKSK Practice</span></div><nav>${nav}</nav><div class="student-top-actions"><a href="/student/profile" class="student-identity" data-link aria-label="Open profile"><span class="student-avatar">${escapeHtml(avatar)}</span><span class="student-identity-name">${escapeHtml(displayName)}</span></a><button id="logout" class="btn ghost">Logout</button></div></header><div class="student-mobile-nav">${nav}</div><main class="page student-page">${content}</main>`;
+  }
+  document.querySelector('#logout')?.addEventListener('click', async () => { await auth.signOut(); profile = null; studentIdentity = null; go('/'); });
   bindLinks();
 }
 function bindLinks() { document.querySelectorAll('[data-link]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); go(a.getAttribute('href')); })); }
@@ -933,17 +971,85 @@ async function loginPage() {
   });
 }
 
-async function studentDashboard() {
-  if (!await requireProfile('student')) return; loading();
-  const d = await studentApi.dashboard();
-  const cards = (d.simulations||[]).map(s => `<article class="sim-card"><div><span class="eyebrow">Simulation</span><h3>${escapeHtml(s.title)}</h3><p>${s.questionCount} questions · ${Math.round(s.timeLimitSeconds/60)} min</p><p class="muted">Best: ${pct(s.bestPercentage)} · Last: ${pct(s.lastPercentage)}</p></div><button class="btn primary sim-action" data-set="${s.setVersionId}" data-attempt="${s.activeAttemptId||''}" data-status="${s.status}">${simulationAction(s.status)}</button></article>`).join('') || `<div class="empty">No published simulations yet.</div>`;
-  shell(`<section class="hero"><div><span class="eyebrow">Student Dashboard</span><h1>Hi, ${escapeHtml(d.profile.displayName)} 👋</h1><p>Ready for your next PKSK practice?</p></div></section><section class="stats"><div class="stat"><b>${d.progress.totalAttempts}</b><span>Attempts</span></div><div class="stat"><b>${pct(d.progress.bestPercentage)}</b><span>Best Score</span></div><div class="stat"><b>${pct(d.progress.averagePercentage)}</b><span>Average</span></div><div class="stat"><b>${escapeHtml(d.progress.strongestSubject||'—')}</b><span>Strongest</span></div></section><h2>Simulations</h2><section class="sim-grid">${cards}</section><section class="card"><h2>Recent History</h2>${historyTable(d.recentHistory||[])}</section>`);
-  document.querySelectorAll('.sim-action').forEach(b => b.addEventListener('click', async () => { b.disabled=true; try { const id=b.dataset.attempt || await studentApi.start(b.dataset.set); go(`/student/quiz/${id}`); } catch(e){ alert(e.message); b.disabled=false; } }));
+function subjectIcon(code) {
+  return ({ INSANIAH:'🌟', MATH:'➗', SCI:'🔬', EN:'🔤', BM:'📚', IQ:'🧩', GK:'🌍' })[code] || '🎯';
 }
+
+async function studentDashboard() {
+  if (!await requireProfile('student')) return;
+  loading('Loading Quiz Hub…');
+  const d = await studentApi.quizHub();
+  studentIdentity = d.profile || null;
+
+  const simCards = (d.simulations||[]).map(sim => `<article class="student-sim-card"><div><span class="eyebrow">Full Simulation</span><h3>${escapeHtml(sim.title)}</h3><div class="sim-metrics"><span class="mini-chip">📝 ${Number(sim.questionCount||0)} questions</span><span class="mini-chip">⏱ ${Math.round(Number(sim.timeLimitSeconds||0)/60)} min</span></div><p class="muted small">Best: ${pct(sim.bestPercentage)} · Last: ${pct(sim.lastPercentage)}</p></div><button class="btn primary sim-action" data-set="${escapeHtml(sim.setVersionId)}" data-attempt="${escapeHtml(sim.activeAttemptId||'')}">${escapeHtml(simulationAction(sim.status))}</button></article>`).join('') || `<div class="empty-playful">No published simulations yet. Your teacher/admin can publish one when it is ready.</div>`;
+
+  const quickCards = (d.practiceSubjects||[]).map(subject => {
+    const quick = subject.quick || {};
+    const best = quick.bestPercentage == null ? 'No score yet' : `Best ${pct(quick.bestPercentage)} · ${formatDuration(quick.bestElapsedSeconds||0)}`;
+    return `<article class="practice-card ${quick.enabled?'':'disabled'}" data-subject="${escapeHtml(subject.subjectCode)}"><div><div class="practice-card-head"><div><div class="mode-copy">Quick Quiz</div><h3>${escapeHtml(subject.subjectName)}</h3></div><span class="subject-icon">${subjectIcon(subject.subjectCode)}</span></div><div class="practice-card-meta"><span class="mini-chip">10 Questions</span><span class="mini-chip">10 Minutes</span></div><div class="practice-best">${escapeHtml(best)}</div></div><button class="btn primary practice-start" data-mode="quick" data-subject="${escapeHtml(subject.subjectCode)}" ${quick.enabled?'':'disabled'}>${quick.enabled?'Start Quick Quiz':'Not enough questions yet'}</button></article>`;
+  }).join('');
+
+  const speedCards = (d.practiceSubjects||[]).map(subject => {
+    const speed = subject.speed || {};
+    const best = speed.bestPercentage == null ? 'No score yet' : `Best ${pct(speed.bestPercentage)} · ${formatDuration(speed.bestElapsedSeconds||0)}`;
+    return `<article class="practice-card ${speed.enabled?'':'disabled'}" data-subject="${escapeHtml(subject.subjectCode)}"><div><div class="practice-card-head"><div><div class="mode-copy">Speed Quiz</div><h3>${escapeHtml(subject.subjectName)}</h3></div><span class="subject-icon">${subjectIcon(subject.subjectCode)}</span></div><div class="practice-card-meta"><span class="mini-chip">20 Questions</span><span class="mini-chip">5 Minutes</span></div><div class="practice-best">${escapeHtml(best)}</div></div><button class="btn primary practice-start" data-mode="speed" data-subject="${escapeHtml(subject.subjectCode)}" ${speed.enabled?'':'disabled'}>${speed.enabled?'Start Speed Quiz':'Not enough questions yet'}</button></article>`;
+  }).join('');
+
+  const leaderboardPreview = (d.leaderboardPreview||[]).length
+    ? `<div class="leaderboard-mini-list">${(d.leaderboardPreview||[]).map(row=>{const pos=row.position||{};return `<div class="leaderboard-mini-row"><span class="rank-bubble">#${Number(pos.rank||0)}</span><div><b>${escapeHtml(row.subjectName)} · ${row.mode==='quick'?'Quick':'Speed'}</b><div class="muted small">${Number(pos.correctCount||0)} correct · ${formatDuration(pos.elapsedSeconds||0)}</div></div><span>${escapeHtml(pos.avatarSymbol||'🎓')}</span></div>`;}).join('')}</div>`
+    : `<div class="empty-playful">Complete a Quick or Speed Quiz to appear on the leaderboard.</div>`;
+
+  const recentActivity = (d.recentActivity||[]).length
+    ? `<div class="activity-list">${(d.recentActivity||[]).map(row=>{const route=row.reviewRouteType==='practice'?`/student/practice/review/${row.attemptId}`:`/student/review/${row.attemptId}`;return `<a class="activity-row" href="${route}" data-link><span class="activity-badge ${escapeHtml(row.activityType)}">${escapeHtml(row.activityType)}</span><div class="activity-main"><b>${escapeHtml(row.title)}</b><span>${date(row.submittedAt)} · ${formatDuration(row.elapsedSeconds||0)}</span></div><div class="activity-score">${escapeHtml(row.scoreText||pct(row.percentage))}</div></a>`;}).join('')}</div>`
+    : `<div class="empty-playful">Your completed quizzes and simulations will appear here.</div>`;
+
+  const welcome = d.profile?.displayNickname || d.profile?.displayName || profile?.display_name || 'Student';
+  shell(`<section class="quiz-hub-hero"><div class="quiz-hub-copy"><span class="eyebrow">Student Quiz Hub</span><h1>Hi, ${escapeHtml(welcome)} 👋</h1><p>Choose a challenge, beat your best score, and keep moving.</p><div class="sim-metrics"><span class="mini-chip">🔥 ${Number(d.progress?.totalAttempts||0)} attempts</span><span class="mini-chip">🏆 Best ${pct(d.progress?.bestPercentage)}</span><span class="mini-chip">📈 Avg ${pct(d.progress?.averagePercentage)}</span></div></div><div class="quiz-hub-avatar">${escapeHtml(d.profile?.avatarSymbol||'🎓')}</div></section>
+  <section class="hub-section"><div class="hub-section-head"><div><h2>Full Simulation</h2><p class="muted">Published PKSK sets from Admin.</p></div></div><div class="student-sim-grid">${simCards}</div></section>
+  <section class="hub-section"><div class="hub-section-head"><div><h2>Quick Quiz</h2><p class="muted">10 questions · 10 minutes · change answers before submit.</p></div></div><div class="practice-grid">${quickCards||'<div class="empty-playful">No subjects available yet.</div>'}</div></section>
+  <section class="hub-section"><div class="hub-section-head"><div><h2>Speed Quiz</h2><p class="muted">20 questions · 5 minutes · one-way, answers lock.</p></div></div><div class="practice-grid">${speedCards||'<div class="empty-playful">No subjects available yet.</div>'}</div></section>
+  <section class="hub-section hub-lower-grid"><div class="hub-panel"><div class="hub-section-head"><div><h2>Leaderboard</h2><p class="muted">Your current best positions.</p></div><a class="hub-link" href="/student/leaderboard" data-link>View all</a></div>${leaderboardPreview}</div><div class="hub-panel"><div class="hub-section-head"><div><h2>Recent Results</h2><p class="muted">Simulation, Quick and Speed together.</p></div><a class="hub-link" href="/student/history" data-link>My Results</a></div>${recentActivity}</div></section>`);
+
+  document.querySelectorAll('.sim-action').forEach(btn => btn.addEventListener('click', async () => {
+    btn.disabled=true;
+    try { const id=btn.dataset.attempt || await studentApi.start(btn.dataset.set); go(`/student/quiz/${id}`); }
+    catch(error){ alert(error.message||'Unable to start simulation.'); btn.disabled=false; }
+  }));
+
+  document.querySelectorAll('.practice-start').forEach(btn => btn.addEventListener('click', async () => {
+    if(btn.disabled)return;
+    btn.disabled=true;
+    try {
+      const attemptId = await studentApi.startPractice(btn.dataset.subject, btn.dataset.mode);
+      go(`/student/practice/attempt/${attemptId}`);
+    } catch(error) {
+      alert(error.message||'Unable to start practice quiz.');
+      btn.disabled=false;
+    }
+  }));
+}
+
 function historyTable(rows) { if(!rows.length) return `<p class="muted">No completed attempts yet.</p>`; return `<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle||r.set_title)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'—')}</td><td>${formatDuration(r.elapsedSeconds??r.elapsed_seconds)}</td><td>${date(r.submittedAt??r.submitted_at)}</td><td><a href="/student/review/${r.attemptId??r.attempt_id}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`; }
 
-async function studentHistory() { if(!await requireProfile('student'))return; loading(); const rows=await studentApi.history(); shell(`<div class="page-head"><div><span class="eyebrow">Progress</span><h1>My History</h1></div></div><section class="card">${historyTable(rows||[])}</section>`); }
-async function studentProfile() { if(!await requireProfile('student'))return; shell(`<div class="page-head"><div><span class="eyebrow">Account</span><h1>My Profile</h1></div></div><section class="card profile-card"><dl><dt>Name</dt><dd>${escapeHtml(profile.display_name)}</dd><dt>School Year</dt><dd>${escapeHtml(profile.school_year||'—')}</dd><dt>Member Since</dt><dd>${date(profile.created_at)}</dd></dl><h3>Change Password <span class="muted small">(optional)</span></h3><form id="password-form"><label>New password<input id="new-password" type="password" minlength="6" required></label><div id="password-msg" aria-live="polite"></div>${button('Update Password','primary','type="submit"')}</form></section>`); document.querySelector('#password-form').addEventListener('submit',async e=>{e.preventDefault();const msg=document.querySelector('#password-msg');try{await auth.changePassword(document.querySelector('#new-password').value);msg.textContent='Password updated.';}catch(err){msg.textContent=err.message;}}); }
+async function studentHistory() {
+  if(!await requireProfile('student'))return;
+  loading('Loading your results…');
+  const rows=await studentApi.combinedHistory()||[];
+  const body=rows.length?`<div class="activity-list">${rows.map(row=>{const route=row.reviewRouteType==='practice'?`/student/practice/review/${row.attemptId}`:`/student/review/${row.attemptId}`;return `<a class="activity-row" href="${route}" data-link><span class="activity-badge ${escapeHtml(row.activityType)}">${escapeHtml(row.activityType)}</span><div class="activity-main"><b>${escapeHtml(row.title)}</b><span>${date(row.submittedAt)} · ${formatDuration(row.elapsedSeconds||0)}</span></div><div class="activity-score">${escapeHtml(row.scoreText||pct(row.percentage))}<div class="muted small">${pct(row.percentage)}</div></div></a>`;}).join('')}</div>`:`<div class="empty-playful">No completed results yet. Start a quiz from the Quiz Hub.</div>`;
+  shell(`<div class="page-head"><div><span class="eyebrow">Progress</span><h1>My Results</h1><p class="muted">All simulations, Quick Quizzes and Speed Quizzes in one place.</p></div><a class="btn ghost" href="/student" data-link>Back to Quiz Hub</a></div><section class="hub-panel">${body}</section>`);
+}
+
+async function studentProfile() {
+  if(!await requireProfile('student'))return;
+  loading('Loading profile…');
+  let hub=null;
+  try{hub=await studentApi.quizHub();studentIdentity=hub?.profile||studentIdentity;}catch{}
+  const p=hub?.profile||{};
+  const nickname=p.displayNickname||profile.display_nickname||profile.display_name;
+  const avatar=p.avatarSymbol||'🎓';
+  shell(`<div class="page-head"><div><span class="eyebrow">Account</span><h1>My Profile</h1></div><a class="btn ghost" href="/student" data-link>Back to Quiz Hub</a></div><section class="profile-hero-card"><div class="profile-avatar-large">${escapeHtml(avatar)}</div><div><span class="eyebrow">${escapeHtml(p.avatarLabel||'Student')}</span><h2 style="margin:.25rem 0">${escapeHtml(nickname)}</h2><p class="muted" style="margin:0">${escapeHtml(profile.display_name)} · ${escapeHtml(profile.school_year||'School Year not set')}</p></div></section><section class="card profile-card"><dl><dt>Nickname</dt><dd>${escapeHtml(nickname)}</dd><dt>Name</dt><dd>${escapeHtml(profile.display_name)}</dd><dt>School Year</dt><dd>${escapeHtml(profile.school_year||'—')}</dd><dt>Member Since</dt><dd>${date(profile.created_at)}</dd></dl><h3>Change Password <span class="muted small">(optional)</span></h3><form id="password-form"><label>New password<input id="new-password" type="password" minlength="6" required></label><div id="password-msg" aria-live="polite"></div>${button('Update Password','primary','type="submit"')}</form></section>`);
+  document.querySelector('#password-form').addEventListener('submit',async e=>{e.preventDefault();const msg=document.querySelector('#password-msg');try{await auth.changePassword(document.querySelector('#new-password').value);msg.textContent='Password updated.';}catch(err){msg.textContent=err.message;}});
+}
 
 function studentQuestionMarkup(q,{preview=false}={}) {
   const blocks=languageBlocks(q).map((b,i)=>`<p class="question-text ${i?'translation':''}" lang="${b.lang}">${escapeHtml(b.text)}</p>`).join('');
@@ -968,9 +1074,145 @@ async function quizPage(attemptId) {
   clearInterval(quizTimer);quizTimer=setInterval(updateTimer,1000);draw();
 }
 
+
+async function practiceAttemptPage(attemptId) {
+  if(!await requireProfile('student'))return;
+  loading('Loading practice quiz…');
+  let payload=await studentApi.practicePayload(attemptId);
+  if(payload.status!=='in_progress')return go(`/student/practice/results/${attemptId}`);
+  const config=practiceModeConfig(payload.mode);
+  let index=0;
+  let saving=false;
+  let finishing=false;
+
+  function answeredCount(){return (payload.questions||[]).filter(q=>q.saved_answer?.selected_option_id).length;}
+  function draw(){
+    const q=payload.questions[index];
+    if(!q)return;
+    const quickNavigator=payload.mode==='speed'?'':`<aside class="navigator"><h3>Jump to Question</h3><div class="nav-grid">${payload.questions.map((row,i)=>`<button class="nav-q ${navigatorState({current:i===index,answered:!!row.saved_answer?.selected_option_id,flagged:false})}" data-practice-i="${i}">${i+1}</button>`).join('')}</div><p class="muted small">${payload.questions.length-answeredCount()} unanswered</p></aside>`;
+    const previous=payload.mode==='speed'?'':`<button id="practice-prev" class="btn ghost" ${index===0?'disabled':''}>Previous</button>`;
+    const nextLabel=index===payload.questions.length-1?'Review / Submit':'Next';
+    const next=payload.mode==='quick'?`<button id="practice-next" class="btn primary">${nextLabel}</button>`:'';
+    const modeNote=payload.mode==='speed'?'Answer once and move forward — answers lock immediately.':'You can go back and change answers before submitting.';
+    const layoutClass=payload.mode==='speed'?'exam-page speed-question-panel':'exam-page';
+    root.innerHTML=`<header class="exam-top practice-top"><div><b>${escapeHtml(payload.title)}</b><span>Question ${index+1}/${payload.question_count}</span><div class="practice-progress"><span style="width:${Math.round(((index+1)/payload.question_count)*100)}%"></span></div></div><div id="timer" class="timer"></div></header><main class="${layoutClass}"><section class="question-panel"><div class="question-meta"><span class="subject-pill">${escapeHtml(payload.subject_name)}</span><span>${escapeHtml(config.label)}</span></div><div class="practice-mode-note">${escapeHtml(modeNote)}</div>${renderQuestion(q)}<div id="save-status" class="save-status" aria-live="polite"></div><div class="exam-actions">${previous}${next}</div>${payload.mode==='speed'?'<div class="speed-next-note">Choose an answer to continue.</div>':''}</section>${quickNavigator}</main>`;
+
+    document.querySelector('#practice-prev')?.addEventListener('click',()=>{if(config.allowBacktrack&&index>0){index-=1;draw();}});
+    document.querySelector('#practice-next')?.addEventListener('click',()=>{if(index<payload.questions.length-1){index+=1;draw();}else submitQuick();});
+    document.querySelectorAll('[data-practice-i]').forEach(btn=>btn.addEventListener('click',()=>{if(config.allowBacktrack){index=Number(btn.dataset.practiceI);draw();}}));
+    document.querySelectorAll('.option').forEach(btn=>btn.addEventListener('click',async()=>{
+      if(saving)return;
+      if(config.lockOnAnswer&&q.saved_answer?.selected_option_id)return;
+      const status=document.querySelector('#save-status');
+      saving=true;if(status)status.textContent='Saving…';
+      if(payload.mode==='speed'){
+        try{
+          await studentApi.savePracticeAnswer(attemptId,q.challenge_question_id,btn.dataset.option);
+          q.saved_answer={selected_option_id:btn.dataset.option};
+          if(index<payload.questions.length-1){index += 1;draw();}
+          else await finishPractice();
+        }catch(error){if(status)status.textContent=error.message||'Save failed — try again.';}
+        finally{saving=false;}
+        return;
+      }
+      try{
+        await studentApi.savePracticeAnswer(attemptId,q.challenge_question_id,btn.dataset.option);
+        q.saved_answer={selected_option_id:btn.dataset.option};
+        draw();
+      }catch(error){if(status)status.textContent=error.message||'Save failed — try again.';}
+      finally{saving=false;}
+    }));
+    hydratePrivateImages(root).catch(()=>{});
+    updatePracticeTimer();
+  }
+
+  async function submitQuick(){
+    const unanswered=payload.questions.length-answeredCount();
+    if(unanswered&&!confirm(`You still have ${unanswered} unanswered question${unanswered===1?'':'s'}.\n\nSubmit anyway?`))return;
+    await finishPractice();
+  }
+  async function finishPractice(){
+    if(finishing)return;
+    finishing=true;clearInterval(quizTimer);
+    try{await studentApi.submitPractice(attemptId);go(`/student/practice/results/${attemptId}`);}
+    catch(error){finishing=false;alert(error.message||'Unable to submit practice quiz.');}
+  }
+  function updatePracticeTimer(){
+    const el=document.querySelector('#timer');if(!el)return;
+    const remaining=remainingSeconds(payload.expires_at);
+    el.textContent=`${String(Math.floor(remaining/60)).padStart(2,'0')}:${String(remaining%60).padStart(2,'0')}`;
+    if(remaining<=0)finishPractice();
+  }
+  clearInterval(quizTimer);quizTimer=setInterval(updatePracticeTimer,1000);draw();
+}
+
+async function practiceResultsPage(attemptId) {
+  if(!await requireProfile('student'))return;
+  loading('Loading result…');
+  const r=await studentApi.practiceReview(attemptId);
+  const modeLabel=practiceModeConfig(r.mode).label;
+  shell(`<div class="page-head"><div><span class="eyebrow">${escapeHtml(modeLabel)} Result</span><h1>${escapeHtml(r.subjectName)}</h1></div></div><section class="card practice-result-card"><div class="result-avatar">${subjectIcon(r.subjectCode)}</div><div class="result-score">${pct(r.percentage)}</div><h2>${Number(r.correctCount||0)} / ${Number(r.attemptedCount||0)} correct</h2><p class="muted">${formatDuration(r.elapsedSeconds||0)} · ${escapeHtml(modeLabel)}</p><div class="result-actions"><a class="btn primary" href="/student/practice/review/${attemptId}" data-link>Review Answers</a><button id="practice-try-again" class="btn ghost">Try Again</button><a class="btn ghost" href="/student" data-link>Back to Quiz Hub</a></div></section>`);
+  document.querySelector('#practice-try-again').addEventListener('click',async e=>{const btn=e.currentTarget;btn.disabled=true;try{const id=await studentApi.startPractice(r.subjectCode,r.mode);go(`/student/practice/attempt/${id}`);}catch(error){alert(error.message||'Unable to start a new quiz.');btn.disabled=false;}});
+}
+
+async function practiceReviewPage(attemptId) {
+  if(!await requireProfile('student'))return;
+  loading('Loading answer review…');
+  const r=await studentApi.practiceReview(attemptId);
+  const rows=(r.questions||[]).map(q=>{
+    const display={language_mode:q.language_mode,prompt_ms:q.prompt_ms,prompt_en:q.prompt_en};
+    const prompts=languageBlocks(display).map((part,i)=>`<p class="question-text ${i?'translation':''}">${escapeHtml(part.text)}</p>`).join('');
+    const image=q.prompt_image_path?`<img class="question-media media-loading" data-media-path="${escapeHtml(q.prompt_image_path)}" alt="Question diagram">`:'';
+    return `<article class="review-card ${q.is_correct?'correct-card':'wrong-card'}"><div class="review-head"><b>Question ${Number(q.position)} · ${escapeHtml(r.subjectName)}</b><span>${q.is_correct?'✓ Correct':'✕ Incorrect'}</span></div>${prompts}${image}<div class="answer-review review-answer ${q.is_correct?'correct':'wrong'}"><p><b>Your answer:</b> ${escapeHtml(answerLabel(q,q.selected_option_id))}</p><p><b>Correct answer:</b> ${escapeHtml(answerLabel(q,q.correct_option_id))}</p></div><div class="explanation"><b>Explanation</b>${q.explanation_ms?`<p>${escapeHtml(q.explanation_ms)}</p>`:''}${q.explanation_en?`<p class="translation">${escapeHtml(q.explanation_en)}</p>`:''}</div></article>`;
+  }).join('');
+  shell(`<div class="page-head"><div><span class="eyebrow">Answer Review</span><h1>${escapeHtml(r.title)}</h1><p class="muted">${Number(r.correctCount||0)} correct · ${pct(r.percentage)} · ${formatDuration(r.elapsedSeconds||0)}</p></div><div class="preview-actions"><a class="btn ghost" href="/student/practice/results/${attemptId}" data-link>Result</a><a class="btn ghost" href="/student" data-link>Quiz Hub</a></div></div><section class="review-list">${rows||'<div class="empty-playful">No questions to review.</div>'}</section>`);
+  hydratePrivateImages(root).catch(()=>{});
+}
+
 function answerLabel(q,id){const o=(q.options||[]).find(x=>x.id===id);if(!o)return 'No answer';return `${o.key}. ${(o.text_ms||o.text_en||'')}`;}
 async function reviewPage(attemptId, admin=false) { if(!await requireProfile(admin?'admin':'student'))return; loading(); const r=admin?await adminApi.attemptReview(attemptId):await studentApi.review(attemptId); let filter='all'; const draw=()=>{const qs=filterReviewQuestions(r.questions||[],filter); const body=`<div class="page-head"><div><span class="eyebrow">${escapeHtml(r.title)}</span><h1>${Number(r.raw_score||0)} / ${Number(r.max_score||0)} · ${pct(r.percentage)} · Grade ${escapeHtml(r.grade||'—')}</h1><p>${formatDuration(r.elapsed_seconds)}</p></div></div><section class="subject-grid">${(r.subject_scores||[]).map(s=>`<div class="stat"><b>${s.correct_count}/${s.total_count}</b><span>${escapeHtml(s.subject_name)}</span></div>`).join('')}</section><div class="review-tabs">${['all','wrong','correct','flagged'].map(f=>`<button class="btn ${filter===f?'primary':'ghost'}" data-filter="${f}">${f[0].toUpperCase()+f.slice(1)}</button>`).join('')}</div><section class="review-list">${qs.map(q=>`<article class="review-card ${q.is_correct?'correct-card':'wrong-card'}"><div class="review-head"><b>Question ${q.position} · ${escapeHtml(q.subject_name)}</b><span>${q.is_correct?'✓ Correct':'✕ Incorrect'}${q.flagged?' · ★ Flagged':''}</span></div>${languageBlocks(q).map((b,i)=>`<p class="question-text ${i?'translation':''}">${escapeHtml(b.text)}</p>`).join('')}<div class="answer-review"><p><b>Your answer:</b> ${q.question_type==='mcq_single'?escapeHtml(answerLabel(q,q.selected_option_id)):escapeHtml(q.answer_numeric??q.answer_text??'No answer')}</p><p><b>Correct answer:</b> ${q.question_type==='mcq_single'?escapeHtml(answerLabel(q,q.correct_option_id)):escapeHtml(q.correct_numeric??(q.accepted_text_answers||[]).join(' / '))}</p></div><div class="explanation"><b>Explanation</b>${q.explanation_ms?`<p>${escapeHtml(q.explanation_ms)}</p>`:''}${q.explanation_en?`<p class="translation">${escapeHtml(q.explanation_en)}</p>`:''}</div></article>`).join('')}</section>`; if(admin)shell(body,'admin');else shell(body,'student'); document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;draw();});};draw(); }
 async function resultsPage(id){return reviewPage(id,false);}
+
+
+async function studentLeaderboard() {
+  if(!await requireProfile('student'))return;
+  loading('Loading leaderboards…');
+  const hub=await studentApi.quizHub();
+  studentIdentity=hub.profile||studentIdentity;
+  let mode='simulation';
+
+  async function draw(nextMode=mode){
+    mode=nextMode;
+    const simulationTargets=(hub.simulations||[]).map(x=>({id:x.setVersionId,label:x.title}));
+    const practiceTargets=(hub.practiceSubjects||[]).map(subject=>({id:subject[mode]?.challengeId||'',label:subject.subjectName,subjectCode:subject.subjectCode}));
+    const targets=mode==='simulation'?simulationTargets:practiceTargets;
+    const usable=targets.filter(x=>x.id);
+    const options=targets.map(x=>`<option value="${escapeHtml(x.id)}" ${x.id?'':'disabled'}>${escapeHtml(x.label)}${x.id?'':' · No leaderboard yet'}</option>`).join('');
+    shell(`<div class="page-head"><div><span class="eyebrow">Best Score Counts</span><h1>Leaderboard</h1><p class="muted">Highest score wins. Ties go to the faster time.</p></div><a class="btn ghost" href="/student" data-link>Quiz Hub</a></div><section class="hub-panel"><div class="leaderboard-controls"><div class="leaderboard-tabs"><button class="btn ${mode==='simulation'?'primary':'ghost'} leaderboard-mode" data-mode="simulation">Full Simulation</button><button class="btn ${mode==='quick'?'primary':'ghost'} leaderboard-mode" data-mode="quick">Quick Quiz</button><button class="btn ${mode==='speed'?'primary':'ghost'} leaderboard-mode" data-mode="speed">Speed Quiz</button></div><select id="leaderboard-target" ${usable.length?'':'disabled'}>${options}</select></div><div id="leaderboard-body">${usable.length?'<div class="muted">Loading ranking…</div>':'<div class="empty-playful">No leaderboard exists for this mode yet. Start a quiz first.</div>'}</div></section>`);
+    document.querySelectorAll('.leaderboard-mode').forEach(btn=>btn.addEventListener('click',()=>draw(btn.dataset.mode)));
+    const select=document.querySelector('#leaderboard-target');
+    select?.addEventListener('change',()=>loadBoard(select.value));
+    if(usable.length){select.value=usable[0].id;await loadBoard(usable[0].id);}
+  }
+
+  async function loadBoard(targetId){
+    const box=document.querySelector('#leaderboard-body');if(!box||!targetId)return;
+    box.innerHTML='<div class="muted">Loading ranking…</div>';
+    try{
+      const data=mode==='simulation'?await studentApi.simulationLeaderboard(targetId):await studentApi.practiceLeaderboard(targetId);
+      const top10=data.top10||[];
+      const myPosition=data.myPosition||null;
+      const rows=top10.map(row=>{
+        const score=mode==='simulation'?`${pct(row.percentage)} · ${Number(row.rawScore||0)}/${Number(row.maxScore||0)}`:`${Number(row.correctCount||0)} correct · ${pct(row.percentage)}`;
+        return `<tr><td><b>#${Number(row.rank||0)}</b></td><td><span class="leaderboard-avatar">${escapeHtml(row.avatarSymbol||'🎓')}</span>${escapeHtml(row.nickname||'Student')}</td><td>${escapeHtml(score)}</td><td>${formatDuration(row.elapsedSeconds||0)}</td></tr>`;
+      }).join('');
+      const mine=myPosition?`<div class="my-position-card"><b>Your position: #${Number(myPosition.rank||0)}</b><div class="muted small">${mode==='simulation'?`${pct(myPosition.percentage)} · ${formatDuration(myPosition.elapsedSeconds||0)}`:`${Number(myPosition.correctCount||0)} correct · ${pct(myPosition.percentage)} · ${formatDuration(myPosition.elapsedSeconds||0)}`}</div></div>`:'';
+      box.innerHTML=top10.length?`<div class="table-wrap"><table class="leaderboard-table"><thead><tr><th>Rank</th><th>Student</th><th>Score</th><th>Time</th></tr></thead><tbody>${rows}</tbody></table></div>${mine}`:`<div class="empty-playful">No completed attempts on this leaderboard yet.</div>${mine}`;
+    }catch(error){box.innerHTML=`<div class="set-alert error">${escapeHtml(error.message||'Unable to load leaderboard.')}</div>`;}
+  }
+
+  await draw('simulation');
+}
 
 async function adminDashboard(){if(!await requireProfile('admin'))return;loading();const s=await adminApi.summary();shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>Dashboard</h1></div><a class="btn primary" href="/admin/students" data-link>Manage Students</a></div><section class="stats"><div class="stat"><b>${s.totalStudents}</b><span>Total Students</span></div><div class="stat"><b>${s.activeToday}</b><span>Active Today</span></div><div class="stat"><b>${s.activeThisWeek}</b><span>Active This Week</span></div><div class="stat"><b>${s.totalAttempts}</b><span>Total Attempts</span></div><div class="stat"><b>${pct(s.averageScore)}</b><span>Average Score</span></div></section><section class="card"><h2>Monitoring</h2><p>Students inactive for 14 days: <b>${s.inactive14Days}</b></p></section>`,'admin');}
 async function adminPlaceholder(title){if(!await requireProfile('admin'))return;shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>${escapeHtml(title)}</h1></div></div><section class="card"><h2>Coming in the next Milestone 2 stage</h2><p>This area is not active yet.</p></section>`,'admin');}
@@ -2120,7 +2362,7 @@ function studentModal(){const wrap=document.createElement('div');wrap.className=
 async function studentDetail(userId){if(!await requireProfile('admin'))return;loading();const d=await adminApi.studentHistory(userId);shell(`<div class="page-head"><div><span class="eyebrow">Student</span><h1>${escapeHtml(d.profile.displayName)}</h1><p>${escapeHtml(d.profile.email)} · ${d.profile.active?'Active':'Inactive'} · ${escapeHtml(d.profile.schoolYear||'')}</p></div></div><section class="stats"><div class="stat"><b>${d.summary.totalAttempts}</b><span>Attempts</span></div><div class="stat"><b>${pct(d.summary.bestPercentage)}</b><span>Best</span></div><div class="stat"><b>${pct(d.summary.averagePercentage)}</b><span>Average</span></div><div class="stat"><b>${pct(d.summary.latestPercentage)}</b><span>Latest</span></div></section><section class="card"><h2>Subject Performance</h2><div class="subject-grid">${(d.subjectPerformance||[]).map(s=>`<div class="stat"><b>${pct(s.percentage)}</b><span>${escapeHtml(s.name)}</span></div>`).join('')}</div></section><section class="card"><h2>Attempt History</h2>${adminHistoryTable(d.attempts||[])}</section>`,'admin');}
 function adminHistoryTable(rows){if(!rows.length)return'<p class="muted">No completed attempts yet.</p>';return`<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'')}</td><td>${formatDuration(r.elapsedSeconds)}</td><td>${date(r.submittedAt)}</td><td><a href="/admin/review/${r.attemptId}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`;}
 
-async function render(){clearInterval(quizTimer);try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/references')return referenceLibraryPage();if(/^\/admin\/references\/[^/]+$/.test(p))return referenceDocumentPage(p.split('/')[3]);if(p==='/admin/ai')return go('/admin/generator');if(p==='/admin/generator')return generationJobsPage();if(p==='/admin/generator/coverage')return generationCoveragePage();if(p==='/admin/generator/new')return generationJobNewPage();if(/^\/admin\/generator\/[^/]+\/review$/.test(p))return generationReviewPage(p.split('/')[3]);if(/^\/admin\/generator\/[^/]+$/.test(p))return generationJobPage(p.split('/')[3]);if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return simulationSetsPage();if(p==='/admin/sets/new')return simulationSetNewPage();if(/^\/admin\/sets\/[^/]+\/edit$/.test(p))return simulationSetBuilderPage(p.split('/')[3]);if(/^\/admin\/sets\/[^/]+\/preview$/.test(p))return simulationSetPreviewPage(p.split('/')[3]);if(p==='/admin/results')return adminPlaceholder('Results');if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
+async function render(){clearInterval(quizTimer);try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/leaderboard')return studentLeaderboard();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/practice/attempt/'))return practiceAttemptPage(p.split('/').pop());if(p.startsWith('/student/practice/results/'))return practiceResultsPage(p.split('/').pop());if(p.startsWith('/student/practice/review/'))return practiceReviewPage(p.split('/').pop());if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/references')return referenceLibraryPage();if(/^\/admin\/references\/[^/]+$/.test(p))return referenceDocumentPage(p.split('/')[3]);if(p==='/admin/ai')return go('/admin/generator');if(p==='/admin/generator')return generationJobsPage();if(p==='/admin/generator/coverage')return generationCoveragePage();if(p==='/admin/generator/new')return generationJobNewPage();if(/^\/admin\/generator\/[^/]+\/review$/.test(p))return generationReviewPage(p.split('/')[3]);if(/^\/admin\/generator\/[^/]+$/.test(p))return generationJobPage(p.split('/')[3]);if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return simulationSetsPage();if(p==='/admin/sets/new')return simulationSetNewPage();if(/^\/admin\/sets\/[^/]+\/edit$/.test(p))return simulationSetBuilderPage(p.split('/')[3]);if(/^\/admin\/sets\/[^/]+\/preview$/.test(p))return simulationSetPreviewPage(p.split('/')[3]);if(p==='/admin/results')return adminPlaceholder('Results');if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
 window.addEventListener('beforeunload',e=>{if(editorDirty){e.preventDefault();e.returnValue='';}});window.addEventListener('hashchange', render);render();})();
 </script>
 </body>
