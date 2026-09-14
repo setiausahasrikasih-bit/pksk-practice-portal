@@ -72,6 +72,10 @@ select,textarea{font:inherit;border:1px solid var(--border);border-radius:10px;p
 <style>
 .preview-stage{display:grid;place-items:center;padding:18px 0 40px}.phone-preview{width:min(430px,100%);border:10px solid #202536;border-radius:28px;background:#f7f8fb;overflow:hidden;box-shadow:0 24px 60px rgba(34,42,65,.18)}.preview-phone-top{display:flex;justify-content:space-between;padding:12px 15px;background:#202536;color:#fff;font-weight:800;font-size:.85rem}.preview-question{border:0;border-radius:0;box-shadow:none;min-height:520px}.preview-option{cursor:default}.preview-actions{display:flex;gap:8px;flex-wrap:wrap}
 </style>
+
+<style>
+.set-create-form{max-width:760px;display:grid;gap:16px}.set-create-form textarea{width:100%;min-height:100px;resize:vertical}.set-form-grid{display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:14px}.set-builder-head{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:12px;align-items:end}.set-builder-head textarea{width:100%;min-height:76px;resize:vertical}.set-builder-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}.set-builder-panel{min-width:0}.set-builder-panel h2{margin-top:0}.set-quota-card{position:sticky;top:88px}.set-quota-table{min-width:0}.set-quota-table th,.set-quota-table td{padding:9px 8px}.set-quota-table .shortage td{background:#fff4f4}.set-quota-table .complete td{background:#f2fbf5}.quota-number{font-variant-numeric:tabular-nums;font-weight:800}.availability-badge{display:inline-flex;border-radius:999px;padding:3px 7px;font-size:.75rem;font-weight:800;background:#eef1f6}.availability-badge.short{background:#ffe2e2;color:#9a3030}.difficulty-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.difficulty-box{border:1px solid var(--border);border-radius:11px;padding:10px;background:#fafbfe}.difficulty-box b{display:block;font-size:1.1rem}.set-filter-grid{display:grid;grid-template-columns:minmax(0,1fr) 180px 150px;gap:10px;margin-bottom:12px}.set-filter-grid label{font-size:.82rem}.set-question-list{display:grid;gap:9px;max-height:760px;overflow:auto;padding-right:4px}.set-question-row{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff}.set-question-row.selected{background:#fbf9ff}.set-question-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.set-question-code{font-weight:850}.set-question-meta{display:flex;gap:7px;flex-wrap:wrap;color:var(--muted);font-size:.77rem;margin-top:4px}.set-question-preview{margin:8px 0 0;line-height:1.4}.set-question-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.set-mini-btn{border:1px solid var(--border);background:#f8f9fc;border-radius:8px;padding:6px 9px;cursor:pointer;font-weight:750}.set-mini-btn:disabled{opacity:.4;cursor:not-allowed}.set-builder-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.set-builder-message{margin-top:12px}.set-builder-message:empty{display:none}.set-alert{border-radius:10px;padding:11px 13px;margin:8px 0}.set-alert.error{background:#fff0f0;color:#9a3030}.set-alert.success{background:#e9f8ef;color:#26734a}.set-alert.warning{background:#fff7db;color:#7f5f00}.set-total{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:8px 0 14px}.set-total strong{font-size:1.15rem}.set-readonly-note{padding:10px 12px;border-radius:10px;background:#f3f5f9;color:var(--muted);margin-bottom:12px}@media(max-width:980px){.set-builder-layout{grid-template-columns:1fr}.set-quota-card{position:static}.set-filter-grid{grid-template-columns:1fr 1fr}.set-filter-grid label:first-child{grid-column:1/-1}}@media(max-width:620px){.set-form-grid,.set-builder-head,.set-filter-grid{grid-template-columns:1fr}.set-question-top{flex-direction:column}.set-question-actions{width:100%}}
+</style>
 </head>
 <body>
 <div id="app"></div>
@@ -153,6 +157,60 @@ function subjectLanguageMode(subjectCode) {
   if (subjectCode === 'EN') return 'en';
   if (subjectCode === 'BM') return 'ms';
   return 'bilingual';
+}
+
+const STANDARD_SET_QUOTAS = Object.freeze({
+  INSANIAH: 20,
+  MATH: 15,
+  SCI: 15,
+  EN: 15,
+  BM: 15,
+  IQ: 10,
+  GK: 10,
+});
+
+const STANDARD_DIFFICULTY_TARGET = Object.freeze({ easy: 20, medium: 55, hard: 25 });
+
+function summarizeSetComposition(rows = []) {
+  const subjects = Object.fromEntries(Object.keys(STANDARD_SET_QUOTAS).map(code => [code, 0]));
+  const difficulty = { easy: 0, medium: 0, hard: 0 };
+  for (const row of rows) {
+    if (Object.prototype.hasOwnProperty.call(subjects, row?.subjectCode)) subjects[row.subjectCode] += 1;
+    if (Object.prototype.hasOwnProperty.call(difficulty, row?.difficulty)) difficulty[row.difficulty] += 1;
+  }
+  return { total: rows.length, subjects, difficulty };
+}
+
+function validateSetComposition(rows = [], timeLimitSeconds = 5400) {
+  const summary = summarizeSetComposition(rows);
+  const errors = [];
+  const warnings = [];
+
+  if (summary.total !== 100) {
+    errors.push(`Exactly 100 questions are required; ${summary.total} selected.`);
+  }
+
+  for (const [code, required] of Object.entries(STANDARD_SET_QUOTAS)) {
+    const actual = summary.subjects[code] || 0;
+    if (actual !== required) {
+      errors.push(`${SUBJECT_LABELS[code] || code}: ${actual} selected; ${required} required.`);
+    }
+  }
+
+  const ids = rows.map(row => row?.versionId).filter(Boolean);
+  if (new Set(ids).size !== ids.length) errors.push('Duplicate question versions are not allowed.');
+
+  if (Number(timeLimitSeconds) !== 5400) {
+    errors.push('Standard 100-question simulations must use a 90 minute time limit.');
+  }
+
+  const difficultyMismatch = Object.entries(STANDARD_DIFFICULTY_TARGET)
+    .some(([level, target]) => summary.difficulty[level] !== target);
+  if (summary.total === 100 && difficultyMismatch) {
+    warnings.push(`Difficulty mix is ${summary.difficulty.easy}/${summary.difficulty.medium}/${summary.difficulty.hard}; target is 20/55/25 (Easy/Medium/Hard).`);
+  }
+
+  return { summary, errors, warnings, canPublish: errors.length === 0 };
 }
 
 function blankQuestionDraft() {
@@ -239,7 +297,7 @@ function validateQuestionDraft(draft, mode = 'draft') {
   return [...new Set(errors)];
 }
 
-window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd };
+window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition };
 </script>
 <script>(() => {
   const SUPABASE_URL = 'https://wwjtpfexvqaipvvupsai.supabase.co';
@@ -436,6 +494,22 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
     publishQuestion: (versionId) => rpc('admin_publish_question', { p_question_version_id: versionId }),
     archiveQuestion: (questionId) => rpc('admin_archive_question', { p_question_id: questionId }),
     questionPreview: (versionId) => rpc('admin_question_preview', { p_question_version_id: versionId }),
+    simulationSets: () => rpc('admin_simulation_set_list'),
+    setCandidates: (filters = {}) => rpc('admin_simulation_set_candidates', {
+      p_subject_id: filters.subjectId || null,
+      p_difficulty: filters.difficulty || null,
+      p_search: filters.search || null,
+    }),
+    createSimulationSet: ({ title, description = '', timeLimitSeconds = 5400 }) => rpc('admin_create_simulation_set', {
+      p_title: title,
+      p_description: description || null,
+      p_time_limit_seconds: Number(timeLimitSeconds) || 5400,
+    }),
+    getSimulationSet: (setVersionId) => rpc('admin_get_simulation_set_builder', { p_set_version_id: setVersionId }),
+    saveSimulationSet: (payload) => rpc('admin_save_simulation_set_draft', { p_payload: payload }),
+    reviseSimulationSet: (setVersionId) => rpc('admin_create_simulation_set_revision', { p_set_version_id: setVersionId }),
+    validateSimulationSet: (setVersionId) => rpc('admin_validate_simulation_set', { p_set_version_id: setVersionId }),
+    publishSimulationSet: (setVersionId) => rpc('admin_publish_simulation_set', { p_set_version_id: setVersionId }),
     uploadQuestionMedia: (path, blob) => authedJson(`/storage/v1/object/question-media/${encodeStoragePath(path)}`, {
       method: 'POST',
       body: blob,
@@ -464,7 +538,7 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
 </script>
 <script>(() => {
 const { auth, studentApi, adminApi } = window.PKSK_API;
-const { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd } = window.PKSK_CORE;
+const { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition } = window.PKSK_CORE;
 
 const root = document.querySelector('#app');
 let profile = null;
@@ -478,7 +552,7 @@ const pct = (v) => v == null ? '—' : `${Number(v).toFixed(1)}%`;
 const date = (v) => v ? new Date(v).toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
 const go = (path) => {
   const current = location.hash.slice(1) || '/';
-  const editing = current === '/admin/questions/new' || /^\/admin\/questions\/[^/]+\/edit$/.test(current);
+  const editing = current === '/admin/questions/new' || /^\/admin\/questions\/[^/]+\/edit$/.test(current) || /^\/admin\/sets\/[^/]+\/edit$/.test(current);
   if (editing && editorDirty && current !== path && !confirm('You have unsaved changes. Leave this page?')) return;
   const next = `#${path}`;
   if (location.hash === next) render(); else location.hash = next;
@@ -600,6 +674,238 @@ async function resultsPage(id){return reviewPage(id,false);}
 
 async function adminDashboard(){if(!await requireProfile('admin'))return;loading();const s=await adminApi.summary();shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>Dashboard</h1></div><a class="btn primary" href="/admin/students" data-link>Manage Students</a></div><section class="stats"><div class="stat"><b>${s.totalStudents}</b><span>Total Students</span></div><div class="stat"><b>${s.activeToday}</b><span>Active Today</span></div><div class="stat"><b>${s.activeThisWeek}</b><span>Active This Week</span></div><div class="stat"><b>${s.totalAttempts}</b><span>Total Attempts</span></div><div class="stat"><b>${pct(s.averageScore)}</b><span>Average Score</span></div></section><section class="card"><h2>Monitoring</h2><p>Students inactive for 14 days: <b>${s.inactive14Days}</b></p></section>`,'admin');}
 async function adminPlaceholder(title){if(!await requireProfile('admin'))return;shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>${escapeHtml(title)}</h1></div></div><section class="card"><h2>Coming in the next Milestone 2 stage</h2><p>This area is not active yet.</p></section>`,'admin');}
+async function simulationSetsPage(){
+  if(!await requireProfile('admin'))return;
+  loading('Loading Simulation Sets…');
+  const rows=await adminApi.simulationSets()||[];
+  shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>Simulation Sets</h1><p class="muted">Build and publish versioned PKSK simulations from the Question Bank.</p></div><a class="btn primary" href="/admin/sets/new" data-link>Create Simulation Set</a></div>
+  <section class="card"><div class="table-wrap"><table><thead><tr><th>Set</th><th>Version</th><th>Questions</th><th>Duration</th><th>Status</th><th>Created / Published</th><th>Actions</th></tr></thead><tbody>${rows.length?rows.map(row=>{
+    const status=String(row.status||'draft').toLowerCase();
+    const standard=Number(row.expectedQuestionCount)===100;
+    const revise=status==='published'&&standard?` · <button class="link-btn set-revision" data-version="${escapeHtml(row.setVersionId)}">Create Revision</button>`:'';
+    const edit=status==='draft'?`<a href="/admin/sets/${row.setVersionId}/edit" data-link>Edit</a> · `:'';
+    return `<tr><td><b>${escapeHtml(row.title||row.name||'Simulation Set')}</b><div class="muted small">${escapeHtml(row.slug||'')}</div></td><td>v${Number(row.versionNo||1)}</td><td>${Number(row.questionCount||0)} / ${Number(row.expectedQuestionCount||0)}</td><td>${formatDuration(Number(row.timeLimitSeconds||0))}</td><td><span class="status-pill ${escapeHtml(status)}">${escapeHtml(status.replace(/^./,c=>c.toUpperCase()))}</span></td><td>${date(row.publishedAt||row.createdAt)}</td><td>${edit}<a href="/admin/sets/${row.setVersionId}/preview" data-link>Preview</a>${revise}</td></tr>`;
+  }).join(''):'<tr><td colspan="7"><span class="muted">No simulation sets yet.</span></td></tr>'}</tbody></table></div></section>`,'admin');
+  bindLinks();
+  document.querySelectorAll('.set-revision').forEach(btn=>btn.addEventListener('click',async()=>{
+    btn.disabled=true;
+    try{const draft=await adminApi.reviseSimulationSet(btn.dataset.version);go(`/admin/sets/${draft.setVersionId}/edit`);}catch(err){alert(err.message||'Unable to create a revision.');btn.disabled=false;}
+  }));
+}
+async function simulationSetNewPage(){
+  if(!await requireProfile('admin'))return;
+  shell(`<div class="page-head"><div><span class="eyebrow">Simulation Sets</span><h1>Create Simulation Set</h1><p class="muted">Create a standard 100-question Draft. You can assemble the questions on the next screen.</p></div><a href="/admin/sets" class="btn ghost" data-link>Back</a></div>
+  <section class="card"><form id="set-create-form" class="set-create-form">
+    <label>Set title<input id="set-new-title" required maxlength="160" placeholder="e.g. PKSK Set 1"></label>
+    <label>Description <span class="muted small">(optional)</span><textarea id="set-new-description" placeholder="Internal note or student-facing description"></textarea></label>
+    <label>Standard duration<input value="90 minutes" disabled><span class="muted small">Standard 100-question PKSK simulations publish at 90 minutes.</span></label>
+    <div id="set-create-error" class="form-error" aria-live="polite"></div>
+    <div><button class="btn primary" type="submit">Create Draft &amp; Build</button></div>
+  </form></section>`,'admin');
+  bindLinks();
+  document.querySelector('#set-create-form').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const submit=e.currentTarget.querySelector('button[type="submit"]');
+    const error=document.querySelector('#set-create-error');
+    submit.disabled=true;error.textContent='';
+    try{
+      const title=document.querySelector('#set-new-title').value.trim();
+      if(!title)throw new Error('Set title is required.');
+      const description=document.querySelector('#set-new-description').value.trim();
+      const created=await adminApi.createSimulationSet({title,description,timeLimitSeconds:5400});
+      go(`/admin/sets/${created.setVersionId}/edit`);
+    }catch(err){error.textContent=err.message||'Unable to create the Draft.';submit.disabled=false;}
+  });
+}
+async function simulationSetBuilderPage(setVersionId){
+  if(!await requireProfile('admin'))return;
+  loading('Loading Simulation Set Builder…');
+  let draft=await adminApi.getSimulationSet(setVersionId);
+  if(String(draft.status).toLowerCase()!=='draft')return go(`/admin/sets/${setVersionId}/preview`);
+  editorDirty=false;
+  const candidates=await adminApi.setCandidates({})||[];
+  let selected=(draft.questions||[]).map(q=>({...q}));
+  const filters={search:'',subjectId:'',difficulty:''};
+
+  const subjectOptions=(draft.quotas||[]).map(q=>`<option value="${escapeHtml(q.subjectId)}">${escapeHtml(q.subjectName)}</option>`).join('');
+  shell(`<div class="page-head"><div><span class="eyebrow">Simulation Set Builder</span><h1>${escapeHtml(draft.title||'Simulation Set')} · v${Number(draft.versionNo||1)}</h1><p class="muted">Manual mode · Published Question Bank versions only</p></div><div class="preview-actions"><a href="/admin/sets/${draft.setVersionId}/preview" class="btn ghost" data-link>Preview</a><a href="/admin/sets" class="btn ghost" data-link>Back to Sets</a></div></div>
+  <section class="card">
+    <div class="set-builder-head"><label>Set title<input id="set-title" maxlength="160" value="${escapeHtml(draft.title||'')}"></label><label>Duration (minutes)<input id="set-duration" type="number" min="1" value="${Math.round(Number(draft.timeLimitSeconds||5400)/60)}"></label></div>
+    <label style="margin-top:12px">Description <span class="muted small">(optional)</span><textarea id="set-description">${escapeHtml(draft.description||'')}</textarea></label>
+    <div class="set-readonly-note">Publication requires exactly 100 questions and a 90-minute duration. Difficulty mix is QA guidance only.</div>
+    <div id="set-message" class="set-builder-message" aria-live="polite"></div>
+  </section>
+  <div class="set-builder-layout">
+    <div class="set-builder-panel">
+      <section class="card">
+        <div class="set-total"><div><span class="eyebrow">Question Bank</span><h2>Available Questions</h2></div><strong id="set-available-count"></strong></div>
+        <div class="set-filter-grid">
+          <label>Search<input id="set-search" type="search" placeholder="Question ID or text"></label>
+          <label>Subject<select id="set-subject"><option value="">All subjects</option>${subjectOptions}</select></label>
+          <label>Difficulty<select id="set-difficulty"><option value="">All levels</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+        </div>
+        <div id="set-available" class="set-question-list"></div>
+      </section>
+    </div>
+    <div class="set-builder-panel">
+      <section class="card set-quota-card">
+        <div class="set-total"><div><span class="eyebrow">Composition</span><h2>Selected Questions</h2></div><strong id="set-total"></strong></div>
+        <div class="table-wrap"><table class="set-quota-table"><thead><tr><th>Subject</th><th>Required</th><th>Selected</th><th>Available</th></tr></thead><tbody id="set-quota-body"></tbody></table></div>
+        <div id="set-difficulty-summary" class="difficulty-grid"></div>
+        <div class="set-builder-actions"><button id="set-save" class="btn ghost">Save Draft</button><button id="set-validate" class="btn ghost">Validate</button><button id="set-publish" class="btn primary" disabled>Publish</button></div>
+      </section>
+      <section class="card"><div id="set-selected" class="set-question-list"></div></section>
+    </div>
+  </div>`,'admin');
+  bindLinks();
+
+  const message=document.querySelector('#set-message');
+  const titleInput=document.querySelector('#set-title');
+  const descriptionInput=document.querySelector('#set-description');
+  const durationInput=document.querySelector('#set-duration');
+
+  function showSetMessage(text,type='error'){
+    message.innerHTML=text?`<div class="set-alert ${escapeHtml(type)}">${escapeHtml(text)}</div>`:'';
+  }
+  function quotaFor(code){return (draft.quotas||[]).find(q=>q.subjectCode===code);}
+  function currentSummary(){return summarizeSetComposition(selected);}
+  function markDirty(){editorDirty=true;document.querySelector('#set-publish').disabled=true;}
+
+  function renderQuota(){
+    const summary=currentSummary();
+    document.querySelector('#set-total').textContent=`${summary.total} / ${Number(draft.expectedQuestionCount||100)}`;
+    document.querySelector('#set-quota-body').innerHTML=(draft.quotas||[]).map(q=>{
+      const actual=summary.subjects[q.subjectCode]||0;
+      const shortage=Number(q.available||0)<Number(q.required||0);
+      const complete=actual===Number(q.required||0);
+      return `<tr class="${shortage?'shortage':complete?'complete':''}"><td><b>${escapeHtml(q.subjectName)}</b></td><td class="quota-number">${Number(q.required||0)}</td><td class="quota-number">${actual}</td><td><span class="availability-badge ${shortage?'short':''}">${Number(q.available||0)}${shortage?' · shortage':''}</span></td></tr>`;
+    }).join('');
+    document.querySelector('#set-difficulty-summary').innerHTML=Object.entries(STANDARD_DIFFICULTY_TARGET).map(([level,target])=>`<div class="difficulty-box"><span>${escapeHtml(level.replace(/^./,c=>c.toUpperCase()))}</span><b>${summary.difficulty[level]||0} / ${target}</b></div>`).join('');
+  }
+
+  function filteredCandidates(){
+    const term=filters.search.toLowerCase();
+    return candidates.filter(q=>{
+      if(filters.subjectId&&q.subjectId!==filters.subjectId)return false;
+      if(filters.difficulty&&q.difficulty!==filters.difficulty)return false;
+      if(term&&!`${q.questionCode||''} ${q.promptPreview||''}`.toLowerCase().includes(term))return false;
+      return true;
+    });
+  }
+  function renderAvailable(){
+    const rows=filteredCandidates();
+    const summary=currentSummary();
+    document.querySelector('#set-available-count').textContent=`${rows.length} shown`;
+    document.querySelector('#set-available').innerHTML=rows.length?rows.map(q=>{
+      const already=selected.some(x=>x.versionId===q.versionId);
+      const quota=quotaFor(q.subjectCode);
+      const full=quota&&(summary.subjects[q.subjectCode]||0)>=Number(quota.required||0);
+      return `<article class="set-question-row"><div class="set-question-top"><div><div class="set-question-code">${escapeHtml(q.questionCode)} · v${Number(q.versionNo||1)}</div><div class="set-question-meta"><span>${escapeHtml(q.subjectName||q.subjectCode)}</span><span>${escapeHtml(q.topicName||'No topic')}</span><span>${escapeHtml(q.difficulty||'medium')}</span></div></div><button class="set-mini-btn set-add-question" data-version="${escapeHtml(q.versionId)}" ${already||full?'disabled':''}>${already?'Added':full?'Quota full':'Add'}</button></div><p class="set-question-preview">${escapeHtml(q.promptPreview||'[Question]')}</p></article>`;
+    }).join(''):'<div class="empty">No published questions match these filters.</div>';
+    document.querySelectorAll('.set-add-question').forEach(btn=>btn.addEventListener('click',()=>{
+      const q=candidates.find(x=>x.versionId===btn.dataset.version);if(!q)return;
+      const quota=quotaFor(q.subjectCode);const summary=currentSummary();
+      if(quota&&(summary.subjects[q.subjectCode]||0)>=Number(quota.required||0)){showSetMessage(`${q.subjectName} quota is already full.`,'warning');return;}
+      if(!selected.some(x=>x.versionId===q.versionId)){selected.push({...q,position:selected.length+1});markDirty();showSetMessage('');renderAll();}
+    }));
+  }
+  function renderSelected(){
+    document.querySelector('#set-selected').innerHTML=selected.length?selected.map((q,i)=>`<article class="set-question-row selected"><div class="set-question-top"><div><div class="set-question-code">${i+1}. ${escapeHtml(q.questionCode)} · v${Number(q.versionNo||1)}</div><div class="set-question-meta"><span>${escapeHtml(q.subjectName||q.subjectCode)}</span><span>${escapeHtml(q.difficulty||'medium')}</span></div></div><div class="set-question-actions"><button class="set-mini-btn set-selected-action" data-action="up" data-i="${i}" ${i===0?'disabled':''} aria-label="Move Up">↑</button><button class="set-mini-btn set-selected-action" data-action="down" data-i="${i}" ${i===selected.length-1?'disabled':''} aria-label="Move Down">↓</button><button class="set-mini-btn set-selected-action" data-action="remove" data-i="${i}">Remove</button></div></div><p class="set-question-preview">${escapeHtml(q.promptPreview||'[Question]')}</p></article>`).join(''):'<div class="empty">No questions selected yet. Add published questions from the Question Bank.</div>';
+    document.querySelectorAll('.set-selected-action').forEach(btn=>btn.addEventListener('click',()=>{
+      const i=Number(btn.dataset.i);const action=btn.dataset.action;
+      if(action==='remove')selected.splice(i,1);
+      if(action==='up'&&i>0)[selected[i-1],selected[i]]=[selected[i],selected[i-1]];
+      if(action==='down'&&i<selected.length-1)[selected[i+1],selected[i]]=[selected[i],selected[i+1]];
+      markDirty();showSetMessage('');renderAll();
+    }));
+  }
+  function renderAll(){renderQuota();renderAvailable();renderSelected();}
+
+  document.querySelector('#set-search').addEventListener('input',e=>{filters.search=e.target.value.trim();renderAvailable();});
+  document.querySelector('#set-subject').addEventListener('change',e=>{filters.subjectId=e.target.value;renderAvailable();});
+  document.querySelector('#set-difficulty').addEventListener('change',e=>{filters.difficulty=e.target.value;renderAvailable();});
+  [titleInput,descriptionInput,durationInput].forEach(el=>el.addEventListener('input',markDirty));
+
+  async function saveSetDraft(showSuccess=false){
+    showSetMessage('');
+    const payload={
+      setVersionId:draft.setVersionId,
+      title:titleInput.value.trim(),
+      description:descriptionInput.value.trim(),
+      timeLimitSeconds:Number(durationInput.value||0)*60,
+      questionVersionIds:selected.map(q=>q.versionId),
+    };
+    draft=await adminApi.saveSimulationSet(payload);
+    selected=(draft.questions||[]).map(q=>({...q}));
+    editorDirty=false;
+    if(showSuccess)showSetMessage('Draft saved.','success');
+    renderAll();
+    return draft;
+  }
+  function renderValidationResult(validation){
+    const errors=validation?.errors||[];const warnings=validation?.warnings||[];
+    const parts=[];
+    if(errors.length)parts.push(...errors.map(x=>`<div class="set-alert error">${escapeHtml(x)}</div>`));
+    if(warnings.length)parts.push(...warnings.map(x=>`<div class="set-alert warning">${escapeHtml(x)}</div>`));
+    if(!errors.length)parts.unshift('<div class="set-alert success">Server validation passed. This Draft is ready to publish.</div>');
+    message.innerHTML=parts.join('');
+  }
+  async function validateSavedSet(){
+    const validation=await adminApi.validateSimulationSet(draft.setVersionId);
+    renderValidationResult(validation);
+    document.querySelector('#set-publish').disabled=!validation.canPublish;
+    return validation;
+  }
+
+  document.querySelector('#set-save').addEventListener('click',async e=>{
+    const btn=e.currentTarget;btn.disabled=true;
+    try{await saveSetDraft(true);}catch(err){showSetMessage(err.message||'Unable to save Draft.');}
+    finally{btn.disabled=false;}
+  });
+  document.querySelector('#set-validate').addEventListener('click',async e=>{
+    const btn=e.currentTarget;btn.disabled=true;document.querySelector('#set-publish').disabled=true;
+    try{await saveSetDraft(false);await validateSavedSet();}catch(err){showSetMessage(err.message||'Unable to validate this Draft.');}
+    finally{btn.disabled=false;}
+  });
+  document.querySelector('#set-publish').addEventListener('click',async e=>{
+    const btn=e.currentTarget;btn.disabled=true;
+    try{
+      await saveSetDraft(false);
+      const validation=await validateSavedSet();
+      if(!validation.canPublish)return;
+      if(!confirm('Publish this simulation set version? Published versions are immutable. Future changes require a new revision.'))return;
+      const published=await adminApi.publishSimulationSet(draft.setVersionId);
+      editorDirty=false;
+      go(`/admin/sets/${published.setVersionId}/preview`);
+    }catch(err){showSetMessage(err.message||'Unable to publish this simulation set.');}
+    finally{if(location.hash.includes('/edit'))btn.disabled=false;}
+  });
+
+  renderAll();
+}
+async function simulationSetPreviewPage(setVersionId){
+  if(!await requireProfile('admin'))return;
+  loading('Loading Simulation Set Preview…');
+  const data=await adminApi.getSimulationSet(setVersionId);
+  const questions=data.questions||[];
+  const summary=summarizeSetComposition(questions);
+  const status=String(data.status||'draft').toLowerCase();
+  const standard=Number(data.expectedQuestionCount)===100;
+  const editAction=status==='draft'?`<a href="/admin/sets/${data.setVersionId}/edit" class="btn primary" data-link>Edit Draft</a>`:'';
+  const revisionAction=status==='published'&&standard?`<button id="set-preview-revise" class="btn primary">Create Revision</button>`:'';
+  shell(`<div class="page-head"><div><span class="eyebrow">Simulation Set Preview</span><h1>${escapeHtml(data.title||'Simulation Set')} · v${Number(data.versionNo||1)}</h1><p class="muted">Read-only composition preview · <span class="status-pill ${escapeHtml(status)}">${escapeHtml(status.replace(/^./,c=>c.toUpperCase()))}</span></p></div><div class="preview-actions">${editAction}${revisionAction}<a href="/admin/sets" class="btn ghost" data-link>Back to Sets</a></div></div>
+  <section class="stats"><div class="stat"><b>${questions.length} / ${Number(data.expectedQuestionCount||0)}</b><span>Questions</span></div><div class="stat"><b>${Math.round(Number(data.timeLimitSeconds||0)/60)} min</b><span>Duration</span></div><div class="stat"><b>v${Number(data.versionNo||1)}</b><span>Version</span></div></section>
+  <div class="set-builder-layout">
+    <section class="card"><h2>Subject composition</h2><div class="table-wrap"><table class="set-quota-table"><thead><tr><th>Subject</th><th>Required</th><th>Selected</th><th>Available</th></tr></thead><tbody id="set-preview-quota">${(data.quotas||[]).map(q=>`<tr class="${Number(q.selected||0)===Number(q.required||0)?'complete':''}"><td><b>${escapeHtml(q.subjectName)}</b></td><td>${Number(q.required||0)}</td><td>${Number(q.selected||0)}</td><td>${Number(q.available||0)}</td></tr>`).join('')}</tbody></table></div></section>
+    <section class="card"><h2>Difficulty mix</h2><p class="muted">Target for a standard set: approximately 20 Easy / 55 Medium / 25 Hard.</p><div class="difficulty-grid">${Object.entries(STANDARD_DIFFICULTY_TARGET).map(([level,target])=>`<div class="difficulty-box"><span>${escapeHtml(level.replace(/^./,c=>c.toUpperCase()))}</span><b>${summary.difficulty[level]||0} / ${target}</b></div>`).join('')}</div></section>
+  </div>
+  <section class="card"><div class="set-total"><div><span class="eyebrow">Fixed order</span><h2>Question Composition</h2></div><strong>${questions.length} questions</strong></div><div id="set-preview-questions" class="set-question-list">${questions.length?questions.map((q,i)=>`<article class="set-question-row"><div class="set-question-code">${i+1}. ${escapeHtml(q.questionCode)} · v${Number(q.versionNo||1)}</div><div class="set-question-meta"><span>${escapeHtml(q.subjectName||q.subjectCode)}</span><span>${escapeHtml(q.topicName||'No topic')}</span><span>${escapeHtml(q.difficulty||'medium')}</span></div><p class="set-question-preview">${escapeHtml(q.promptPreview||'[Question]')}</p></article>`).join(''):'<div class="empty">No questions selected.</div>'}</div></section>`,'admin');
+  bindLinks();
+  document.querySelector('#set-preview-revise')?.addEventListener('click',async e=>{
+    const btn=e.currentTarget;btn.disabled=true;
+    try{const draft=await adminApi.reviseSimulationSet(data.setVersionId);go(`/admin/sets/${draft.setVersionId}/edit`);}catch(err){alert(err.message||'Unable to create a revision.');btn.disabled=false;}
+  });
+}
 async function questionBankPage(){
   if(!await requireProfile('admin'))return;
   loading('Loading Question Bank…');
@@ -828,7 +1134,7 @@ function studentModal(){const wrap=document.createElement('div');wrap.className=
 async function studentDetail(userId){if(!await requireProfile('admin'))return;loading();const d=await adminApi.studentHistory(userId);shell(`<div class="page-head"><div><span class="eyebrow">Student</span><h1>${escapeHtml(d.profile.displayName)}</h1><p>${escapeHtml(d.profile.email)} · ${d.profile.active?'Active':'Inactive'} · ${escapeHtml(d.profile.schoolYear||'')}</p></div></div><section class="stats"><div class="stat"><b>${d.summary.totalAttempts}</b><span>Attempts</span></div><div class="stat"><b>${pct(d.summary.bestPercentage)}</b><span>Best</span></div><div class="stat"><b>${pct(d.summary.averagePercentage)}</b><span>Average</span></div><div class="stat"><b>${pct(d.summary.latestPercentage)}</b><span>Latest</span></div></section><section class="card"><h2>Subject Performance</h2><div class="subject-grid">${(d.subjectPerformance||[]).map(s=>`<div class="stat"><b>${pct(s.percentage)}</b><span>${escapeHtml(s.name)}</span></div>`).join('')}</div></section><section class="card"><h2>Attempt History</h2>${adminHistoryTable(d.attempts||[])}</section>`,'admin');}
 function adminHistoryTable(rows){if(!rows.length)return'<p class="muted">No completed attempts yet.</p>';return`<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'')}</td><td>${formatDuration(r.elapsedSeconds)}</td><td>${date(r.submittedAt)}</td><td><a href="/admin/review/${r.attemptId}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`;}
 
-async function render(){clearInterval(quizTimer);try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return adminPlaceholder('Simulation Sets');if(p==='/admin/results')return adminPlaceholder('Results');if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
+async function render(){clearInterval(quizTimer);try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return simulationSetsPage();if(p==='/admin/sets/new')return simulationSetNewPage();if(/^\/admin\/sets\/[^/]+\/edit$/.test(p))return simulationSetBuilderPage(p.split('/')[3]);if(/^\/admin\/sets\/[^/]+\/preview$/.test(p))return simulationSetPreviewPage(p.split('/')[3]);if(p==='/admin/results')return adminPlaceholder('Results');if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
 window.addEventListener('beforeunload',e=>{if(editorDirty){e.preventDefault();e.returnValue='';}});window.addEventListener('hashchange', render);render();})();
 </script>
 </body>
