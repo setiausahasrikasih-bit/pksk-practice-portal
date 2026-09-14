@@ -58,7 +58,7 @@ body[data-role="admin"] .btn.primary{background:linear-gradient(135deg,#6754b8,#
 select,textarea{font:inherit;border:1px solid var(--border);border-radius:10px;padding:12px 13px;background:#fff;color:var(--text)}
 .question-preview-cell{max-width:520px;min-width:280px;white-space:normal;line-height:1.45}.qb-actions{white-space:nowrap}
 .status-pill{display:inline-flex;padding:.25rem .55rem;border-radius:999px;font-weight:750;font-size:.78rem}.status-pill.draft{background:#fff4c8}.status-pill.published{background:#dff7e7}.status-pill.archived{background:#ececf2}
-.question-bank-table{min-width:1040px}#qb-count{margin:10px 0 4px}
+.question-bank-table{min-width:1120px}#qb-count{margin:10px 0 4px}.visual-question-id{font-size:1.45rem;font-weight:850;letter-spacing:.04em;margin:.2rem 0 .9rem}.editor-side-meta{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin:0 0 18px}.question-code-cell{white-space:nowrap;font-weight:800}
 </style>
 
 <style>
@@ -158,6 +158,8 @@ function subjectLanguageMode(subjectCode) {
 function blankQuestionDraft() {
   return {
     questionId: null,
+    displayNo: null,
+    questionCode: null,
     versionId: null,
     versionNo: 1,
     status: 'draft',
@@ -606,16 +608,16 @@ async function questionBankPage(){
   const subjectOptions=(taxonomy.subjects||[]).map(s=>`<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
   shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>Question Bank</h1><p class="muted">Create and manage A–D multiple-choice questions.</p></div><a class="btn primary" href="/admin/questions/new" data-link>Add Question</a></div>
   <section class="card"><div class="admin-toolbar">
-    <label>Search<input id="qb-search" type="search" placeholder="Search question text"></label>
+    <label>Search<input id="qb-search" type="search" placeholder="Search ID or question text"></label>
     <label>Subject<select id="qb-subject"><option value="">All subjects</option>${subjectOptions}</select></label>
     <label>Status<select id="qb-status"><option value="">All statuses</option><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
     <label>Difficulty<select id="qb-difficulty"><option value="">All difficulties</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
-  </div><div id="qb-count" class="muted small"></div><div class="table-wrap"><table class="question-bank-table"><thead><tr><th>Subject</th><th>Question</th><th>Topic</th><th>Difficulty</th><th>Status</th><th>Version</th><th>Updated</th><th>Actions</th></tr></thead><tbody id="qb-body"><tr><td colspan="8">Loading…</td></tr></tbody></table></div></section>`,'admin');
+  </div><div id="qb-count" class="muted small"></div><div class="table-wrap"><table class="question-bank-table"><thead><tr><th>Question ID</th><th>Subject</th><th>Question</th><th>Topic</th><th>Difficulty</th><th>Status</th><th>Version</th><th>Updated</th><th>Actions</th></tr></thead><tbody id="qb-body"><tr><td colspan="9">Loading…</td></tr></tbody></table></div></section>`,'admin');
 
   const body=document.querySelector('#qb-body');
   const count=document.querySelector('#qb-count');
   async function loadRows(){
-    body.innerHTML='<tr><td colspan="8">Loading…</td></tr>';
+    body.innerHTML='<tr><td colspan="9">Loading…</td></tr>';
     try{
       const rows=await adminApi.questionBank(filters)||[];
       count.textContent=`${rows.length} question${rows.length===1?'':'s'}`;
@@ -623,8 +625,8 @@ async function questionBankPage(){
         const status=String(row.status||'draft').toLowerCase();
         const editLabel=status==='published'?'Create revision':'Edit';
         const archive=status==='archived'?'':` · <button class="link-btn qb-action" data-action="archive" data-question="${row.questionId}" data-version="${row.versionId}">Archive</button>`;
-        return `<tr><td><b>${escapeHtml(row.subjectName||'')}</b></td><td class="question-preview-cell">${escapeHtml(row.promptPreview||'[Draft question]')}</td><td>${escapeHtml(row.topicName||'—')}</td><td>${escapeHtml(String(row.difficulty||'medium').replace(/^./,c=>c.toUpperCase()))}</td><td><span class="status-pill ${escapeHtml(status)}">${escapeHtml(status.replace(/^./,c=>c.toUpperCase()))}</span></td><td>v${Number(row.versionNo||1)}</td><td>${date(row.updatedAt)}</td><td class="qb-actions"><a href="/admin/questions/${row.questionId}/preview" data-link>Preview</a> · <a href="/admin/questions/${row.questionId}/edit" data-link>${editLabel}</a> · <button class="link-btn qb-action" data-action="duplicate" data-question="${row.questionId}" data-version="${row.versionId}">Duplicate</button>${archive}</td></tr>`;
-      }).join(''):'<tr><td colspan="8"><span class="muted">No questions match these filters.</span></td></tr>';
+        return `<tr><td class="question-code-cell mono">${escapeHtml(row.questionCode||'—')}</td><td><b>${escapeHtml(row.subjectName||'')}</b></td><td class="question-preview-cell">${escapeHtml(row.promptPreview||'[Draft question]')}</td><td>${escapeHtml(row.topicName||'—')}</td><td>${escapeHtml(String(row.difficulty||'medium').replace(/^./,c=>c.toUpperCase()))}</td><td><span class="status-pill ${escapeHtml(status)}">${escapeHtml(status.replace(/^./,c=>c.toUpperCase()))}</span></td><td>v${Number(row.versionNo||1)}</td><td>${date(row.updatedAt)}</td><td class="qb-actions"><a href="/admin/questions/${row.questionId}/preview" data-link>Preview</a> · <a href="/admin/questions/${row.questionId}/edit" data-link>${editLabel}</a> · <button class="link-btn qb-action" data-action="duplicate" data-question="${row.questionId}" data-version="${row.versionId}">Duplicate</button>${archive}</td></tr>`;
+      }).join(''):'<tr><td colspan="9"><span class="muted">No questions match these filters.</span></td></tr>';
       bindLinks();
       document.querySelectorAll('.qb-action').forEach(btn=>btn.addEventListener('click',async()=>{
         btn.disabled=true;
@@ -641,7 +643,7 @@ async function questionBankPage(){
           }
         }catch(err){alert(err.message||'Unable to complete this action.');btn.disabled=false;}
       }));
-    }catch(err){body.innerHTML=`<tr><td colspan="8" class="form-error">${escapeHtml(err.message||'Unable to load questions.')}</td></tr>`;}
+    }catch(err){body.innerHTML=`<tr><td colspan="9" class="form-error">${escapeHtml(err.message||'Unable to load questions.')}</td></tr>`;}
   }
 
   let searchTimer;
@@ -728,7 +730,7 @@ async function questionEditorPage(questionId){
       <section class="editor-section"><h2>Question</h2>${languageFields(mode)}${mediaSlot('prompt',draft.promptImagePath,'Optional question image')}</section>
       <section class="editor-section"><h2>Answer Choices</h2>${['A','B','C','D'].map(k=>optionFields(k,mode)).join('')}</section>
       <section class="editor-section"><h2>Explanation</h2><p class="muted small">Can be blank while Draft. Required before Publish.</p>${explanationFields(mode)}</section>
-    </section><aside class="card editor-side"><div class="status-pill ${escapeHtml(draft.status||'draft')}">${escapeHtml(String(draft.status||'draft').replace(/^./,c=>c.toUpperCase()))}</div><p class="muted small">Question ID</p><p class="mono small">${escapeHtml(draft.questionId||'Not saved yet')}</p><div class="editor-actions">${button('Save Draft','ghost','id="qe-save"')}${button('Preview as Student','ghost','id="qe-preview"')}${button('Publish','primary','id="qe-publish"')}</div></aside></div>`,'admin');
+    </section><aside class="card editor-side"><div class="status-pill ${escapeHtml(draft.status||'draft')}">${escapeHtml(String(draft.status||'draft').replace(/^./,c=>c.toUpperCase()))}</div><p class="muted small">Question ID</p><p class="visual-question-id mono">${escapeHtml(draft.questionCode||'Not saved yet')}</p><div class="editor-side-meta"><span class="muted small">Version</span><b>v${Number(draft.versionNo||1)}</b></div><div class="editor-actions">${button('Save Draft','ghost','id="qe-save"')}${button('Preview as Student','ghost','id="qe-preview"')}${button('Publish','primary','id="qe-publish"')}</div></aside></div>`,'admin');
 
     const markDirty=()=>{editorDirty=true;};
     document.querySelectorAll('#app input,#app textarea,#app select').forEach(el=>el.addEventListener('input',markDirty));
@@ -818,7 +820,7 @@ async function questionPreviewPage(questionId){
     options:(p.options||[]).map(o=>({id:o.id||o.key,key:o.key,text_ms:o.textMs,text_en:o.textEn,image_path:o.imagePath})),
     saved_answer:{}
   };
-  shell(`<div class="page-head"><div><span class="eyebrow">Preview as Student</span><h1>${escapeHtml(p.subjectName||'Question Preview')} · v${Number(p.versionNo||1)}</h1><p class="muted">This uses the same question layout as the student simulator.</p></div><div class="preview-actions"><a class="btn ghost" href="/admin/questions/${p.questionId}/edit" data-link>Back to Editor</a><a class="btn ghost" href="/admin/questions" data-link>Question Bank</a></div></div><section class="preview-stage"><div class="phone-preview"><div class="preview-phone-top"><span>Question Preview</span><span>01:30:00</span></div><div class="question-panel preview-question"><div class="question-meta"><span class="subject-pill">${escapeHtml(p.subjectName||'')}</span><span>${escapeHtml(p.topicName||'')}</span></div>${studentQuestionMarkup(q,{preview:true})}</div></div></section>`,'admin');
+  shell(`<div class="page-head"><div><span class="eyebrow">Preview as Student</span><h1>${p.questionCode?`${escapeHtml(p.questionCode)} · `:''}${escapeHtml(p.subjectName||'Question Preview')} · v${Number(p.versionNo||1)}</h1><p class="muted">This uses the same question layout as the student simulator.</p></div><div class="preview-actions"><a class="btn ghost" href="/admin/questions/${p.questionId}/edit" data-link>Back to Editor</a><a class="btn ghost" href="/admin/questions" data-link>Question Bank</a></div></div><section class="preview-stage"><div class="phone-preview"><div class="preview-phone-top"><span>Question Preview</span><span>01:30:00</span></div><div class="question-panel preview-question"><div class="question-meta"><span class="subject-pill">${escapeHtml(p.subjectName||'')}</span><span>${escapeHtml(p.topicName||'')}</span></div>${studentQuestionMarkup(q,{preview:true})}</div></div></section>`,'admin');
   hydratePrivateImages(root).catch(()=>{});
 }
 async function studentsPage(){if(!await requireProfile('admin'))return;loading();const students=await adminApi.listStudents();shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>Students</h1></div>${button('Add Student','primary','id="add-student"')}</div><section class="card"><div class="table-wrap"><table><thead><tr><th>Student</th><th>Email</th><th>Status</th><th>Last Activity</th><th></th></tr></thead><tbody>${(students||[]).map(s=>`<tr><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.email)}</td><td>${s.active?'Active':'Inactive'}</td><td>${date(s.lastActivityAt||s.lastSignInAt)}</td><td><a href="/admin/students/${s.userId}" data-link>View</a> · <button class="link-btn reset" data-id="${s.userId}">Reset password</button> · <button class="link-btn active" data-id="${s.userId}" data-active="${s.active}">${s.active?'Deactivate':'Activate'}</button></td></tr>`).join('')}</tbody></table></div></section>`,'admin'); document.querySelector('#add-student').onclick=()=>studentModal(); document.querySelectorAll('.reset').forEach(b=>b.onclick=async()=>{const p=prompt('Enter a new temporary password (minimum 6 characters):');if(p){await adminApi.resetPassword(b.dataset.id,p);alert('Password reset.');}}); document.querySelectorAll('.active').forEach(b=>b.onclick=async()=>{await adminApi.setActive(b.dataset.id,b.dataset.active!=='true');location.reload();});}
