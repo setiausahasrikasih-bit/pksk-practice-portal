@@ -88,6 +88,10 @@ select,textarea{font:inherit;border:1px solid var(--border);border-radius:10px;p
 <style>
 .generator-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start}.generator-section{margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}.generator-section:first-child{margin-top:0;padding-top:0;border-top:0}.generator-subject-table{min-width:720px}.generator-subject-table input,.generator-subject-table select{width:100%}.generator-subject-table input{min-width:90px}.generator-source-list{display:grid;gap:9px}.generator-source-option{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;border:1px solid var(--border);border-radius:12px;padding:12px;background:#fafbfe}.generator-source-option input{width:auto;margin-top:3px}.generator-source-option.unusable{opacity:.62}.generator-badge{display:inline-flex;padding:3px 7px;border-radius:999px;background:#e9f8ef;color:#26734a;font-size:.72rem;font-weight:800}.generator-badge.warn{background:#fff2c7;color:#775800}.generator-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.generator-difficulty{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.generator-difficulty input{width:100%}.generator-sticky{position:sticky;top:88px}.generator-summary{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px}.generator-summary .stat{box-shadow:none}.generator-plan-list{display:grid;gap:12px}.generator-plan-row{border:1px solid var(--border);border-radius:14px;padding:14px;background:#fff}.generator-plan-row-grid{display:grid;grid-template-columns:1.1fr 1.3fr .75fr .65fr 1.05fr 1.25fr 1fr;gap:9px;align-items:end}.generator-plan-row-grid label{font-size:.76rem}.generator-plan-row-grid input,.generator-plan-row-grid select{width:100%;padding:9px}.generator-rationale{margin:10px 0 0;padding:9px 11px;border-radius:9px;background:#f8f9fc;color:var(--muted);font-size:.82rem}.generator-manual-topic{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:8px;align-items:end;margin:7px 0}.generator-manual-topic input,.generator-manual-topic select{width:100%}.generator-actions{display:flex;gap:9px;flex-wrap:wrap}.generator-status{margin-bottom:12px}.generator-readonly{opacity:.8}.generator-source-coverage{display:grid;gap:8px}.generator-source-coverage-row{display:flex;justify-content:space-between;gap:12px;padding:9px 11px;border-radius:10px;background:#f8f9fc}.generator-job-table{min-width:900px}@media(max-width:980px){.generator-grid{grid-template-columns:1fr}.generator-sticky{position:static}.generator-controls{grid-template-columns:1fr 1fr}.generator-plan-row-grid{grid-template-columns:1fr 1fr 1fr}.generator-summary{grid-template-columns:1fr 1fr}}@media(max-width:620px){.generator-controls,.generator-difficulty,.generator-plan-row-grid,.generator-summary{grid-template-columns:1fr}.generator-manual-topic{grid-template-columns:1fr}}
 </style>
+
+<style>
+.generator-progress-grid{display:grid;grid-template-columns:repeat(4,minmax(110px,1fr));gap:10px;margin-top:14px}.generator-progress-grid .stat{box-shadow:none}.generator-candidate-list{display:grid;gap:12px}.generator-candidate-list .reference-source-card{box-shadow:none}.generator-candidate-list details{margin:12px 0;padding:10px;border-radius:10px;background:#f8f9fc}.generator-candidate-list summary{cursor:pointer;font-weight:800}@media(max-width:760px){.generator-progress-grid{grid-template-columns:1fr 1fr}}@media(max-width:430px){.generator-progress-grid{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <div id="app"></div>
@@ -709,6 +713,8 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
     saveGenerationPlan: (jobId,plan) => rpc('admin_save_ai_generation_plan', { p_job_id: jobId, p_plan: plan }),
     validateGenerationPlan: (jobId) => rpc('admin_validate_ai_generation_plan', { p_job_id: jobId }),
     approveGenerationPlan: (jobId) => rpc('admin_approve_ai_generation_plan', { p_job_id: jobId }),
+    generationProgress: (jobId) => rpc('admin_ai_generation_progress', { p_job_id: jobId }),
+    generateQuestionBatch: (jobId) => invoke('admin-generate-question-batch', { jobId }),
     simulationSets: () => rpc('admin_simulation_set_list'),
     setCandidates: (filters = {}) => rpc('admin_simulation_set_candidates', {
       p_subject_id: filters.subjectId || null,
@@ -1134,7 +1140,9 @@ function generationStatusMeta(status='draft'){
 
 function generationJobAction(status){
   if(status==='plan_ready')return 'Review Plan';
-  if(status==='approved')return 'View Approved Plan';
+  if(status==='approved')return 'Start Generation';
+  if(status==='generating')return 'Resume Generation';
+  if(status==='review_ready')return 'Review Candidates';
   if(status==='planning')return 'Open';
   return 'Open & Plan';
 }
@@ -1247,28 +1255,102 @@ async function generationJobPage(jobId){
   loading('Loading Generation Plan…');
   let [job,taxonomy]=await Promise.all([adminApi.generationJob(jobId),adminApi.taxonomy()]);
   let items=(job.planItems||[]).map(x=>({...x}));
-  const status=String(job.status||'draft');
-  const statusMeta=generationStatusMeta(status);
-  const isApproved=status==='approved';
+  let status=String(job.status||'draft');
+  let progress=['approved','generating','review_ready','completed'].includes(status)?await adminApi.generationProgress(jobId):null;
+  const planLocked=['approved','generating','review_ready','completed'].includes(status);
   const summary=summarizeGenerationPlan(items);
   const sourceRows=(job.sourceDocuments||[]).map(d=>`<div class="generator-source-coverage-row"><span><b>${escapeHtml(d.title)}</b><div class="muted small">${escapeHtml(d.status||'')}</div></span><span class="generator-badge ${Number(d.eligibleSourceCount||0)?'':'warn'}">${Number(d.eligibleSourceCount||0)} eligible</span></div>`).join('')||'<div class="muted">No Reference PDFs selected.</div>';
-  const stateNotice=status==='planning'?'<div class="reference-notice warning">AI planning is in progress. Refresh this page after a moment if you reopened it during processing.</div>':status==='failed'?`<div class="reference-notice error"><b>Planning failed.</b><div>${escapeHtml(job.planningError||'AI planning failed.')}</div></div>`:isApproved?'<div class="reference-notice neutral">Plan approved. Question generation will be enabled in Milestone 3C.</div>':'';
-  const topAction=status==='draft'?'<button id="gen-build-plan" class="btn primary">Build AI Plan</button>':status==='failed'?'<button id="gen-build-plan" class="btn primary">Retry Plan</button>':status==='planning'?'<button id="gen-refresh-plan" class="btn primary">Refresh</button>':'';
+  const statusMeta=generationStatusMeta(status);
+  const stateNotice=status==='planning'?'<div class="reference-notice warning">AI planning is in progress. Refresh this page after a moment if you reopened it during processing.</div>':status==='failed'?`<div class="reference-notice error"><b>Planning failed.</b><div>${escapeHtml(job.planningError||'AI planning failed.')}</div></div>`:status==='approved'?'<div class="reference-notice neutral">Plan approved. Question generation will be enabled in Milestone 3C. You are now using Milestone 3C — start generation below.</div>':status==='generating'?'<div class="reference-notice warning">Generation is resumable. Leaving this page pauses browser-driven batching after the current server request; reopen this job and choose Resume Generation.</div>':status==='review_ready'?'<div class="reference-notice neutral"><b>Generation finished.</b> Candidates are staged for Admin review and are not in the Question Bank yet.</div>':'';
+  const planningAction=status==='draft'?'<button id="gen-build-plan" class="btn primary">Build AI Plan</button>':status==='failed'?'<button id="gen-build-plan" class="btn primary">Retry Plan</button>':status==='planning'?'<button id="gen-refresh-plan" class="btn primary">Refresh</button>':'';
+  const generationAction=status==='approved'?'<button id="gen-start-generation" class="btn primary">Start Generation</button>':status==='generating'?'<button id="gen-start-generation" class="btn primary">Resume Generation</button>':'';
 
   const planRows=items.length?items.map((item,i)=>{
     const topics=(taxonomy.topics||[]).filter(t=>t.subject_id===item.subjectId);
     const docs=(job.sourceDocuments||[]);
-    const disabled=isApproved?'disabled':'';
-    return `<article class="generator-plan-row ${isApproved?'generator-readonly':''}" data-i="${i}"><div class="generator-plan-row-grid"><label>Subject<input value="${escapeHtml(item.subjectName||SUBJECT_LABELS[item.subjectCode]||item.subjectCode)}" disabled></label><label>Topic<select class="gen-plan-topic" ${disabled}><option value="">Unspecified / AI skill</option>${topics.map(t=>`<option value="${escapeHtml(t.id)}" ${t.id===item.topicId?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}</select></label><label>Difficulty<select class="gen-plan-difficulty" ${disabled}><option value="easy" ${item.difficulty==='easy'?'selected':''}>Easy</option><option value="medium" ${item.difficulty==='medium'?'selected':''}>Medium</option><option value="hard" ${item.difficulty==='hard'?'selected':''}>Hard</option></select></label><label>Count<input class="gen-plan-count" type="number" min="1" max="200" value="${Number(item.questionCount||0)}" ${disabled}></label><label>Source policy<select class="gen-plan-source-policy" ${disabled}>${STANDARD_SOURCE_POLICIES.map(v=>`<option value="${v}" ${v===item.sourcePolicy?'selected':''}>${v.replaceAll('_',' ')}</option>`).join('')}</select></label><label>Source document<select class="gen-plan-source-doc" ${disabled}><option value="">None / fresh</option>${docs.map(d=>`<option value="${escapeHtml(d.documentId)}" ${d.documentId===item.sourceDocumentId?'selected':''}>${escapeHtml(d.title)}</option>`).join('')}</select></label><label>Variation mode<select class="gen-plan-variation" ${disabled}><option value="mixed" ${item.variationMode==='mixed'?'selected':''}>Mixed</option><option value="close_variant" ${item.variationMode==='close_variant'?'selected':''}>Close Variant</option><option value="fresh_variant" ${item.variationMode==='fresh_variant'?'selected':''}>Fresh Variant</option></select></label></div><div class="generator-rationale"><b>AI rationale:</b> ${escapeHtml(item.rationale||'No rationale provided.')}</div></article>`;
+    const disabled=planLocked?'disabled':'';
+    return `<article class="generator-plan-row ${planLocked?'generator-readonly':''}" data-i="${i}"><div class="generator-plan-row-grid"><label>Subject<input value="${escapeHtml(item.subjectName||SUBJECT_LABELS[item.subjectCode]||item.subjectCode)}" disabled></label><label>Topic<select class="gen-plan-topic" ${disabled}><option value="">Unspecified / AI skill</option>${topics.map(t=>`<option value="${escapeHtml(t.id)}" ${t.id===item.topicId?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}</select></label><label>Difficulty<select class="gen-plan-difficulty" ${disabled}><option value="easy" ${item.difficulty==='easy'?'selected':''}>Easy</option><option value="medium" ${item.difficulty==='medium'?'selected':''}>Medium</option><option value="hard" ${item.difficulty==='hard'?'selected':''}>Hard</option></select></label><label>Count<input class="gen-plan-count" type="number" min="1" max="200" value="${Number(item.questionCount||0)}" ${disabled}></label><label>Source policy<select class="gen-plan-source-policy" ${disabled}>${STANDARD_SOURCE_POLICIES.map(v=>`<option value="${v}" ${v===item.sourcePolicy?'selected':''}>${v.replaceAll('_',' ')}</option>`).join('')}</select></label><label>Source document<select class="gen-plan-source-doc" ${disabled}><option value="">None / fresh</option>${docs.map(d=>`<option value="${escapeHtml(d.documentId)}" ${d.documentId===item.sourceDocumentId?'selected':''}>${escapeHtml(d.title)}</option>`).join('')}</select></label><label>Variation mode<select class="gen-plan-variation" ${disabled}><option value="mixed" ${item.variationMode==='mixed'?'selected':''}>Mixed</option><option value="close_variant" ${item.variationMode==='close_variant'?'selected':''}>Close Variant</option><option value="fresh_variant" ${item.variationMode==='fresh_variant'?'selected':''}>Fresh Variant</option></select></label></div><div class="generator-rationale"><b>AI rationale:</b> ${escapeHtml(item.rationale||'No rationale provided.')}</div></article>`;
   }).join(''):'<div class="reference-empty">No plan has been created yet.</div>';
 
-  shell(`<div class="page-head"><div><span class="eyebrow">AI Generation Plan</span><h1>${escapeHtml(job.name||'Generation Job')}</h1><p class="muted">${Number(job.totalQuestions||0)} planned questions · ${job.topicMode==='manual'?'Manual topic allocation':'AI-balanced topics'} · <span class="status-pill ${escapeHtml(statusMeta.tone)}">${escapeHtml(statusMeta.label)}</span></p></div><div class="generator-actions">${topAction}<a href="/admin/generator" class="btn ghost" data-link>Back to Generator</a></div></div>${stateNotice}
-  <div class="generator-grid"><main><section class="card"><span class="eyebrow">Plan Summary</span><h2>Plan Summary</h2><div class="generator-summary"><div class="stat"><b id="gen-plan-total">${summary.total}</b><span>Total</span></div><div class="stat"><b id="gen-plan-pdf">${summary.pdfInspiredCount}</b><span>PDF-inspired</span></div><div class="stat"><b id="gen-plan-fresh">${summary.freshAiCount}</b><span>Fresh AI</span></div><div class="stat"><b id="gen-plan-external">${summary.externalKnowledgeCount}</b><span>External knowledge</span></div></div>${job.planSummary?.notes?`<div class="reference-notice warning"><b>Source shortages / notes:</b> ${escapeHtml(job.planSummary.notes)}</div>`:''}</section><section class="card"><span class="eyebrow">Allocation</span><h2>Question Allocation</h2><div id="gen-plan-errors"></div><div id="gen-plan-list" class="generator-plan-list">${planRows}</div>${items.length&&!isApproved?'<div class="generator-actions" style="margin-top:14px"><button id="gen-save-plan" class="btn ghost">Save Plan</button><button id="gen-validate-plan" class="btn ghost">Validate Plan</button><button id="gen-approve-plan" class="btn primary" disabled>Approve Plan</button></div>':''}</section></main><aside class="card generator-sticky"><span class="eyebrow">Reference Coverage</span><h2>Reference Coverage</h2><div class="generator-source-coverage">${sourceRows}</div><div class="generator-section"><b>Generation controls</b><p class="muted small">Variation: ${escapeHtml(job.variationMode||'mixed')}<br>Creativity: ${escapeHtml(job.creativityLevel||'balanced')}<br>Avoid already-used concepts: ${job.avoidUsedConcepts?'Yes':'No'}<br>Similarity: ${escapeHtml(job.similarityPolicy||'balanced')}</p></div></aside></div>`,'admin');
+  const generationSection=planLocked?`<section class="card"><div class="set-total"><div><span class="eyebrow">Milestone 3C</span><h2>Question Generation + QA</h2></div><div class="generator-actions">${generationAction}<button id="gen-pause-generation" class="btn ghost" disabled>Pause After Current Batch</button></div></div><div class="reference-notice warning"><b>Paid API.</b> The portal processes up to <b>10 questions per batch</b>; each batch uses <b>generation + independent QA</b> API calls. You can pause after the current batch and resume later.</div><p class="muted small">You can <b>View Approved Plan</b> below at any time. Generated candidates remain Admin-only and are never published automatically.</p><div id="gen-progress"></div></section><section class="card"><div class="set-total"><div><span class="eyebrow">Staging Queue</span><h2>Generated Candidates</h2></div><strong id="gen-candidate-count"></strong></div><div class="reference-notice neutral">Read-only in 3C. <b>Bulk Review in Milestone 3D</b> will add accept, reject, regenerate and edit actions.</div><div id="gen-candidates" class="generator-candidate-list"></div></section>`:'';
+
+  shell(`<div class="page-head"><div><span class="eyebrow">AI Generation Plan</span><h1>${escapeHtml(job.name||'Generation Job')}</h1><p class="muted">${Number(job.totalQuestions||0)} planned questions · ${job.topicMode==='manual'?'Manual topic allocation':'AI-balanced topics'} · <span id="gen-job-status" class="status-pill ${escapeHtml(statusMeta.tone)}">${escapeHtml(statusMeta.label)}</span></p></div><div class="generator-actions">${planningAction}<a href="/admin/generator" class="btn ghost" data-link>Back to Generator</a></div></div>${stateNotice}
+  <div class="generator-grid"><main>${generationSection}<section class="card"><span class="eyebrow">Plan Summary</span><h2>Plan Summary</h2><div class="generator-summary"><div class="stat"><b id="gen-plan-total">${summary.total}</b><span>Total</span></div><div class="stat"><b id="gen-plan-pdf">${summary.pdfInspiredCount}</b><span>PDF-inspired</span></div><div class="stat"><b id="gen-plan-fresh">${summary.freshAiCount}</b><span>Fresh AI</span></div><div class="stat"><b id="gen-plan-external">${summary.externalKnowledgeCount}</b><span>External knowledge</span></div></div>${job.planSummary?.notes?`<div class="reference-notice warning"><b>Source shortages / notes:</b> ${escapeHtml(job.planSummary.notes)}</div>`:''}</section><section class="card"><span class="eyebrow">Allocation</span><h2>Question Allocation</h2><div id="gen-plan-errors"></div><div id="gen-plan-list" class="generator-plan-list">${planRows}</div>${items.length&&!planLocked?'<div class="generator-actions" style="margin-top:14px"><button id="gen-save-plan" class="btn ghost">Save Plan</button><button id="gen-validate-plan" class="btn ghost">Validate Plan</button><button id="gen-approve-plan" class="btn primary" disabled>Approve Plan</button></div>':''}</section></main><aside class="card generator-sticky"><span class="eyebrow">Reference Coverage</span><h2>Reference Coverage</h2><div class="generator-source-coverage">${sourceRows}</div><div class="generator-section"><b>Generation controls</b><p class="muted small">Variation: ${escapeHtml(job.variationMode||'mixed')}<br>Creativity: ${escapeHtml(job.creativityLevel||'balanced')}<br>Avoid already-used concepts: ${job.avoidUsedConcepts?'Yes':'No'}<br>Similarity: ${escapeHtml(job.similarityPolicy||'balanced')}</p></div></aside></div>`,'admin');
   bindLinks();
 
   document.querySelector('#gen-build-plan')?.addEventListener('click',async e=>{const btn=e.currentTarget;btn.disabled=true;btn.textContent='Building AI Plan…';try{await adminApi.planGenerationJob(jobId);}catch{/* persisted */}await generationJobPage(jobId);});
   document.querySelector('#gen-refresh-plan')?.addEventListener('click',()=>generationJobPage(jobId));
-  if(!items.length||isApproved)return;
+
+  let generationLoopRunning=false;
+  let generationPauseRequested=false;
+
+  function qaLabel(status){
+    return ({pass:'QA Pass',needs_review:'Needs Review',rejected:'Rejected',failed:'Failed',accepted:'Accepted',pending:'Pending',generating:'Generating',qa:'QA'})[status]||String(status||'Unknown');
+  }
+  function candidateScore(label,value){
+    return `<div class="reference-analysis-item"><span>${escapeHtml(label)}</span><b>${escapeHtml(value?String(value).replace(/^./,c=>c.toUpperCase()):'—')}</b></div>`;
+  }
+  function candidateCard(candidate){
+    const generated=candidate.generated||{};
+    const qa=candidate.qa||{};
+    const scores=qa.scores||{};
+    const source=candidate.sourceRef;
+    const sourceLine=source?`${source.documentTitle||'Reference PDF'} · page ${Number(source.pageNo||0)}${source.sourceLabel?` · ${source.sourceLabel}`:''}`:'Fresh AI / no direct PDF source';
+    const promptMs=generated.promptMs?`<p class="question-text">${escapeHtml(generated.promptMs)}</p>`:'';
+    const promptEn=generated.promptEn?`<p class="question-text translation">${escapeHtml(generated.promptEn)}</p>`:'';
+    const options=Array.isArray(generated.options)&&generated.options.length?`<div class="reference-options">${generated.options.map(o=>`<div class="reference-option"><b>${escapeHtml(o.key||'')}</b>. ${escapeHtml(o.textMs||o.textEn||'')}${o.textMs&&o.textEn?`<div class="translation">${escapeHtml(o.textEn)}</div>`:''}</div>`).join('')}</div>`:'';
+    const terminal=['pass','needs_review','rejected','failed','accepted'].includes(candidate.status);
+    const failure=candidate.failureReason?`<div class="set-alert error">${escapeHtml(candidate.failureReason)}</div>`:'';
+    return `<article class="reference-source-card ${candidate.status==='failed'||candidate.status==='rejected'?'ignored':''}"><div class="reference-source-head"><div><b>Candidate #${Number(candidate.slotNo||0)} · ${escapeHtml(candidate.subjectName||candidate.subjectCode||'')}</b><div class="reference-source-meta"><span>${escapeHtml(candidate.topicName||'AI skill')}</span><span>·</span><span>${escapeHtml(String(candidate.difficulty||'').replace(/^./,c=>c.toUpperCase()))}</span><span>·</span><span>Attempt ${Number(candidate.attemptCount||0)}/3</span></div></div><div><span class="reference-chip ${candidate.status==='needs_review'?'warning':candidate.status==='failed'||candidate.status==='rejected'?'error':''}">QA status: ${escapeHtml(qaLabel(candidate.status))}</span></div></div>${promptMs}${promptEn}${options}${terminal&&generated.correctKey?`<details><summary>Admin answer + explanation</summary><p><b>Correct:</b> ${escapeHtml(generated.correctKey)}</p>${generated.explanationMs?`<p>${escapeHtml(generated.explanationMs)}</p>`:''}${generated.explanationEn?`<p class="translation">${escapeHtml(generated.explanationEn)}</p>`:''}</details>`:''}<div class="reference-source-analysis">${candidateScore('Correctness',scores.correctness)}${candidateScore('Uniqueness',scores.uniqueness)}${candidateScore('Difficulty',scores.difficulty)}${candidateScore('Distractor quality',scores.distractorQuality)}${candidateScore('Source alignment',scores.sourceAlignment)}${candidateScore('Clarity',scores.clarity)}</div><p class="muted small"><b>Source:</b> ${escapeHtml(sourceLine)}</p>${qa.notes?`<p class="muted small"><b>QA note:</b> ${escapeHtml(qa.notes)}</p>`:''}${failure}</article>`;
+  }
+  function renderGenerationProgress(){
+    if(!progress||!document.querySelector('#gen-progress'))return;
+    const counts=progress.counts||{};
+    const effectiveTotal=Number(counts.total||0)||Number(job.totalQuestions||0);
+    const effectivePending=status==='approved'&&Number(counts.total||0)===0?Number(job.totalQuestions||0):Number(counts.pending||0);
+    document.querySelector('#gen-progress').innerHTML=`<div class="generator-progress-grid"><div class="stat"><b>${effectiveTotal}</b><span>Total</span></div><div class="stat"><b>${effectivePending}</b><span>Pending</span></div><div class="stat"><b>${Number(counts.generating||0)}</b><span>Generating</span></div><div class="stat"><b>${Number(counts.pass||0)}</b><span>QA Pass</span></div><div class="stat"><b>${Number(counts.needs_review||0)}</b><span>Needs Review</span></div><div class="stat"><b>${Number(counts.rejected||0)}</b><span>Rejected</span></div><div class="stat"><b>${Number(counts.failed||0)}</b><span>Failed</span></div><div class="stat"><b>${Number(counts.accepted||0)}</b><span>Accepted</span></div></div>`;
+    const candidates=(progress.candidates||[]).filter(c=>c.status!=='pending'||c.generated&&Object.keys(c.generated).length);
+    const countEl=document.querySelector('#gen-candidate-count');if(countEl)countEl.textContent=`${candidates.length} shown`;
+    const list=document.querySelector('#gen-candidates');if(list)list.innerHTML=candidates.length?candidates.map(candidateCard).join(''):'<div class="reference-empty">No generated candidates yet. Start generation to create the first batch.</div>';
+    const meta=generationStatusMeta(progress.status||status);const badge=document.querySelector('#gen-job-status');if(badge){badge.className=`status-pill ${meta.tone}`;badge.textContent=meta.label;}
+  }
+  async function refreshGenerationProgress(){
+    progress=await adminApi.generationProgress(jobId);
+    status=String(progress.status||status);
+    renderGenerationProgress();
+    return progress;
+  }
+  async function runGenerationLoop(){
+    if(generationLoopRunning)return;
+    generationLoopRunning=true;
+    generationPauseRequested=false;
+    const startBtn=document.querySelector('#gen-start-generation');
+    const pauseBtn=document.querySelector('#gen-pause-generation');
+    if(startBtn){startBtn.disabled=true;startBtn.textContent='Generating…';}
+    if(pauseBtn)pauseBtn.disabled=false;
+    try{
+      while(!generationPauseRequested){
+        const result=await adminApi.generateQuestionBatch(jobId);
+        progress=result?.progress||await adminApi.generationProgress(jobId);
+        status=String(progress?.status||status);
+        renderGenerationProgress();
+        if(progress?.done||progress?.status==='review_ready')break;
+      }
+    }catch(err){
+      const box=document.querySelector('#gen-plan-errors');if(box)box.innerHTML=`<div class="set-alert error">${escapeHtml(err.message||'Generation batch failed.')}</div>`;
+      await refreshGenerationProgress().catch(()=>{});
+    }finally{
+      generationLoopRunning=false;
+      if(pauseBtn){pauseBtn.disabled=true;pauseBtn.textContent='Pause After Current Batch';}
+      if(startBtn){startBtn.disabled=false;startBtn.textContent=status==='generating'?'Resume Generation':'Start Generation';}
+      if(progress?.done||progress?.status==='review_ready')await generationJobPage(jobId);
+    }
+  }
+  document.querySelector('#gen-start-generation')?.addEventListener('click',runGenerationLoop);
+  document.querySelector('#gen-pause-generation')?.addEventListener('click',e=>{generationPauseRequested=true;e.currentTarget.disabled=true;e.currentTarget.textContent='Pausing after current batch…';});
+  renderGenerationProgress();
+
+  if(!items.length||planLocked)return;
   const errorBox=document.querySelector('#gen-plan-errors');
   const approveBtn=document.querySelector('#gen-approve-plan');
   let serverValidated=false;
