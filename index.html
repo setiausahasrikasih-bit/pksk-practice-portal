@@ -76,6 +76,14 @@ select,textarea{font:inherit;border:1px solid var(--border);border-radius:10px;p
 <style>
 .set-create-form{max-width:760px;display:grid;gap:16px}.set-create-form textarea{width:100%;min-height:100px;resize:vertical}.set-form-grid{display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:14px}.set-builder-head{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:12px;align-items:end}.set-builder-head textarea{width:100%;min-height:76px;resize:vertical}.set-builder-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}.set-builder-panel{min-width:0}.set-builder-panel h2{margin-top:0}.set-quota-card{position:sticky;top:88px}.set-quota-table{min-width:0}.set-quota-table th,.set-quota-table td{padding:9px 8px}.set-quota-table .shortage td{background:#fff4f4}.set-quota-table .complete td{background:#f2fbf5}.quota-number{font-variant-numeric:tabular-nums;font-weight:800}.availability-badge{display:inline-flex;border-radius:999px;padding:3px 7px;font-size:.75rem;font-weight:800;background:#eef1f6}.availability-badge.short{background:#ffe2e2;color:#9a3030}.difficulty-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}.difficulty-box{border:1px solid var(--border);border-radius:11px;padding:10px;background:#fafbfe}.difficulty-box b{display:block;font-size:1.1rem}.set-filter-grid{display:grid;grid-template-columns:minmax(0,1fr) 180px 150px;gap:10px;margin-bottom:12px}.set-filter-grid label{font-size:.82rem}.set-question-list{display:grid;gap:9px;max-height:760px;overflow:auto;padding-right:4px}.set-question-row{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff}.set-question-row.selected{background:#fbf9ff}.set-question-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.set-question-code{font-weight:850}.set-question-meta{display:flex;gap:7px;flex-wrap:wrap;color:var(--muted);font-size:.77rem;margin-top:4px}.set-question-preview{margin:8px 0 0;line-height:1.4}.set-question-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.set-mini-btn{border:1px solid var(--border);background:#f8f9fc;border-radius:8px;padding:6px 9px;cursor:pointer;font-weight:750}.set-mini-btn:disabled{opacity:.4;cursor:not-allowed}.set-builder-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.set-builder-message{margin-top:12px}.set-builder-message:empty{display:none}.set-alert{border-radius:10px;padding:11px 13px;margin:8px 0}.set-alert.error{background:#fff0f0;color:#9a3030}.set-alert.success{background:#e9f8ef;color:#26734a}.set-alert.warning{background:#fff7db;color:#7f5f00}.set-total{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:8px 0 14px}.set-total strong{font-size:1.15rem}.set-readonly-note{padding:10px 12px;border-radius:10px;background:#f3f5f9;color:var(--muted);margin-bottom:12px}@media(max-width:980px){.set-builder-layout{grid-template-columns:1fr}.set-quota-card{position:static}.set-filter-grid{grid-template-columns:1fr 1fr}.set-filter-grid label:first-child{grid-column:1/-1}}@media(max-width:620px){.set-form-grid,.set-builder-head,.set-filter-grid{grid-template-columns:1fr}.set-question-top{flex-direction:column}.set-question-actions{width:100%}}
 </style>
+
+<style>
+.reference-status{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:.78rem;font-weight:800}.reference-status.neutral{background:#eef1f6;color:#556070}.reference-status.warning{background:#fff4cf;color:#805f00}.reference-status.success{background:#e5f7ec;color:#246d46}.reference-status.error{background:#ffe7e7;color:#9b3030}.reference-upload-drop{display:grid;gap:8px;border:2px dashed #cfd6e4;border-radius:14px;padding:18px;background:#fafbfe}.reference-upload-drop input[type=file]{padding:8px;background:#fff}.reference-doc-meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:.78rem;margin-top:4px}.reference-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-width:240px}.reference-table{min-width:1080px}.reference-processing{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:#f7f4ff;color:#5f4b9a}.reference-processing .mini-spinner{width:16px;height:16px;border:2px solid #cfc4ee;border-top-color:#6d45d6;border-radius:50%;animation:spin .8s linear infinite}.reference-upload-progress{display:grid;gap:7px;margin-top:8px}.reference-progress-step{display:flex;gap:8px;align-items:center;color:var(--muted)}.reference-progress-step.active{color:var(--primary);font-weight:800}.reference-progress-step.done{color:#28724b}.reference-subject-hint{max-width:210px}.reference-empty{padding:34px;text-align:center;color:var(--muted)}@media(max-width:780px){.reference-actions{min-width:0}.reference-table{min-width:850px}.reference-upload-drop{padding:14px}.reference-doc-meta{flex-direction:column;gap:3px}}
+</style>
+
+<style>
+.reference-detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}.reference-detail-grid .stat{box-shadow:none}.reference-notice{border-radius:12px;padding:13px 15px;margin:0 0 18px;border:1px solid var(--border);background:#f8f9fc}.reference-notice.warning{background:#fff8df;border-color:#f0df9b}.reference-notice.error{background:#fff0f0;border-color:#efc8c8;color:#8f3030}.reference-notice.neutral{background:#f3f5f9}.reference-filter-grid{display:grid;grid-template-columns:minmax(0,1fr) 180px auto;gap:10px;align-items:end;margin-bottom:16px}.reference-filter-grid label{font-size:.82rem}.reference-filter-grid input[type=checkbox]{width:auto}.reference-check-label{display:flex!important;grid-template-columns:auto 1fr;align-items:center;gap:7px;padding:12px 0}.reference-source-list{display:grid;gap:12px}.reference-source-card{border:1px solid var(--border);border-radius:14px;padding:16px;background:#fff}.reference-source-card.ignored{opacity:.66;background:#f7f8fa}.reference-source-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.reference-source-meta{display:flex;gap:7px;flex-wrap:wrap;color:var(--muted);font-size:.8rem;margin-top:5px}.reference-chip{display:inline-flex;padding:3px 7px;border-radius:999px;background:#eef1f6;color:#586275;font-size:.72rem;font-weight:800}.reference-chip.warning{background:#fff0bd;color:#7a5900}.reference-chip.error{background:#ffe1e1;color:#943131}.reference-source-prompt{font-weight:700;line-height:1.5;margin:14px 0}.reference-source-analysis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin:12px 0}.reference-analysis-item{background:#f8f9fc;border-radius:10px;padding:10px}.reference-analysis-item span{display:block;color:var(--muted);font-size:.75rem;margin-bottom:3px}.reference-options{display:grid;gap:5px;margin:10px 0}.reference-option{padding:7px 9px;border-radius:8px;background:#fafbfe}.reference-source-footer{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}@media(max-width:780px){.reference-filter-grid{grid-template-columns:1fr}.reference-source-head,.reference-source-footer{flex-direction:column;align-items:stretch}}
+</style>
 </head>
 <body>
 <div id="app"></div>
@@ -297,7 +305,41 @@ function validateQuestionDraft(draft, mode = 'draft') {
   return [...new Set(errors)];
 }
 
-window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition };
+
+const REFERENCE_MAX_BYTES = 20 * 1024 * 1024;
+
+function referenceStatusMeta(status='uploaded') {
+  return ({
+    uploaded:{label:'Uploaded',tone:'neutral'},
+    processing:{label:'Processing',tone:'warning'},
+    ready:{label:'Ready',tone:'success'},
+    needs_review:{label:'Needs Review',tone:'warning'},
+    failed:{label:'Failed',tone:'error'},
+    archived:{label:'Archived',tone:'neutral'},
+  })[status] || {label:String(status||'Unknown'),tone:'neutral'};
+}
+
+function formatBytes(bytes=0) {
+  const n=Number(bytes)||0;
+  if(n<1024)return `${n} B`;
+  if(n<1024*1024)return `${(n/1024).toFixed(1)} KB`;
+  return `${(n/(1024*1024)).toFixed(1)} MB`;
+}
+
+function validateReferencePdf(file) {
+  const errors=[];
+  if(!file) return ['Choose a PDF file.'];
+  if(file.type!=='application/pdf' && !/\.pdf$/i.test(file.name||'')) errors.push('Reference file must be a PDF.');
+  if(Number(file.size||0)<=0) errors.push('PDF is empty.');
+  if(Number(file.size||0)>REFERENCE_MAX_BYTES) errors.push('PDF must be 20 MB or smaller.');
+  return errors;
+}
+
+function sourceReviewStatus(source) {
+  return source?.analysis?.reviewStatus === 'needs_review' ? 'needs_review' : 'pass';
+}
+
+window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, REFERENCE_MAX_BYTES, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus };
 </script>
 <script>(() => {
   const SUPABASE_URL = 'https://wwjtpfexvqaipvvupsai.supabase.co';
@@ -494,6 +536,39 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
     publishQuestion: (versionId) => rpc('admin_publish_question', { p_question_version_id: versionId }),
     archiveQuestion: (questionId) => rpc('admin_archive_question', { p_question_id: questionId }),
     questionPreview: (versionId) => rpc('admin_question_preview', { p_question_version_id: versionId }),
+    referenceDocuments: () => rpc('admin_reference_document_list'),
+    createReferenceDocument: ({title,originalFilename,subjectHintId,fileSizeBytes}) => rpc('admin_create_reference_document', {
+      p_title: title,
+      p_original_filename: originalFilename,
+      p_subject_hint_id: subjectHintId || null,
+      p_file_size_bytes: Number(fileSizeBytes) || 0,
+    }),
+    referenceDocument: (documentId) => rpc('admin_get_reference_document', { p_document_id: documentId }),
+    updateReferenceDocument: ({documentId,title,subjectHintId}) => rpc('admin_update_reference_document', {
+      p_document_id: documentId,
+      p_title: title,
+      p_subject_hint_id: subjectHintId || null,
+    }),
+    archiveReferenceDocument: (documentId) => rpc('admin_archive_reference_document', { p_document_id: documentId }),
+    setReferenceSourceIgnored: (sourceQuestionId,ignored) => rpc('admin_set_reference_source_ignored', {
+      p_source_question_id: sourceQuestionId,
+      p_ignored: !!ignored,
+    }),
+    uploadReferencePdf: (path,blob) => authedJson(`/storage/v1/object/reference-library/${encodeStoragePath(path)}`, {
+      method: 'POST',
+      body: blob,
+      headers: { 'Content-Type': 'application/pdf', 'x-upsert': 'false' },
+    }),
+    referencePdfUrl: async (path) => {
+      const data = await authedJson(`/storage/v1/object/sign/reference-library/${encodeStoragePath(path)}`, {
+        method: 'POST',
+        body: JSON.stringify({ expiresIn: 3600 }),
+      });
+      const signed = data?.signedURL || data?.signedUrl || data?.signed_url;
+      if (!signed) throw new Error('Unable to create a secure PDF link.');
+      return /^https?:/i.test(signed) ? signed : `${SUPABASE_URL}/storage/v1${signed.startsWith('/') ? signed : `/${signed}`}`;
+    },
+    processReferenceDocument: (documentId) => invoke('admin-process-reference-document', { documentId }),
     simulationSets: () => rpc('admin_simulation_set_list'),
     setCandidates: (filters = {}) => rpc('admin_simulation_set_candidates', {
       p_subject_id: filters.subjectId || null,
@@ -538,14 +613,14 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
 </script>
 <script>(() => {
 const { auth, studentApi, adminApi } = window.PKSK_API;
-const { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition } = window.PKSK_CORE;
+const { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus } = window.PKSK_CORE;
 
 const root = document.querySelector('#app');
 let profile = null;
 let quizTimer = null;
 let editorDirty = false;
 
-const ROUTES = ['/student/history', '/student/quiz/', '/student/review/', '/admin/students', '/admin/questions'];
+const ROUTES = ['/student/history', '/student/quiz/', '/student/review/', '/admin/students', '/admin/questions', '/admin/references', '/admin/ai'];
 void ROUTES;
 
 const pct = (v) => v == null ? '—' : `${Number(v).toFixed(1)}%`;
@@ -562,7 +637,7 @@ const button = (label, cls='primary', attrs='') => `<button class="btn ${cls}" $
 function shell(content, role = profile?.role) {
   document.body.dataset.role = role || '';
   const nav = role === 'admin'
-    ? `<a href="/admin" data-link>Dashboard</a><a href="/admin/students" data-link>Students</a><a href="/admin/questions" data-link>Question Bank</a><a href="/admin/sets" data-link>Simulation Sets</a><a href="/admin/results" data-link>Results</a>`
+    ? `<a href="/admin" data-link>Dashboard</a><a href="/admin/students" data-link>Students</a><a href="/admin/questions" data-link>Question Bank</a><a href="/admin/references" data-link>Reference Library</a><a href="/admin/ai" data-link>AI Generator</a><a href="/admin/sets" data-link>Simulation Sets</a><a href="/admin/results" data-link>Results</a>`
     : `<a href="/student" data-link>Dashboard</a><a href="/student/history" data-link>My History</a><a href="/student/profile" data-link>Profile</a>`;
   root.innerHTML = `<header class="topbar"><div class="brand"><span class="brandmark">P</span><span>PKSK Practice</span></div><nav>${nav}</nav><button id="logout" class="btn ghost">Logout</button></header><main class="page">${content}</main>`;
   document.querySelector('#logout')?.addEventListener('click', async () => { await auth.signOut(); profile = null; go('/'); });
@@ -674,6 +749,241 @@ async function resultsPage(id){return reviewPage(id,false);}
 
 async function adminDashboard(){if(!await requireProfile('admin'))return;loading();const s=await adminApi.summary();shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>Dashboard</h1></div><a class="btn primary" href="/admin/students" data-link>Manage Students</a></div><section class="stats"><div class="stat"><b>${s.totalStudents}</b><span>Total Students</span></div><div class="stat"><b>${s.activeToday}</b><span>Active Today</span></div><div class="stat"><b>${s.activeThisWeek}</b><span>Active This Week</span></div><div class="stat"><b>${s.totalAttempts}</b><span>Total Attempts</span></div><div class="stat"><b>${pct(s.averageScore)}</b><span>Average Score</span></div></section><section class="card"><h2>Monitoring</h2><p>Students inactive for 14 days: <b>${s.inactive14Days}</b></p></section>`,'admin');}
 async function adminPlaceholder(title){if(!await requireProfile('admin'))return;shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>${escapeHtml(title)}</h1></div></div><section class="card"><h2>Coming in the next Milestone 2 stage</h2><p>This area is not active yet.</p></section>`,'admin');}
+
+function referenceStatusPill(status){
+  const meta=referenceStatusMeta(status);
+  return `<span class="reference-status ${escapeHtml(meta.tone)}">${escapeHtml(meta.label)}</span>`;
+}
+
+function referenceActionsMarkup(row){
+  const id=escapeHtml(row.documentId||'');
+  const status=String(row.status||'uploaded');
+  const actions=[];
+  if(status==='uploaded'){
+    actions.push(`<button class="link-btn reference-analyse" data-id="${id}">Analyze</button>`);
+    actions.push(`<a href="/admin/references/${id}" data-link>View</a>`);
+  }else if(status==='processing'){
+    actions.push(`<a href="/admin/references/${id}" data-link>View</a>`);
+  }else if(status==='ready'||status==='needs_review'){
+    actions.push(`<a href="/admin/references/${id}" data-link>View Sources</a>`);
+    actions.push(`<button class="link-btn reference-view-pdf" data-path="${escapeHtml(row.storagePath||'')}">View PDF</button>`);
+    actions.push(`<button class="link-btn reference-analyse" data-id="${id}">Re-analyze</button>`);
+  }else if(status==='failed'){
+    actions.push(`<button class="link-btn reference-analyse" data-id="${id}">Retry Analysis</button>`);
+    actions.push(`<a href="/admin/references/${id}" data-link>View</a>`);
+  }else if(status==='archived'){
+    actions.push(`<a href="/admin/references/${id}" data-link>View</a>`);
+  }
+  if(status!=='processing'&&status!=='archived') actions.push(`<button class="link-btn reference-edit" data-id="${id}">Edit Details</button>`);
+  if(status!=='archived') actions.push(`<button class="link-btn reference-archive" data-id="${id}">Archive</button>`);
+  return actions.join('<span class="muted">·</span>');
+}
+
+function referenceUploadModal(taxonomy){
+  const wrap=document.createElement('div');
+  wrap.className='modal-backdrop';
+  const subjectOptions=(taxonomy.subjects||[]).map(s=>`<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+  wrap.innerHTML=`<div class="modal"><h2>Upload Reference PDF</h2><p class="muted">The PDF stays private. AI will analyse visible source questions and keep page provenance for Admin review.</p><form id="reference-upload-form"><label>Title<input id="reference-upload-title" maxlength="200" required placeholder="Reference title"></label><label>Subject hint <span class="muted small">(optional)</span><select id="reference-upload-subject"><option value="">Auto-detect / mixed subjects</option>${subjectOptions}</select></label><label class="reference-upload-drop">PDF file <span class="muted small">PDF only · maximum 20 MB</span><input id="reference-upload-file" type="file" accept="application/pdf,.pdf" required></label><div id="reference-upload-error" class="form-error" aria-live="polite"></div><div id="reference-upload-progress" class="reference-upload-progress" hidden><div class="reference-progress-step" data-step="record">○ Creating record…</div><div class="reference-progress-step" data-step="upload">○ Uploading PDF…</div><div class="reference-progress-step" data-step="analyse">○ Analysing PDF…</div></div><div class="modal-actions"><button type="button" id="reference-upload-cancel" class="btn ghost">Cancel</button><button type="submit" class="btn primary">Upload &amp; Analyse</button></div></form></div>`;
+  document.body.append(wrap);
+  const form=wrap.querySelector('#reference-upload-form');
+  const fileInput=wrap.querySelector('#reference-upload-file');
+  const titleInput=wrap.querySelector('#reference-upload-title');
+  const error=wrap.querySelector('#reference-upload-error');
+  const progress=wrap.querySelector('#reference-upload-progress');
+  const submit=form.querySelector('button[type="submit"]');
+  wrap.querySelector('#reference-upload-cancel').onclick=()=>wrap.remove();
+  fileInput.addEventListener('change',()=>{
+    const file=fileInput.files?.[0];
+    if(file&&!titleInput.value.trim()) titleInput.value=file.name.replace(/\.pdf$/i,'');
+  });
+  function setProgress(step){
+    progress.hidden=false;
+    const order=['record','upload','analyse'];
+    const active=order.indexOf(step);
+    progress.querySelectorAll('[data-step]').forEach((el,i)=>{
+      el.classList.toggle('active',i===active);
+      el.classList.toggle('done',i<active);
+      el.textContent=`${i<active?'✓':i===active?'●':'○'} ${['Creating record…','Uploading PDF…','Analysing PDF…'][i]}`;
+    });
+  }
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    error.textContent='';
+    const file=fileInput.files?.[0];
+    const errors=validateReferencePdf(file);
+    if(errors.length){error.textContent=errors.join(' ');return;}
+    const title=titleInput.value.trim();
+    if(!title){error.textContent='Document title is required.';return;}
+    submit.disabled=true;wrap.querySelector('#reference-upload-cancel').disabled=true;
+    try{
+      setProgress('record');
+      const created=await adminApi.createReferenceDocument({
+        title,
+        originalFilename:file.name,
+        subjectHintId:wrap.querySelector('#reference-upload-subject').value||null,
+        fileSizeBytes:file.size,
+      });
+      try{
+        setProgress('upload');
+        await adminApi.uploadReferencePdf(created.storagePath,file);
+      }catch(err){
+        throw new Error(`Metadata was created but PDF upload failed: ${err.message}`);
+      }
+      setProgress('analyse');
+      try{
+        await adminApi.processReferenceDocument(created.documentId);
+      }catch(err){
+        // Processing failure is persisted by the Edge Function; detail page shows the failure.
+      }
+      wrap.remove();
+      go(`/admin/references/${created.documentId}`);
+    }catch(err){
+      error.textContent=err.message||'Unable to upload reference PDF.';
+      submit.disabled=false;wrap.querySelector('#reference-upload-cancel').disabled=false;
+    }
+  });
+}
+
+function referenceEditModal(row,taxonomy,onSaved){
+  const wrap=document.createElement('div');wrap.className='modal-backdrop';
+  const subjectOptions=(taxonomy.subjects||[]).map(s=>`<option value="${escapeHtml(s.id)}" ${s.id===row.subjectHintId?'selected':''}>${escapeHtml(s.name)}</option>`).join('');
+  wrap.innerHTML=`<div class="modal"><h2>Edit Reference Details</h2><form id="reference-edit-form"><label>Title<input id="reference-edit-title" maxlength="200" required value="${escapeHtml(row.title||'')}"></label><label>Subject hint <span class="muted small">(optional)</span><select id="reference-edit-subject"><option value="">Auto-detect / mixed subjects</option>${subjectOptions}</select></label><div id="reference-edit-error" class="form-error"></div><div class="modal-actions"><button type="button" id="reference-edit-cancel" class="btn ghost">Cancel</button><button type="submit" class="btn primary">Save Changes</button></div></form></div>`;
+  document.body.append(wrap);
+  wrap.querySelector('#reference-edit-cancel').onclick=()=>wrap.remove();
+  wrap.querySelector('#reference-edit-form').onsubmit=async e=>{
+    e.preventDefault();const submit=e.currentTarget.querySelector('button[type="submit"]');const error=wrap.querySelector('#reference-edit-error');submit.disabled=true;error.textContent='';
+    try{
+      await adminApi.updateReferenceDocument({documentId:row.documentId,title:wrap.querySelector('#reference-edit-title').value.trim(),subjectHintId:wrap.querySelector('#reference-edit-subject').value||null});
+      wrap.remove();await onSaved();
+    }catch(err){error.textContent=err.message||'Unable to update reference details.';submit.disabled=false;}
+  };
+}
+
+async function referenceLibraryPage(){
+  if(!await requireProfile('admin'))return;
+  loading('Loading Reference Library…');
+  const [rows,taxonomy]=await Promise.all([adminApi.referenceDocuments(),adminApi.taxonomy()]);
+  const activeRows=(rows||[]);
+  const body=activeRows.length?activeRows.map(row=>{
+    const status=String(row.status||'uploaded');
+    const review=Number(row.needsReviewCount||0);
+    const statusCell=status==='processing'?`<div>${referenceStatusPill(status)}</div><div class="muted small" style="margin-top:5px">Processing…</div>`:referenceStatusPill(status);
+    return `<tr><td><b>${escapeHtml(row.title||row.originalFilename||'Reference PDF')}</b><div class="reference-doc-meta"><span>${escapeHtml(row.originalFilename||'')}</span><span>${formatBytes(row.fileSizeBytes)}</span></div></td><td>${escapeHtml(row.subjectHintName||'Auto / mixed')}</td><td>${statusCell}${row.processingError?`<div class="form-error small" style="margin-top:5px">${escapeHtml(row.processingError)}</div>`:''}</td><td>${row.pageCount??'—'}</td><td>${Number(row.sourceQuestionCount||0)}</td><td>${review?`<span class="reference-status warning">${review} need review</span>`:'—'}</td><td>${date(row.updatedAt)}</td><td><div class="reference-actions">${referenceActionsMarkup(row)}</div></td></tr>`;
+  }).join(''):`<tr><td colspan="8"><div class="reference-empty">No reference PDFs yet. Upload your first PKSK source document.</div></td></tr>`;
+  shell(`<div class="page-head"><div><span class="eyebrow">AI Source Material</span><h1>Reference Library</h1><p class="muted">Upload private PKSK PDFs for AI source analysis.</p></div><button id="reference-upload-open" class="btn primary">Upload Reference PDF</button></div><section class="card"><div class="table-wrap"><table class="reference-table"><thead><tr><th>Document</th><th>Subject Hint</th><th>Status</th><th>Pages</th><th>Sources</th><th>Review</th><th>Updated</th><th>Actions</th></tr></thead><tbody>${body}</tbody></table></div></section>`,'admin');
+  bindLinks();
+  document.querySelector('#reference-upload-open').onclick=()=>referenceUploadModal(taxonomy);
+  const rowById=new Map(activeRows.map(row=>[row.documentId,row]));
+  document.querySelectorAll('.reference-view-pdf').forEach(btn=>btn.addEventListener('click',async()=>{
+    btn.disabled=true;
+    try{const url=await adminApi.referencePdfUrl(btn.dataset.path);window.open(url,'_blank','noopener');}
+    catch(err){alert(err.message||'Unable to open the private PDF.');}
+    finally{btn.disabled=false;}
+  }));
+  document.querySelectorAll('.reference-analyse').forEach(btn=>btn.addEventListener('click',async()=>{
+    btn.disabled=true;const old=btn.textContent;btn.textContent='Analysing…';
+    try{await adminApi.processReferenceDocument(btn.dataset.id);}catch(err){/* persisted failure is shown after reload */}
+    finally{btn.textContent=old;await render();}
+  }));
+  document.querySelectorAll('.reference-edit').forEach(btn=>btn.addEventListener('click',()=>{
+    const row=rowById.get(btn.dataset.id);if(row)referenceEditModal(row,taxonomy,async()=>render());
+  }));
+  document.querySelectorAll('.reference-archive').forEach(btn=>btn.addEventListener('click',async()=>{
+    if(!confirm('Archive this reference document? It will be hidden from future AI generation, but the PDF and historical provenance will be preserved.'))return;
+    btn.disabled=true;
+    try{await adminApi.archiveReferenceDocument(btn.dataset.id);await render();}
+    catch(err){alert(err.message||'Unable to archive the reference document.');btn.disabled=false;}
+  }));
+}
+
+
+async function referenceDocumentPage(documentId){
+  if(!await requireProfile('admin'))return;
+  loading('Loading reference analysis…');
+  let data=await adminApi.referenceDocument(documentId);
+  const status=String(data.status||'uploaded');
+  const archived=status==='archived';
+  const processing=status==='processing';
+  const mayProcess=!archived&&!processing&&['uploaded','failed','ready','needs_review'].includes(status);
+  const processLabel=status==='failed'?'Retry Analysis':status==='uploaded'?'Analyze Now':'Re-analyse';
+  let notice='';
+  if(status==='uploaded') notice=`<div class="reference-notice neutral">PDF uploaded and waiting for analysis.</div>`;
+  if(status==='processing') notice=`<div class="reference-notice warning">Analysis is in progress. If this page was reopened after an interrupted request, wait briefly and refresh before retrying.</div>`;
+  if(status==='failed') notice=`<div class="reference-notice error"><b>Analysis failed.</b><div style="margin-top:5px">${escapeHtml(data.processingError||'Reference analysis failed.')}</div></div>`;
+  if(status==='needs_review') notice=`<div class="reference-notice warning"><b>Review needed.</b> One or more extracted source items need inspection before they should influence future AI generation.</div>`;
+  if(status==='archived') notice=`<div class="reference-notice neutral"><b>Archived reference.</b> This document is read-only and will be excluded from future AI generation.</div>`;
+  const processButton=mayProcess?`<button id="reference-process-now" class="btn ${status==='failed'?'ghost':'primary'}">${escapeHtml(processLabel)}</button>`:'';
+  shell(`<div class="page-head"><div><span class="eyebrow">AI Source Analysis</span><h1>${escapeHtml(data.title||'Reference Document')}</h1><p class="muted">${escapeHtml(data.originalFilename||'')} · ${formatBytes(data.fileSizeBytes)}</p></div><div class="preview-actions"><button id="reference-detail-pdf" class="btn ghost">View PDF</button>${processButton}<a href="/admin/references" class="btn ghost" data-link>Back to Reference Library</a></div></div>${notice}<section class="card"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><h2 style="margin-top:0">Document</h2><div>${referenceStatusPill(status)}</div></div><div class="muted small">Processed: ${date(data.processedAt)}</div></div><div class="reference-detail-grid"><div class="stat"><b>${escapeHtml(data.subjectHintName||'Auto / mixed')}</b><span>Subject Hint</span></div><div class="stat"><b>${data.pageCount??'—'}</b><span>Pages</span></div><div class="stat"><b>${Number(data.sourceQuestionCount||0)}</b><span>Source Questions</span></div><div class="stat"><b>${Number(data.needsReviewCount||0)}</b><span>Need Review</span></div></div>${data.analysisSummary?.notes?`<p class="muted">${escapeHtml(data.analysisSummary.notes)}</p>`:''}</section><section class="card"><div class="set-total"><div><span class="eyebrow">Extracted Material</span><h2>Source Questions</h2></div><strong id="reference-source-count"></strong></div><div class="reference-filter-grid"><label>Search<input id="reference-source-search" type="search" placeholder="Prompt, skill or source label"></label><label>Review status<select id="reference-source-review"><option value="all">All</option><option value="pass">Pass</option><option value="needs_review">Needs Review</option></select></label><label class="reference-check-label"><input id="reference-source-ignored" type="checkbox"> Include ignored</label></div><div id="reference-source-list" class="reference-source-list"></div></section>`,'admin');
+  bindLinks();
+
+  document.querySelector('#reference-detail-pdf').onclick=async e=>{
+    const btn=e.currentTarget;btn.disabled=true;
+    try{const url=await adminApi.referencePdfUrl(data.storagePath);window.open(url,'_blank','noopener');}
+    catch(err){alert(err.message||'Unable to open the private PDF.');}
+    finally{btn.disabled=false;}
+  };
+
+  document.querySelector('#reference-process-now')?.addEventListener('click',async e=>{
+    if((status==='ready'||status==='needs_review')&&!confirm('Re-analyse this PDF? Existing extracted source-question rows for this document will be replaced, but the document ID and PDF will stay the same.'))return;
+    const btn=e.currentTarget;btn.disabled=true;btn.textContent='Analysing…';
+    try{await adminApi.processReferenceDocument(documentId);}catch(err){/* failure is persisted for the refreshed detail */}
+    await referenceDocumentPage(documentId);
+  });
+
+  const filters={search:'',review:'all',includeIgnored:false};
+  const sources=(data.sourceQuestions||[]).map(source=>({...source}));
+
+  function sourceCard(source){
+    const analysis=source.analysis||{};
+    const review=sourceReviewStatus(source);
+    const chips=[];
+    if(review==='needs_review')chips.push('<span class="reference-chip warning">Needs Review</span>');
+    else chips.push('<span class="reference-chip">QA Pass</span>');
+    if(analysis.sourceConcern)chips.push('<span class="reference-chip error">Source concern</span>');
+    if(analysis.imageDependent)chips.push('<span class="reference-chip warning">Image dependent</span>');
+    if(analysis.lowConfidence)chips.push('<span class="reference-chip warning">Low confidence</span>');
+    if(source.isIgnored)chips.push('<span class="reference-chip">Ignored</span>');
+    const options=Array.isArray(source.options)&&source.options.length?`<div class="reference-options">${source.options.map(o=>`<div class="reference-option"><b>${escapeHtml(o.key||'')}</b>. ${escapeHtml(o.text||'')}</div>`).join('')}</div>`:'';
+    const answer=source.answerText?`<details><summary>Source answer</summary><p>${escapeHtml(source.answerText)}</p></details>`:'';
+    const toggle=archived?'':`<button class="btn ghost reference-source-toggle" data-id="${escapeHtml(source.id)}">${source.isIgnored?'Include Source':'Mark Ignored'}</button>`;
+    return `<article class="reference-source-card ${source.isIgnored?'ignored':''}"><div class="reference-source-head"><div><b>Page ${Number(source.pageNo||0)} · ${escapeHtml(source.sourceLabel||'Source item')}</b><div class="reference-source-meta"><span>${escapeHtml(source.subjectName||source.subjectCode||'Unmapped subject')}</span><span>·</span><span>${escapeHtml(source.topicName||'Unmapped topic')}</span><span>·</span><span>${escapeHtml(source.difficulty?String(source.difficulty).replace(/^./,c=>c.toUpperCase()):'Unrated')}</span></div></div><div>${chips.join(' ')}</div></div><p class="reference-source-prompt">${escapeHtml(source.promptText||'[Prompt requires source-page inspection]')}</p>${options}<div class="reference-source-analysis"><div class="reference-analysis-item"><span>Tested Skill</span><b>${escapeHtml(analysis.testedSkill||'Unclassified')}</b></div><div class="reference-analysis-item"><span>Reasoning</span><b>${escapeHtml(analysis.reasoningPattern||'Unclassified')}</b></div><div class="reference-analysis-item"><span>Reasoning Steps</span><b>${Number.isInteger(analysis.reasoningSteps)?analysis.reasoningSteps:'—'}</b></div><div class="reference-analysis-item"><span>Difficulty rationale</span><b>${escapeHtml(analysis.difficultyRationale||'—')}</b></div></div>${analysis.notes?`<p class="muted"><b>AI note:</b> ${escapeHtml(analysis.notes)}</p>`:''}${answer}<div class="reference-source-footer"><span class="muted small">Source language: ${escapeHtml(analysis.sourceLanguage||'Unknown')}</span>${toggle}</div></article>`;
+  }
+
+  function filteredSources(){
+    const term=filters.search.toLowerCase();
+    return sources.filter(source=>{
+      if(!filters.includeIgnored&&source.isIgnored)return false;
+      const review=sourceReviewStatus(source);
+      if(filters.review!=='all'&&review!==filters.review)return false;
+      if(term){
+        const hay=[source.promptText,source.sourceLabel,source.subjectName,source.topicName,source.analysis?.testedSkill,source.analysis?.reasoningPattern].filter(Boolean).join(' ').toLowerCase();
+        if(!hay.includes(term))return false;
+      }
+      return true;
+    });
+  }
+
+  function renderSources(){
+    const visible=filteredSources();
+    document.querySelector('#reference-source-count').textContent=`${visible.length} shown`;
+    document.querySelector('#reference-source-list').innerHTML=visible.length?visible.map(sourceCard).join(''):`<div class="reference-empty">No source questions match these filters.</div>`;
+    document.querySelectorAll('.reference-source-toggle').forEach(btn=>btn.addEventListener('click',async()=>{
+      const source=sources.find(item=>item.id===btn.dataset.id);if(!source)return;
+      btn.disabled=true;
+      try{
+        await adminApi.setReferenceSourceIgnored(source.id,!source.isIgnored);
+        source.isIgnored=!source.isIgnored;
+        renderSources();
+      }catch(err){alert(err.message||'Unable to update source status.');btn.disabled=false;}
+    }));
+  }
+
+  document.querySelector('#reference-source-search').addEventListener('input',e=>{filters.search=e.target.value.trim();renderSources();});
+  document.querySelector('#reference-source-review').addEventListener('change',e=>{filters.review=e.target.value;renderSources();});
+  document.querySelector('#reference-source-ignored').addEventListener('change',e=>{filters.includeIgnored=e.target.checked;renderSources();});
+  renderSources();
+}
+
 async function simulationSetsPage(){
   if(!await requireProfile('admin'))return;
   loading('Loading Simulation Sets…');
@@ -1134,7 +1444,7 @@ function studentModal(){const wrap=document.createElement('div');wrap.className=
 async function studentDetail(userId){if(!await requireProfile('admin'))return;loading();const d=await adminApi.studentHistory(userId);shell(`<div class="page-head"><div><span class="eyebrow">Student</span><h1>${escapeHtml(d.profile.displayName)}</h1><p>${escapeHtml(d.profile.email)} · ${d.profile.active?'Active':'Inactive'} · ${escapeHtml(d.profile.schoolYear||'')}</p></div></div><section class="stats"><div class="stat"><b>${d.summary.totalAttempts}</b><span>Attempts</span></div><div class="stat"><b>${pct(d.summary.bestPercentage)}</b><span>Best</span></div><div class="stat"><b>${pct(d.summary.averagePercentage)}</b><span>Average</span></div><div class="stat"><b>${pct(d.summary.latestPercentage)}</b><span>Latest</span></div></section><section class="card"><h2>Subject Performance</h2><div class="subject-grid">${(d.subjectPerformance||[]).map(s=>`<div class="stat"><b>${pct(s.percentage)}</b><span>${escapeHtml(s.name)}</span></div>`).join('')}</div></section><section class="card"><h2>Attempt History</h2>${adminHistoryTable(d.attempts||[])}</section>`,'admin');}
 function adminHistoryTable(rows){if(!rows.length)return'<p class="muted">No completed attempts yet.</p>';return`<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'')}</td><td>${formatDuration(r.elapsedSeconds)}</td><td>${date(r.submittedAt)}</td><td><a href="/admin/review/${r.attemptId}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`;}
 
-async function render(){clearInterval(quizTimer);try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return simulationSetsPage();if(p==='/admin/sets/new')return simulationSetNewPage();if(/^\/admin\/sets\/[^/]+\/edit$/.test(p))return simulationSetBuilderPage(p.split('/')[3]);if(/^\/admin\/sets\/[^/]+\/preview$/.test(p))return simulationSetPreviewPage(p.split('/')[3]);if(p==='/admin/results')return adminPlaceholder('Results');if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
+async function render(){clearInterval(quizTimer);try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/references')return referenceLibraryPage();if(/^\/admin\/references\/[^/]+$/.test(p))return referenceDocumentPage(p.split('/')[3]);if(p==='/admin/ai')return adminPlaceholder('AI Generator');if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return simulationSetsPage();if(p==='/admin/sets/new')return simulationSetNewPage();if(/^\/admin\/sets\/[^/]+\/edit$/.test(p))return simulationSetBuilderPage(p.split('/')[3]);if(/^\/admin\/sets\/[^/]+\/preview$/.test(p))return simulationSetPreviewPage(p.split('/')[3]);if(p==='/admin/results')return adminPlaceholder('Results');if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
 window.addEventListener('beforeunload',e=>{if(editorDirty){e.preventDefault();e.returnValue='';}});window.addEventListener('hashchange', render);render();})();
 </script>
 </body>
