@@ -502,7 +502,54 @@ function filterGeneratedCandidates(candidates=[],filters={}) {
   });
 }
 
-window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, REFERENCE_MAX_BYTES, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES };
+function allocateGapDifficulty(total,publishedDifficulty={}) {
+  let remaining=Math.max(0,Number(total)||0);
+  const targets={...STANDARD_DIFFICULTY_TARGET};
+  const result={easy:0,medium:0,hard:0};
+  const deficits=Object.fromEntries(Object.keys(targets).map(level=>[level,Math.max(0,targets[level]-(Number(publishedDifficulty?.[level])||0))]));
+  while(remaining>0){
+    const level=Object.keys(result).sort((a,b)=>deficits[b]-deficits[a]||targets[b]-targets[a])[0];
+    result[level]+=1;
+    deficits[level]=Math.max(0,deficits[level]-1);
+    remaining-=1;
+  }
+  return result;
+}
+
+function buildGapGenerationDraft(coverage={},referenceDocumentIds=[]) {
+  const subjects=(coverage.subjects||[]).filter(row=>Number(row?.poolShortage)>0).map(row=>({
+    subjectCode:row.subjectCode,
+    questionCount:Number(row.poolShortage),
+    sourcePolicy:['IQ','GK'].includes(row.subjectCode)?'external_allowed':'hybrid',
+  }));
+  const totalQuestions=subjects.reduce((n,row)=>n+row.questionCount,0);
+  return {
+    name:`PKSK Coverage Gap · ${totalQuestions} Questions`,
+    totalQuestions,
+    subjects,
+    difficulty:allocateGapDifficulty(totalQuestions,coverage.publishedDifficulty||{}),
+    topicMode:'ai_balanced',manualTopicQuotas:[],variationMode:'mixed',creativityLevel:'balanced',
+    avoidUsedConcepts:true,similarityPolicy:'balanced',sourceDocumentIds:[...(referenceDocumentIds||[])],
+  };
+}
+
+function applySetSuggestions(selected=[],suggestions=[],quotas={}) {
+  const out=(selected||[]).map((row,i)=>({...row,position:i+1}));
+  const ids=new Set(out.map(row=>row.versionId));
+  const counts={};
+  for(const row of out) counts[row.subjectCode]=(counts[row.subjectCode]||0)+1;
+  for(const suggestion of suggestions||[]){
+    if(!suggestion?.versionId||ids.has(suggestion.versionId))continue;
+    const limit=Number(quotas?.[suggestion.subjectCode]??Infinity);
+    if((counts[suggestion.subjectCode]||0)>=limit)continue;
+    out.push({...suggestion,position:out.length+1});
+    ids.add(suggestion.versionId);
+    counts[suggestion.subjectCode]=(counts[suggestion.subjectCode]||0)+1;
+  }
+  return out;
+}
+
+window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, REFERENCE_MAX_BYTES, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES, allocateGapDifficulty, buildGapGenerationDraft, applySetSuggestions };
 </script>
 <script>(() => {
   const SUPABASE_URL = 'https://wwjtpfexvqaipvvupsai.supabase.co';
@@ -741,6 +788,8 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
     validateGenerationPlan: (jobId) => rpc('admin_validate_ai_generation_plan', { p_job_id: jobId }),
     approveGenerationPlan: (jobId) => rpc('admin_approve_ai_generation_plan', { p_job_id: jobId }),
     generationProgress: (jobId) => rpc('admin_ai_generation_progress', { p_job_id: jobId }),
+    questionPoolCoverage: (setVersionId = null) => rpc('admin_question_pool_coverage', { p_set_version_id: setVersionId || null }),
+    setSuggestions: (setVersionId) => rpc('admin_simulation_set_suggestions', { p_set_version_id: setVersionId }),
     generateQuestionBatch: (jobId) => invoke('admin-generate-question-batch', { jobId }),
     acceptGeneratedCandidate: (itemId) => rpc('admin_accept_generated_candidate', { p_item_id: itemId }),
     rejectGeneratedCandidate: (itemId) => rpc('admin_reject_generated_candidate', { p_item_id: itemId }),
@@ -789,7 +838,7 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
 </script>
 <script>(() => {
 const { auth, studentApi, adminApi } = window.PKSK_API;
-const { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES } = window.PKSK_CORE;
+const { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES, allocateGapDifficulty, buildGapGenerationDraft, applySetSuggestions } = window.PKSK_CORE;
 
 const root = document.querySelector('#app');
 let profile = null;
@@ -1185,8 +1234,44 @@ async function generationJobsPage(){
     const meta=generationStatusMeta(row.status);
     return `<tr><td><b>${escapeHtml(row.name||'Generation Job')}</b></td><td><span class="status-pill ${escapeHtml(meta.tone)}">${escapeHtml(meta.label)}</span>${row.planningError?`<div class="form-error small">${escapeHtml(row.planningError)}</div>`:''}</td><td>${Number(row.totalQuestions||0)}</td><td>${row.topicMode==='manual'?'Manual topic allocation':'AI-balanced topics'}</td><td>${Number(row.sourceDocumentCount||0)}</td><td>${date(row.updatedAt)}</td><td><a href="/admin/generator/${escapeHtml(row.jobId)}" data-link>${escapeHtml(generationJobAction(row.status))}</a></td></tr>`;
   }).join(''):'<tr><td colspan="7"><span class="muted">No generation jobs yet.</span></td></tr>';
-  shell(`<div class="page-head"><div><span class="eyebrow">AI Question Factory</span><h1>AI Question Generator</h1><p class="muted">Plan controlled PKSK question batches from your private Reference Library.</p></div><a class="btn primary" href="/admin/generator/new" data-link>Create Generation Job</a></div><section class="card"><div class="table-wrap"><table class="generator-job-table"><thead><tr><th>Job</th><th>Status</th><th>Total</th><th>Topics</th><th>References</th><th>Updated</th><th>Action</th></tr></thead><tbody>${table}</tbody></table></div></section>`,'admin');
+  shell(`<div class="page-head"><div><span class="eyebrow">AI Question Factory</span><h1>AI Question Generator</h1><p class="muted">Plan controlled PKSK question batches from your private Reference Library.</p></div><div class="generator-actions"><a class="btn ghost" href="/admin/generator/coverage" data-link>Coverage Assistant</a><a class="btn primary" href="/admin/generator/new" data-link>Create Generation Job</a></div></div><section class="card"><div class="table-wrap"><table class="generator-job-table"><thead><tr><th>Job</th><th>Status</th><th>Total</th><th>Topics</th><th>References</th><th>Updated</th><th>Action</th></tr></thead><tbody>${table}</tbody></table></div></section>`,'admin');
   bindLinks();
+}
+
+
+async function generationCoveragePage(){
+  if(!await requireProfile('admin'))return;
+  loading('Loading Question Coverage…');
+  const coverage=await adminApi.questionPoolCoverage(null);
+  const subjects=coverage.subjects||[];
+  const totalShortage=subjects.reduce((n,row)=>n+Number(row.poolShortage||0),0);
+  const ready=totalShortage===0;
+  const diff=coverage.publishedDifficulty||{};
+  const topicBySubject=new Map();
+  for(const row of coverage.topicCoverage||[]){
+    if(!topicBySubject.has(row.subjectCode))topicBySubject.set(row.subjectCode,[]);
+    topicBySubject.get(row.subjectCode).push(row);
+  }
+  const rows=subjects.map(row=>`<tr class="${Number(row.poolShortage)>0?'shortage':'complete'}"><td><b>${escapeHtml(row.subjectName)}</b></td><td>${Number(row.required)}</td><td>${Number(row.publishedAvailable)}</td><td>${Number(row.aiDrafts)}</td><td>${Number(row.aiPublished)}</td><td><span class="availability-badge ${Number(row.poolShortage)>0?'short':''}">${Number(row.poolShortage)}</span></td></tr>`).join('');
+  const topics=subjects.map(row=>{const list=topicBySubject.get(row.subjectCode)||[];return `<div class="card" style="box-shadow:none;margin:8px 0"><b>${escapeHtml(row.subjectName)}</b><p class="muted small">${list.length?list.map(t=>`${escapeHtml(t.topicName)}: ${Number(t.publishedCount)}`).join(' · '):'No Published topic coverage yet.'}</p></div>`;}).join('');
+  shell(`<div class="page-head"><div><span class="eyebrow">Milestone 3E</span><h1>Coverage Assistant</h1><p class="muted">Checks whether the <b>Published Question Bank</b> can fill one standard 100-question PKSK set.</p></div><a class="btn ghost" href="/admin/generator" data-link>Back to Generator</a></div>
+  <div class="reference-notice ${ready?'neutral':'warning'}"><b>${ready?'Published pool is ready for one standard set.':'Published pool has real shortages.'}</b> ${ready?'No new generation is required for subject quotas.':'Generate only the missing pool questions below; existing Published questions are never replaced by unnecessary AI generation.'}</div>
+  <section class="card"><div class="set-total"><div><span class="eyebrow">Published Pool</span><h2>Subject Readiness</h2></div><strong>${ready?'Ready':`${totalShortage} missing`}</strong></div><div class="table-wrap"><table class="set-quota-table"><thead><tr><th>Subject</th><th>Required</th><th>Published Pool</th><th>AI Drafts</th><th>AI Published</th><th>Pool Shortage</th></tr></thead><tbody>${rows}</tbody></table></div><div class="generator-actions" style="margin-top:16px"><button id="coverage-generate" class="btn primary" ${ready?'disabled':''}>Generate Missing Questions</button><a class="btn ghost" href="/admin/questions" data-link>Open Question Bank</a></div><div id="coverage-result" class="generator-review-result"></div></section>
+  <section class="card"><h2>Published Difficulty Mix</h2><p class="muted small">Advisory target for a standard set: 20 Easy / 55 Medium / 25 Hard. Subject quota readiness above remains the hard gate.</p><div class="difficulty-grid"><div class="difficulty-box"><span>Easy</span><b>${Number(diff.easy||0)} / 20</b></div><div class="difficulty-box"><span>Medium</span><b>${Number(diff.medium||0)} / 55</b></div><div class="difficulty-box"><span>Hard</span><b>${Number(diff.hard||0)} / 25</b></div></div></section>
+  <section class="card"><h2>Topic Coverage</h2>${topics}</section>`,'admin');
+  bindLinks();
+  document.querySelector('#coverage-generate')?.addEventListener('click',async e=>{
+    const btn=e.currentTarget;btn.disabled=true;const result=document.querySelector('#coverage-result');result.innerHTML='';
+    try{
+      const refs=await loadGeneratorReferences();
+      const usableIds=refs.filter(r=>Number(r.eligibleSourceCount||0)>0).map(r=>r.documentId);
+      const payload=buildGapGenerationDraft(coverage,usableIds);
+      if(!payload.totalQuestions)throw new Error('The Published pool has no subject shortage.');
+      const created=await adminApi.createGenerationJob(payload);
+      try{await adminApi.planGenerationJob(created.jobId);}catch{/* planner persists its own failure */}
+      go(`/admin/generator/${created.jobId}`);
+    }catch(err){result.innerHTML=`<div class="set-alert error">${escapeHtml(err.message||'Unable to create the gap-generation plan.')}</div>`;btn.disabled=false;}
+  });
 }
 
 async function loadGeneratorReferences(){
@@ -1432,7 +1517,7 @@ async function generationReviewPage(jobId){
     <label>Source document<select id="gr-source"><option value="">All sources</option><option value="__fresh__">Fresh AI</option>${sources.map(d=>`<option value="${escapeHtml(d.id)}">${escapeHtml(d.title)}</option>`).join('')}</select></label>
     <label>Variation mode<select id="gr-variation"><option value="">All modes</option><option value="close_variant">Close Variant</option><option value="fresh_variant">Fresh Variant</option><option value="mixed">Mixed</option></select></label>
   </div>
-  <div class="generator-review-toolbar"><div><b id="gr-count"></b> <span class="muted small" id="gr-selected-count"></span></div><div class="generator-review-actions"><button id="gr-accept-selected" class="btn ghost" disabled>Accept Selected</button><button id="gr-regenerate-selected" class="btn ghost" disabled>Regenerate Selected</button><button id="gr-reject-selected" class="btn ghost" disabled>Reject Selected</button></div></div><div id="gr-result" class="generator-review-result"></div></section>
+  <div class="generator-review-toolbar"><div><b id="gr-count"></b> <span class="muted small" id="gr-selected-count"></span></div><div class="generator-review-actions"><button id="gr-accept-selected" class="btn ghost" disabled>Accept Selected</button><button id="gr-publish-selected" class="btn primary" disabled>Publish Selected Drafts</button><button id="gr-regenerate-selected" class="btn ghost" disabled>Regenerate Selected</button><button id="gr-reject-selected" class="btn ghost" disabled>Reject Selected</button></div></div><div class="muted small">Publish Selected Drafts uses the <b>normal Question Bank validation</b> for every question and reports partial success.</div><div id="gr-result" class="generator-review-result"></div></section>
   <section id="gr-list" class="generator-candidate-list"></section>`,'admin');
   bindLinks();
 
@@ -1452,21 +1537,24 @@ async function generationReviewPage(jobId){
   }
   function card(c){
     const g=c.generated||{},qa=c.qa||{},scores=qa.scores||{};
-    const canSelect=c.status!=='accepted';
+    const canSelect=c.status!=='accepted'||c.questionVersionStatus==='draft';
     const statusTone=c.status==='needs_review'?'warning':c.status==='rejected'||c.status==='failed'?'error':'';
     const options=Array.isArray(g.options)?g.options.map(o=>`<div class="reference-option"><b>${escapeHtml(o.key||'')}</b>. ${escapeHtml(o.textMs||o.textEn||'')}${o.textMs&&o.textEn?`<div class="translation">${escapeHtml(o.textEn)}</div>`:''}</div>`).join(''):'';
     const answer=g.correctKey?`<details><summary>Admin answer + explanation</summary><p><b>Correct:</b> ${escapeHtml(g.correctKey)}</p>${g.explanationMs?`<p>${escapeHtml(g.explanationMs)}</p>`:''}${g.explanationEn?`<p class="translation">${escapeHtml(g.explanationEn)}</p>`:''}</details>`:'';
     const accepted=c.status==='accepted';
+    const acceptedPublished=accepted&&c.questionVersionStatus==='published';
     const acceptButton=actionEligible(c,'accept')?`<button class="btn primary gr-action" data-action="accept" data-id="${escapeHtml(c.itemId)}">Accept as Draft</button>`:'';
-    const editButton=accepted?`<a class="btn ghost" href="/admin/questions/${escapeHtml(c.questionId)}/edit" data-link>Edit Draft</a>`:actionEligible(c,'accept')?`<button class="btn ghost gr-action" data-action="edit" data-id="${escapeHtml(c.itemId)}">Edit as Draft</button>`:'';
+    const editButton=acceptedPublished?`<a class="btn ghost" href="/admin/questions/${escapeHtml(c.questionId)}/preview" data-link>Preview Published</a>`:accepted?`<a class="btn ghost" href="/admin/questions/${escapeHtml(c.questionId)}/edit" data-link>Edit Draft</a>`:actionEligible(c,'accept')?`<button class="btn ghost gr-action" data-action="edit" data-id="${escapeHtml(c.itemId)}">Edit as Draft</button>`:'';
     const regenerateButton=c.status==='accepted'?'':actionEligible(c,'regenerate')?`<button class="btn ghost gr-action" data-action="regenerate" data-id="${escapeHtml(c.itemId)}">Regenerate</button>`:'';
     const rejectButton=c.status==='accepted'?'':actionEligible(c,'reject')?`<button class="btn ghost gr-action" data-action="reject" data-id="${escapeHtml(c.itemId)}">Reject</button>`:'';
-    return `<article class="reference-source-card generator-review-card ${selected.has(c.itemId)?'selected':''}" data-item="${escapeHtml(c.itemId)}"><div class="reference-source-head"><div><label class="generator-review-select">${canSelect?`<input class="gr-select" type="checkbox" data-id="${escapeHtml(c.itemId)}" ${selected.has(c.itemId)?'checked':''}>`:''}<span><span class="generator-review-question-code">${escapeHtml(c.questionCode||`Candidate #${Number(c.slotNo||0)}`)}</span> · ${escapeHtml(c.subjectName||c.subjectCode||'')}</span></label><div class="reference-source-meta"><span>${escapeHtml(c.topicName||'AI skill')}</span><span>·</span><span>${escapeHtml(String(c.difficulty||'').replace(/^./,x=>x.toUpperCase()))}</span><span>·</span><span>${escapeHtml(String(c.variationMode||'mixed').replaceAll('_',' '))}</span></div></div><span class="reference-chip ${statusTone}">QA status: ${escapeHtml(qaLabel(c.status))}</span></div>${g.promptMs?`<p class="question-text">${escapeHtml(g.promptMs)}</p>`:''}${g.promptEn?`<p class="question-text translation">${escapeHtml(g.promptEn)}</p>`:''}<div class="reference-options">${options}</div>${answer}<div class="reference-source-analysis">${score('Correctness',scores.correctness)}${score('Uniqueness',scores.uniqueness)}${score('Difficulty',scores.difficulty)}${score('Distractor quality',scores.distractorQuality)}${score('Source alignment',scores.sourceAlignment)}${score('Clarity',scores.clarity)}</div><div class="generator-review-source"><b>Source:</b> ${escapeHtml(sourceSummary(c))}</div>${qa.notes?`<p class="muted"><b>QA note:</b> ${escapeHtml(qa.notes)}</p>`:''}${c.failureReason?`<div class="set-alert ${c.status==='rejected'||c.status==='failed'?'error':'warning'}">${escapeHtml(c.failureReason)}</div>`:''}${accepted?`<div class="set-alert success">Accepted as Question Bank Draft ${escapeHtml(c.questionCode||'')}.</div>`:''}<div class="generator-review-card-actions">${acceptButton}${editButton}${regenerateButton}${rejectButton}</div></article>`;
+    return `<article class="reference-source-card generator-review-card ${selected.has(c.itemId)?'selected':''}" data-item="${escapeHtml(c.itemId)}"><div class="reference-source-head"><div><label class="generator-review-select">${canSelect?`<input class="gr-select" type="checkbox" data-id="${escapeHtml(c.itemId)}" ${selected.has(c.itemId)?'checked':''}>`:''}<span><span class="generator-review-question-code">${escapeHtml(c.questionCode||`Candidate #${Number(c.slotNo||0)}`)}</span> · ${escapeHtml(c.subjectName||c.subjectCode||'')}</span></label><div class="reference-source-meta"><span>${escapeHtml(c.topicName||'AI skill')}</span><span>·</span><span>${escapeHtml(String(c.difficulty||'').replace(/^./,x=>x.toUpperCase()))}</span><span>·</span><span>${escapeHtml(String(c.variationMode||'mixed').replaceAll('_',' '))}</span></div></div><span class="reference-chip ${statusTone}">QA status: ${escapeHtml(qaLabel(c.status))}</span></div>${g.promptMs?`<p class="question-text">${escapeHtml(g.promptMs)}</p>`:''}${g.promptEn?`<p class="question-text translation">${escapeHtml(g.promptEn)}</p>`:''}<div class="reference-options">${options}</div>${answer}<div class="reference-source-analysis">${score('Correctness',scores.correctness)}${score('Uniqueness',scores.uniqueness)}${score('Difficulty',scores.difficulty)}${score('Distractor quality',scores.distractorQuality)}${score('Source alignment',scores.sourceAlignment)}${score('Clarity',scores.clarity)}</div><div class="generator-review-source"><b>Source:</b> ${escapeHtml(sourceSummary(c))}</div>${qa.notes?`<p class="muted"><b>QA note:</b> ${escapeHtml(qa.notes)}</p>`:''}${c.failureReason?`<div class="set-alert ${c.status==='rejected'||c.status==='failed'?'error':'warning'}">${escapeHtml(c.failureReason)}</div>`:''}${accepted?`<div class="set-alert success">Accepted as Question Bank ${acceptedPublished?'Published':'Draft'} ${escapeHtml(c.questionCode||'')}.</div>`:''}<div class="generator-review-card-actions">${acceptButton}${editButton}${regenerateButton}${rejectButton}</div></article>`;
   }
 
   function updateBulkButtons(){
     const count=selected.size;document.querySelector('#gr-selected-count').textContent=count?`· ${count} selected`:'';
     document.querySelector('#gr-accept-selected').disabled=!count;
+    const publishable=[...selected].some(id=>{const c=candidates.find(x=>x.itemId===id);return c?.status==='accepted'&&c?.questionVersionStatus==='draft';});
+    document.querySelector('#gr-publish-selected').disabled=!publishable;
     document.querySelector('#gr-regenerate-selected').disabled=!count;
     document.querySelector('#gr-reject-selected').disabled=!count;
   }
@@ -1482,7 +1570,7 @@ async function generationReviewPage(jobId){
   async function refreshReview(){
     progress=await adminApi.generationProgress(jobId);
     candidates=(progress.candidates||[]).map(c=>({...c}));
-    for(const id of [...selected])if(!candidates.some(c=>c.itemId===id&&c.status!=='accepted'))selected.delete(id);
+    for(const id of [...selected])if(!candidates.some(c=>c.itemId===id&&!(c.status==='accepted'&&c.questionVersionStatus==='published')))selected.delete(id);
     renderList();
   }
   function showResult(message,type='success'){document.querySelector('#gr-result').innerHTML=message?`<div class="set-alert ${escapeHtml(type)}">${escapeHtml(message)}</div>`:'';}
@@ -1530,9 +1618,23 @@ async function generationReviewPage(jobId){
     showResult(failures?`${summary} ${failures}`:summary,result.failed.length?'warning':'success');
   }
 
+  async function publishSelectedDrafts(){
+    const publishable=[...selected].map(id=>candidates.find(x=>x.itemId===id)).filter(candidate=>candidate?.status==='accepted'&&candidate?.questionVersionStatus==='draft'&&candidate?.questionVersionId);
+    if(!publishable.length){showResult('Select at least one Accepted Draft to publish.','warning');return;}
+    if(!confirm(`Publish ${publishable.length} accepted Draft(s)? Normal Question Bank validation will run for every question.`))return;
+    const published=[];const failed=[];
+    for(const candidate of publishable){
+      try{await adminApi.publishQuestion(candidate.questionVersionId);published.push(candidate.questionCode||candidate.itemId);}
+      catch(error){failed.push(`${candidate.questionCode||candidate.itemId}: ${error?.message||String(error)}`);}
+    }
+    selected.clear();await refreshReview();
+    showResult(`${published.length} published, ${failed.length} failed.${failed.length?' '+failed.join(' · '):''}`,failed.length?'warning':'success');
+  }
+
   const bindings=[['#gr-search','search','input'],['#gr-subject','subjectCode','change'],['#gr-topic','topicId','change'],['#gr-difficulty','difficulty','change'],['#gr-status','qaStatus','change'],['#gr-source','sourceDocumentId','change'],['#gr-variation','variationMode','change']];
   for(const [selector,key,event] of bindings)document.querySelector(selector).addEventListener(event,e=>{filters[key]=e.target.value.trim();renderList();});
   document.querySelector('#gr-accept-selected').onclick=()=>runBulk('accept');
+  document.querySelector('#gr-publish-selected').onclick=publishSelectedDrafts;
   document.querySelector('#gr-regenerate-selected').onclick=()=>runBulk('regenerate');
   document.querySelector('#gr-reject-selected').onclick=()=>runBulk('reject');
   renderList();
@@ -1587,7 +1689,7 @@ async function simulationSetBuilderPage(setVersionId){
   let draft=await adminApi.getSimulationSet(setVersionId);
   if(String(draft.status).toLowerCase()!=='draft')return go(`/admin/sets/${setVersionId}/preview`);
   editorDirty=false;
-  const candidates=await adminApi.setCandidates({})||[];
+  const [candidates,coverage]=await Promise.all([adminApi.setCandidates({}),adminApi.questionPoolCoverage(setVersionId)]);
   let selected=(draft.questions||[]).map(q=>({...q}));
   const filters={search:'',subjectId:'',difficulty:''};
 
@@ -1599,6 +1701,7 @@ async function simulationSetBuilderPage(setVersionId){
     <div class="set-readonly-note">Publication requires exactly 100 questions and a 90-minute duration. Difficulty mix is QA guidance only.</div>
     <div id="set-message" class="set-builder-message" aria-live="polite"></div>
   </section>
+  <section class="card"><div class="set-total"><div><span class="eyebrow">Milestone 3E</span><h2>Coverage Assistant</h2></div><div class="generator-actions"><button id="set-suggest" class="btn ghost">Suggest Published Questions</button>${(coverage.subjects||[]).some(r=>Number(r.poolShortage)>0)?'<a class="btn ghost" href="/admin/generator/coverage" data-link>Generate Pool Gaps</a>':''}</div></div><div class="table-wrap"><table class="set-quota-table"><thead><tr><th>Subject</th><th>Required</th><th>Selected</th><th>Published Available</th><th>Pool Shortage</th></tr></thead><tbody>${(coverage.subjects||[]).map(r=>`<tr class="${Number(r.poolShortage)>0?'shortage':''}"><td><b>${escapeHtml(r.subjectName)}</b></td><td>${Number(r.required)}</td><td>${Number(r.selected)}</td><td>${Number(r.publishedAvailable)}</td><td>${Number(r.poolShortage)}</td></tr>`).join('')}</tbody></table></div><div id="set-suggestion-preview" style="margin-top:14px"></div></section>
   <div class="set-builder-layout">
     <div class="set-builder-panel">
       <section class="card">
@@ -1634,6 +1737,17 @@ async function simulationSetBuilderPage(setVersionId){
   function quotaFor(code){return (draft.quotas||[]).find(q=>q.subjectCode===code);}
   function currentSummary(){return summarizeSetComposition(selected);}
   function markDirty(){editorDirty=true;document.querySelector('#set-publish').disabled=true;}
+  let suggestedQuestions=[];
+  function renderSuggestionPreview(){
+    const box=document.querySelector('#set-suggestion-preview');if(!box)return;
+    if(!suggestedQuestions.length){box.innerHTML='<p class="muted small">Suggestions use Published Question Bank versions only. Nothing is saved automatically.</p>';return;}
+    box.innerHTML=`<div class="reference-notice neutral"><b>${suggestedQuestions.length} Published suggestions.</b> Review them, then Apply Suggestions. Normal Save Draft / Validate / Publish is still required.</div><div class="set-question-list">${suggestedQuestions.map(q=>`<article class="set-question-row"><div class="set-question-code">${escapeHtml(q.questionCode)} · ${escapeHtml(q.subjectName)}</div><div class="set-question-meta"><span>${escapeHtml(q.topicName||'No topic')}</span><span>${escapeHtml(q.difficulty||'medium')}</span></div><p class="set-question-preview">${escapeHtml(q.promptPreview||'[Question]')}</p></article>`).join('')}</div><div class="generator-actions" style="margin-top:10px"><button id="set-apply-suggestions" class="btn primary">Apply Suggestions</button></div>`;
+    document.querySelector('#set-apply-suggestions').onclick=()=>{
+      const quotas=Object.fromEntries((draft.quotas||[]).map(q=>[q.subjectCode,Number(q.required||0)]));
+      selected=applySetSuggestions(selected,suggestedQuestions,quotas);
+      suggestedQuestions=[];markDirty();renderSuggestionPreview();renderAll();showSetMessage('Suggestions applied locally. Save Draft when ready.','success');
+    };
+  }
 
   function renderQuota(){
     const summary=currentSummary();
@@ -1684,6 +1798,14 @@ async function simulationSetBuilderPage(setVersionId){
     }));
   }
   function renderAll(){renderQuota();renderAvailable();renderSelected();}
+
+  document.querySelector('#set-suggest').addEventListener('click',async e=>{
+    const btn=e.currentTarget;btn.disabled=true;showSetMessage('');
+    try{suggestedQuestions=await adminApi.setSuggestions(setVersionId)||[];renderSuggestionPreview();if(!suggestedQuestions.length)showSetMessage('No additional Published questions are needed or available for the remaining quotas.','warning');}
+    catch(err){showSetMessage(err.message||'Unable to load Published suggestions.');}
+    finally{btn.disabled=false;}
+  });
+  renderSuggestionPreview();
 
   document.querySelector('#set-search').addEventListener('input',e=>{filters.search=e.target.value.trim();renderAvailable();});
   document.querySelector('#set-subject').addEventListener('change',e=>{filters.subjectId=e.target.value;renderAvailable();});
@@ -1998,7 +2120,7 @@ function studentModal(){const wrap=document.createElement('div');wrap.className=
 async function studentDetail(userId){if(!await requireProfile('admin'))return;loading();const d=await adminApi.studentHistory(userId);shell(`<div class="page-head"><div><span class="eyebrow">Student</span><h1>${escapeHtml(d.profile.displayName)}</h1><p>${escapeHtml(d.profile.email)} · ${d.profile.active?'Active':'Inactive'} · ${escapeHtml(d.profile.schoolYear||'')}</p></div></div><section class="stats"><div class="stat"><b>${d.summary.totalAttempts}</b><span>Attempts</span></div><div class="stat"><b>${pct(d.summary.bestPercentage)}</b><span>Best</span></div><div class="stat"><b>${pct(d.summary.averagePercentage)}</b><span>Average</span></div><div class="stat"><b>${pct(d.summary.latestPercentage)}</b><span>Latest</span></div></section><section class="card"><h2>Subject Performance</h2><div class="subject-grid">${(d.subjectPerformance||[]).map(s=>`<div class="stat"><b>${pct(s.percentage)}</b><span>${escapeHtml(s.name)}</span></div>`).join('')}</div></section><section class="card"><h2>Attempt History</h2>${adminHistoryTable(d.attempts||[])}</section>`,'admin');}
 function adminHistoryTable(rows){if(!rows.length)return'<p class="muted">No completed attempts yet.</p>';return`<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'')}</td><td>${formatDuration(r.elapsedSeconds)}</td><td>${date(r.submittedAt)}</td><td><a href="/admin/review/${r.attemptId}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`;}
 
-async function render(){clearInterval(quizTimer);try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/references')return referenceLibraryPage();if(/^\/admin\/references\/[^/]+$/.test(p))return referenceDocumentPage(p.split('/')[3]);if(p==='/admin/ai')return go('/admin/generator');if(p==='/admin/generator')return generationJobsPage();if(p==='/admin/generator/new')return generationJobNewPage();if(/^\/admin\/generator\/[^/]+\/review$/.test(p))return generationReviewPage(p.split('/')[3]);if(/^\/admin\/generator\/[^/]+$/.test(p))return generationJobPage(p.split('/')[3]);if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return simulationSetsPage();if(p==='/admin/sets/new')return simulationSetNewPage();if(/^\/admin\/sets\/[^/]+\/edit$/.test(p))return simulationSetBuilderPage(p.split('/')[3]);if(/^\/admin\/sets\/[^/]+\/preview$/.test(p))return simulationSetPreviewPage(p.split('/')[3]);if(p==='/admin/results')return adminPlaceholder('Results');if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
+async function render(){clearInterval(quizTimer);try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/references')return referenceLibraryPage();if(/^\/admin\/references\/[^/]+$/.test(p))return referenceDocumentPage(p.split('/')[3]);if(p==='/admin/ai')return go('/admin/generator');if(p==='/admin/generator')return generationJobsPage();if(p==='/admin/generator/coverage')return generationCoveragePage();if(p==='/admin/generator/new')return generationJobNewPage();if(/^\/admin\/generator\/[^/]+\/review$/.test(p))return generationReviewPage(p.split('/')[3]);if(/^\/admin\/generator\/[^/]+$/.test(p))return generationJobPage(p.split('/')[3]);if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return simulationSetsPage();if(p==='/admin/sets/new')return simulationSetNewPage();if(/^\/admin\/sets\/[^/]+\/edit$/.test(p))return simulationSetBuilderPage(p.split('/')[3]);if(/^\/admin\/sets\/[^/]+\/preview$/.test(p))return simulationSetPreviewPage(p.split('/')[3]);if(p==='/admin/results')return adminPlaceholder('Results');if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
 window.addEventListener('beforeunload',e=>{if(editorDirty){e.preventDefault();e.returnValue='';}});window.addEventListener('hashchange', render);render();})();
 </script>
 </body>
