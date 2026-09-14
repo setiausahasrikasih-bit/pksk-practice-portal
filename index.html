@@ -51,6 +51,27 @@ body[data-role="admin"] .card{border-color:#e5e8f0;box-shadow:0 10px 24px rgba(5
 body[data-role="admin"] .btn.primary{background:linear-gradient(135deg,#6754b8,#836dcf)}
 
 </style>
+
+<style>
+.admin-toolbar{display:flex;gap:.75rem;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.admin-toolbar label{min-width:160px;flex:1}.admin-toolbar input,.admin-toolbar select{width:100%}
+select,textarea{font:inherit;border:1px solid var(--border);border-radius:10px;padding:12px 13px;background:#fff;color:var(--text)}
+.question-preview-cell{max-width:520px;min-width:280px;white-space:normal;line-height:1.45}.qb-actions{white-space:nowrap}
+.status-pill{display:inline-flex;padding:.25rem .55rem;border-radius:999px;font-weight:750;font-size:.78rem}.status-pill.draft{background:#fff4c8}.status-pill.published{background:#dff7e7}.status-pill.archived{background:#ececf2}
+.question-bank-table{min-width:1040px}#qb-count{margin:10px 0 4px}
+</style>
+
+<style>
+.question-editor-grid{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:18px;align-items:start}.editor-side{position:sticky;top:88px}.editor-actions{display:grid;gap:10px;margin-top:18px}.editor-meta{display:grid;grid-template-columns:1.2fr 1.2fr .7fr;gap:12px}.editor-section{padding-top:18px;margin-top:18px;border-top:1px solid var(--border)}.editor-section textarea{width:100%;resize:vertical;min-height:82px}.option-editor{border:1px solid var(--border);border-radius:14px;padding:16px;margin:12px 0;background:#fbfbfe}.option-editor-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.option-editor h3{margin:0}.correct-choice{display:flex;grid-template-columns:auto 1fr;align-items:center;gap:7px;font-size:.9rem}.correct-choice input{width:auto}.media-slot{margin-top:10px}.media-placeholder{margin-top:6px;border:1px dashed #ccd2df;border-radius:10px;padding:10px;color:var(--muted);font-size:.85rem;background:#fff}.validation-list{margin:0 0 14px;padding:12px 16px 12px 34px;background:#fff0f0;border-radius:10px}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}.editor-language-note{border-radius:12px;background:#f7f7fb}@media(max-width:900px){.question-editor-grid{grid-template-columns:1fr}.editor-side{position:static}.editor-meta{grid-template-columns:1fr}}
+</style>
+
+<style>
+.media-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.file-button{display:inline-flex!important;align-items:center;cursor:pointer}.file-button input{display:none}.media-preview,.question-media,.option-media{display:block;max-width:100%;height:auto;border-radius:12px;margin-top:10px}.media-preview{max-height:260px;object-fit:contain;border:1px solid var(--border);background:#fff}.question-media{max-height:420px;margin:14px auto;object-fit:contain}.option-media{max-height:220px;object-fit:contain}.media-loading{min-height:48px;background:#f1f3f7}.media-error{min-height:48px;background:#fff0f0}.option-content{min-width:0;flex:1}
+</style>
+
+<style>
+.preview-stage{display:grid;place-items:center;padding:18px 0 40px}.phone-preview{width:min(430px,100%);border:10px solid #202536;border-radius:28px;background:#f7f8fb;overflow:hidden;box-shadow:0 24px 60px rgba(34,42,65,.18)}.preview-phone-top{display:flex;justify-content:space-between;padding:12px 15px;background:#202536;color:#fff;font-weight:800;font-size:.85rem}.preview-question{border:0;border-radius:0;box-shadow:none;min-height:520px}.preview-option{cursor:default}.preview-actions{display:flex;gap:8px;flex-wrap:wrap}
+</style>
 </head>
 <body>
 <div id="app"></div>
@@ -118,7 +139,105 @@ function escapeHtml(value = '') {
   return String(value).replace(/[&<>'"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[c]);
 }
 
-window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml };
+const SUBJECT_LABELS = {
+  INSANIAH: 'Kecerdasan Insaniah',
+  MATH: 'Mathematics',
+  SCI: 'Science',
+  EN: 'English',
+  BM: 'Bahasa Melayu',
+  IQ: 'IQ / Logical Reasoning',
+  GK: 'General Knowledge'
+};
+
+function subjectLanguageMode(subjectCode) {
+  if (subjectCode === 'EN') return 'en';
+  if (subjectCode === 'BM') return 'ms';
+  return 'bilingual';
+}
+
+function blankQuestionDraft() {
+  return {
+    questionId: null,
+    versionId: null,
+    versionNo: 1,
+    status: 'draft',
+    subjectId: '',
+    subjectCode: '',
+    topicId: null,
+    difficulty: 'medium',
+    promptMs: '',
+    promptEn: '',
+    promptImagePath: null,
+    options: ['A', 'B', 'C', 'D'].map(key => ({
+      key, textMs: '', textEn: '', imagePath: null
+    })),
+    correctKey: null,
+    explanationMs: '',
+    explanationEn: '',
+    explanationImagePath: null
+  };
+}
+
+function isExactAbcd(options) {
+  return Array.isArray(options)
+    && options.length === 4
+    && options.map(x => x.key).join(',') === 'A,B,C,D';
+}
+
+function hasOptionContent(o) {
+  return Boolean(
+    String(o?.textMs || '').trim()
+    || String(o?.textEn || '').trim()
+    || o?.imagePath
+  );
+}
+
+function validateQuestionDraft(draft, mode = 'draft') {
+  const errors = [];
+  if (!draft?.subjectId) errors.push('Subject is required.');
+  if (mode !== 'publish') return errors;
+
+  const label = SUBJECT_LABELS[draft.subjectCode] || 'this subject';
+  const lang = subjectLanguageMode(draft.subjectCode);
+
+  if (!isExactAbcd(draft.options)) {
+    errors.push('Exactly four options A, B, C and D are required.');
+    return errors;
+  }
+
+  if ((lang === 'ms' || lang === 'bilingual') && !String(draft.promptMs || '').trim()) {
+    errors.push(`Malay prompt is required for ${label}.`);
+  }
+  if ((lang === 'en' || lang === 'bilingual') && !String(draft.promptEn || '').trim()) {
+    errors.push(`English prompt is required for ${label}.`);
+  }
+
+  draft.options.forEach(o => {
+    if (!hasOptionContent(o)) errors.push(`Option ${o.key} is empty.`);
+    if (String(o.textMs || '').trim() || String(o.textEn || '').trim()) {
+      if ((lang === 'ms' || lang === 'bilingual') && !String(o.textMs || '').trim()) {
+        errors.push(`Malay text is required for option ${o.key}.`);
+      }
+      if ((lang === 'en' || lang === 'bilingual') && !String(o.textEn || '').trim()) {
+        errors.push(`English text is required for option ${o.key}.`);
+      }
+    }
+  });
+
+  if (!['A', 'B', 'C', 'D'].includes(draft.correctKey)) {
+    errors.push('Select the correct answer.');
+  }
+  if ((lang === 'ms' || lang === 'bilingual') && !String(draft.explanationMs || '').trim()) {
+    errors.push(`Malay explanation is required for ${label}.`);
+  }
+  if ((lang === 'en' || lang === 'bilingual') && !String(draft.explanationEn || '').trim()) {
+    errors.push(`English explanation is required for ${label}.`);
+  }
+
+  return [...new Set(errors)];
+}
+
+window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd };
 </script>
 <script>(() => {
   const SUPABASE_URL = 'https://wwjtpfexvqaipvvupsai.supabase.co';
@@ -193,10 +312,11 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
   async function authedJson(path, options = {}) {
     const session = await validSession();
     if (!session) throw new Error('Authentication required. Please log in again.');
+    const bodyIsBlob = typeof Blob !== 'undefined' && options.body instanceof Blob;
     const headers = {
       apikey: SUPABASE_PUBLISHABLE_KEY,
       Authorization: `Bearer ${session.access_token}`,
-      ...(options.body ? { 'content-type': 'application/json' } : {}),
+      ...(options.body && !bodyIsBlob ? { 'content-type': 'application/json' } : {}),
       ...(options.headers || {}),
     };
     try {
@@ -288,6 +408,8 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
     review: (attemptId) => rpc('get_attempt_review', { p_attempt_id: attemptId }),
   };
 
+  const encodeStoragePath = (path='') => String(path).split('/').map(encodeURIComponent).join('/');
+
   const adminApi = {
     summary: () => rpc('admin_dashboard_summary'),
     studentHistory: (userId) => rpc('admin_get_student_history', { p_user_id: userId }),
@@ -296,6 +418,43 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
     createStudent: (body) => invoke('admin-create-student', body),
     resetPassword: (userId, temporaryPassword) => invoke('admin-reset-student-password', { userId, temporaryPassword }),
     setActive: (userId, active) => invoke('admin-set-student-active', { userId, active }),
+    questionBank: (filters = {}) => rpc('admin_question_bank_list', {
+      p_subject_id: filters.subjectId || null,
+      p_status: filters.status || null,
+      p_difficulty: filters.difficulty || null,
+      p_search: filters.search || null,
+    }),
+    questionEditor: (questionId, versionId = null) => rpc('admin_get_question_editor', {
+      p_question_id: questionId,
+      p_version_id: versionId,
+    }),
+    saveQuestionDraft: (payload) => rpc('admin_save_question_draft', { p_payload: payload }),
+    duplicateQuestion: (versionId) => rpc('admin_duplicate_question', { p_question_version_id: versionId }),
+    createQuestionRevision: (versionId) => rpc('admin_create_question_revision', { p_question_version_id: versionId }),
+    publishQuestion: (versionId) => rpc('admin_publish_question', { p_question_version_id: versionId }),
+    archiveQuestion: (questionId) => rpc('admin_archive_question', { p_question_id: questionId }),
+    questionPreview: (versionId) => rpc('admin_question_preview', { p_question_version_id: versionId }),
+    uploadQuestionMedia: (path, blob) => authedJson(`/storage/v1/object/question-media/${encodeStoragePath(path)}`, {
+      method: 'POST',
+      body: blob,
+      headers: { 'Content-Type': blob.type || 'application/octet-stream', 'x-upsert': 'false' },
+    }),
+    mediaUrl: async (path) => {
+      if (!path) return '';
+      const data = await authedJson(`/storage/v1/object/sign/question-media/${encodeStoragePath(path)}`, {
+        method: 'POST',
+        body: JSON.stringify({ expiresIn: 3600 }),
+      });
+      const signed = data?.signedURL || data?.signedUrl || data?.signed_url;
+      if (!signed) throw new Error('Unable to create a secure image link.');
+      if (/^https?:/i.test(signed)) return signed;
+      return `${SUPABASE_URL}/storage/v1${signed.startsWith('/') ? signed : `/${signed}`}`;
+    },
+    taxonomy: async () => {
+      const subjects = await authedJson('/rest/v1/subjects?select=id,code,name,display_order&is_active=eq.true&order=display_order', { method: 'GET' });
+      const topics = await authedJson('/rest/v1/topics?select=id,subject_id,code,name&is_active=eq.true&order=name', { method: 'GET' });
+      return { subjects, topics };
+    },
   };
 
   window.PKSK_API = { auth, studentApi, adminApi };
@@ -303,24 +462,31 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, languageB
 </script>
 <script>(() => {
 const { auth, studentApi, adminApi } = window.PKSK_API;
-const { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered } = window.PKSK_CORE;
+const { formatDuration, navigatorState, simulationAction, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd } = window.PKSK_CORE;
 
 const root = document.querySelector('#app');
 let profile = null;
 let quizTimer = null;
+let editorDirty = false;
 
-const ROUTES = ['/student/history', '/student/quiz/', '/student/review/', '/admin/students'];
+const ROUTES = ['/student/history', '/student/quiz/', '/student/review/', '/admin/students', '/admin/questions'];
 void ROUTES;
 
 const pct = (v) => v == null ? '—' : `${Number(v).toFixed(1)}%`;
 const date = (v) => v ? new Date(v).toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
-const go = (path) => { const next = `#${path}`; if (location.hash === next) render(); else location.hash = next; };
+const go = (path) => {
+  const current = location.hash.slice(1) || '/';
+  const editing = current === '/admin/questions/new' || /^\/admin\/questions\/[^/]+\/edit$/.test(current);
+  if (editing && editorDirty && current !== path && !confirm('You have unsaved changes. Leave this page?')) return;
+  const next = `#${path}`;
+  if (location.hash === next) render(); else location.hash = next;
+};
 const button = (label, cls='primary', attrs='') => `<button class="btn ${cls}" ${attrs}>${escapeHtml(label)}</button>`;
 
 function shell(content, role = profile?.role) {
   document.body.dataset.role = role || '';
   const nav = role === 'admin'
-    ? `<a href="/admin" data-link>Dashboard</a><a href="/admin/students" data-link>Students</a>`
+    ? `<a href="/admin" data-link>Dashboard</a><a href="/admin/students" data-link>Students</a><a href="/admin/questions" data-link>Question Bank</a><a href="/admin/sets" data-link>Simulation Sets</a><a href="/admin/results" data-link>Results</a>`
     : `<a href="/student" data-link>Dashboard</a><a href="/student/history" data-link>My History</a><a href="/student/profile" data-link>Profile</a>`;
   root.innerHTML = `<header class="topbar"><div class="brand"><span class="brandmark">P</span><span>PKSK Practice</span></div><nav>${nav}</nav><button id="logout" class="btn ghost">Logout</button></header><main class="page">${content}</main>`;
   document.querySelector('#logout')?.addEventListener('click', async () => { await auth.signOut(); profile = null; go('/'); });
@@ -329,6 +495,44 @@ function shell(content, role = profile?.role) {
 function bindLinks() { document.querySelectorAll('[data-link]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); go(a.getAttribute('href')); })); }
 function loading(text='Loading…') { root.innerHTML = `<main class="center"><div class="loader"></div><p>${escapeHtml(text)}</p></main>`; }
 function errorView(err) { root.innerHTML = `<main class="center"><div class="card error"><h2>Something went wrong</h2><p>${escapeHtml(err?.message || String(err))}</p><button class="btn primary" onclick="location.reload()">Try Again</button></div></main>`; }
+
+const IMAGE_TYPES = new Set(['image/jpeg','image/png','image/webp']);
+const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 1600;
+const WEBP_QUALITY = 0.82;
+const mediaUrlCache = new Map();
+
+async function compressQuestionImage(file){
+  if(!file || !IMAGE_TYPES.has(file.type)) throw new Error('Please choose a JPG, PNG or WebP image.');
+  if(file.size > MAX_SOURCE_BYTES) throw new Error('Image is too large. Maximum source size is 8 MB.');
+  if(typeof createImageBitmap !== 'function') return {blob:file,extension:file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg'};
+  try{
+    const bitmap=await createImageBitmap(file);
+    const scale=Math.min(1,MAX_IMAGE_DIMENSION/Math.max(bitmap.width,bitmap.height));
+    const width=Math.max(1,Math.round(bitmap.width*scale));
+    const height=Math.max(1,Math.round(bitmap.height*scale));
+    const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+    const ctx=canvas.getContext('2d');ctx.drawImage(bitmap,0,0,width,height);bitmap.close?.();
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',WEBP_QUALITY));
+    if(blob) return {blob,extension:'webp'};
+  }catch(err){console.warn('Image compression fallback:',err);}
+  return {blob:file,extension:file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg'};
+}
+
+async function secureMediaUrl(path){
+  if(!path)return '';
+  if(mediaUrlCache.has(path))return mediaUrlCache.get(path);
+  const url=await adminApi.mediaUrl(path);mediaUrlCache.set(path,url);return url;
+}
+
+async function hydratePrivateImages(scope=document){
+  const images=[...scope.querySelectorAll('img[data-media-path]')];
+  await Promise.all(images.map(async img=>{
+    const path=img.dataset.mediaPath;if(!path)return;
+    try{img.src=await secureMediaUrl(path);img.classList.remove('media-loading');}
+    catch(err){img.alt='Image unavailable';img.classList.add('media-error');}
+  }));
+}
 
 async function requireProfile(role) {
   const session = await auth.session();
@@ -365,15 +569,23 @@ function historyTable(rows) { if(!rows.length) return `<p class="muted">No compl
 async function studentHistory() { if(!await requireProfile('student'))return; loading(); const rows=await studentApi.history(); shell(`<div class="page-head"><div><span class="eyebrow">Progress</span><h1>My History</h1></div></div><section class="card">${historyTable(rows||[])}</section>`); }
 async function studentProfile() { if(!await requireProfile('student'))return; shell(`<div class="page-head"><div><span class="eyebrow">Account</span><h1>My Profile</h1></div></div><section class="card profile-card"><dl><dt>Name</dt><dd>${escapeHtml(profile.display_name)}</dd><dt>School Year</dt><dd>${escapeHtml(profile.school_year||'—')}</dd><dt>Member Since</dt><dd>${date(profile.created_at)}</dd></dl><h3>Change Password <span class="muted small">(optional)</span></h3><form id="password-form"><label>New password<input id="new-password" type="password" minlength="6" required></label><div id="password-msg" aria-live="polite"></div>${button('Update Password','primary','type="submit"')}</form></section>`); document.querySelector('#password-form').addEventListener('submit',async e=>{e.preventDefault();const msg=document.querySelector('#password-msg');try{await auth.changePassword(document.querySelector('#new-password').value);msg.textContent='Password updated.';}catch(err){msg.textContent=err.message;}}); }
 
-function renderQuestion(q) { const blocks=languageBlocks(q).map((b,i)=>`<p class="question-text ${i?'translation':''}" lang="${b.lang}">${escapeHtml(b.text)}</p>`).join(''); const img=q.prompt_image_path?`<div class="question-image"><img src="${escapeHtml(q.prompt_image_path)}" alt="Question diagram"></div>`:''; let answer=''; if(q.question_type==='mcq_single') answer=`<div class="options">${(q.options||[]).map(o=>`<button class="option ${q.saved_answer?.selected_option_id===o.id?'selected':''}" data-option="${o.id}"><span class="option-key">${escapeHtml(o.key)}</span><span>${optionLanguageBlocks(q.language_mode,o).map((b,i)=>`<span class="option-line ${i?'translation':''}" lang="${b.lang}">${escapeHtml(b.text)}</span>`).join('')}</span></button>`).join('')}</div>`; else if(q.question_type==='numeric') answer=`<label class="answer-input">Your answer<input id="free-answer" type="number" inputmode="decimal" value="${escapeHtml(q.saved_answer?.answer_numeric??'')}"></label>`; else answer=`<label class="answer-input">Your answer<input id="free-answer" type="text" value="${escapeHtml(q.saved_answer?.answer_text??'')}"></label>`; return `${blocks}${img}${answer}`; }
+function studentQuestionMarkup(q,{preview=false}={}) {
+  const blocks=languageBlocks(q).map((b,i)=>`<p class="question-text ${i?'translation':''}" lang="${b.lang}">${escapeHtml(b.text)}</p>`).join('');
+  const img=q.prompt_image_path?`<div class="question-image"><img class="question-media media-loading" data-media-path="${escapeHtml(q.prompt_image_path)}" alt="Question diagram"></div>`:'';
+  const options=`<div class="options">${(q.options||[]).map(o=>`<button type="button" class="option ${!preview&&q.saved_answer?.selected_option_id===o.id?'selected':''} ${preview?'preview-option':''}" ${preview?'aria-disabled="true"':`data-option="${escapeHtml(o.id||'')}"`}><span class="option-key">${escapeHtml(o.key)}</span><span class="option-content">${optionLanguageBlocks(q.language_mode,o).map((b,i)=>`<span class="option-line ${i?'translation':''}" lang="${b.lang}">${escapeHtml(b.text)}</span>`).join('')}${o.image_path?`<img class="option-media media-loading" data-media-path="${escapeHtml(o.image_path)}" alt="Option ${escapeHtml(o.key)} image">`:''}</span></button>`).join('')}</div>`;
+  return `${blocks}${img}${options}`;
+}
+function renderQuestion(q){return studentQuestionMarkup(q,{preview:false});}
 
 async function quizPage(attemptId) {
   if(!await requireProfile('student'))return; loading('Loading simulation…');
   let payload=await studentApi.payload(attemptId); if(payload.status!=='in_progress') return go(`/student/results/${attemptId}`);
+  const legacyQuestion=(payload.questions||[]).find(q=>q.question_type!=='mcq_single'||!isExactAbcd((q.options||[]).map(o=>({key:o.key}))));
+  if(legacyQuestion) throw new Error('This simulation contains a legacy question format. Please return to the dashboard and start the current version.');
   let index=0, saving=false, autoSubmitted=false;
   const draw=()=>{ const q=payload.questions[index]; const unanswered=countUnanswered(payload.questions); root.innerHTML=`<header class="exam-top"><div><b>${escapeHtml(payload.title)}</b><span>Question ${index+1}/${payload.question_count}</span></div><div id="timer" class="timer"></div></header><main class="exam-page"><section class="question-panel"><div class="question-meta"><span class="subject-pill">${escapeHtml(q.subject_name)}</span><span>${escapeHtml(q.topic_name||'')}</span></div>${renderQuestion(q)}<div id="save-status" class="save-status" aria-live="polite"></div><div class="exam-actions">${button('Previous','ghost',index===0?'disabled':'')}<button id="flag" class="btn ${q.saved_answer?.flagged?'flag-on':'ghost'}">${q.saved_answer?.flagged?'★ Flagged':'☆ Flag for Review'}</button>${button(index===payload.questions.length-1?'Review / Submit':'Next','primary')}</div></section><aside class="navigator"><h3>Jump to Question</h3><div class="nav-grid">${payload.questions.map((x,i)=>`<button class="nav-q ${navigatorState({current:i===index,answered:isAnswered(x),flagged:x.saved_answer?.flagged})}" data-i="${i}" aria-label="Question ${i+1}${isAnswered(x)?', answered':', unanswered'}${x.saved_answer?.flagged?', flagged':''}">${i+1}</button>`).join('')}</div><div class="legend"><span>● Current</span><span>● Answered</span><span>● Flagged</span><span>● Unanswered</span></div><p class="muted">${unanswered} unanswered</p></aside></main>`;
-    const actions=document.querySelector('.exam-actions').querySelectorAll('button'); actions[0].onclick=()=>{if(index>0){index--;draw();}}; actions[1].onclick=async()=>{q.saved_answer={...(q.saved_answer||{}),flagged:!q.saved_answer?.flagged}; await saveQ(q); draw();}; actions[2].onclick=()=>{if(index<payload.questions.length-1){index++;draw();}else submitFlow();}; document.querySelectorAll('.nav-q').forEach(b=>b.onclick=()=>{index=Number(b.dataset.i);draw();}); document.querySelectorAll('.option').forEach(b=>b.onclick=async()=>{q.saved_answer={...(q.saved_answer||{}),selected_option_id:b.dataset.option}; draw(); await saveQ(q);}); const input=document.querySelector('#free-answer'); if(input){let t; input.addEventListener('input',()=>{clearTimeout(t); const v=input.value; if(q.question_type==='numeric')q.saved_answer={...(q.saved_answer||{}),answer_numeric:v===''?null:Number(v)}; else q.saved_answer={...(q.saved_answer||{}),answer_text:v}; t=setTimeout(()=>saveQ(q),400);}); input.addEventListener('blur',()=>saveQ(q));} updateTimer(); };
-  async function saveQ(q){ if(saving)return; saving=true; const el=document.querySelector('#save-status'); if(el)el.textContent='Saving…'; try{await studentApi.save({attemptQuestionId:q.attempt_question_id,selectedOptionId:q.saved_answer?.selected_option_id,answerNumeric:q.saved_answer?.answer_numeric,answerText:q.saved_answer?.answer_text,flagged:!!q.saved_answer?.flagged}); if(el)el.textContent='Saved';}catch(e){if(el)el.textContent='Save failed — please try again.';}finally{saving=false;}}
+    const actions=document.querySelector('.exam-actions').querySelectorAll('button'); actions[0].onclick=()=>{if(index>0){index--;draw();}}; actions[1].onclick=async()=>{q.saved_answer={...(q.saved_answer||{}),flagged:!q.saved_answer?.flagged}; await saveQ(q); draw();}; actions[2].onclick=()=>{if(index<payload.questions.length-1){index++;draw();}else submitFlow();}; document.querySelectorAll('.nav-q').forEach(b=>b.onclick=()=>{index=Number(b.dataset.i);draw();}); document.querySelectorAll('.option').forEach(b=>b.onclick=async()=>{q.saved_answer={...(q.saved_answer||{}),selected_option_id:b.dataset.option}; draw(); await saveQ(q);}); hydratePrivateImages(root).catch(()=>{}); updateTimer(); };
+  async function saveQ(q){ if(saving)return; saving=true; const el=document.querySelector('#save-status'); if(el)el.textContent='Saving…'; try{await studentApi.save({attemptQuestionId:q.attempt_question_id,selectedOptionId:q.saved_answer?.selected_option_id,flagged:!!q.saved_answer?.flagged}); if(el)el.textContent='Saved';}catch(e){if(el)el.textContent='Save failed — please try again.';}finally{saving=false;}}
   async function submitFlow(){const n=countUnanswered(payload.questions);if(n&&!confirm(`You still have ${n} unanswered questions.\n\nPress OK to submit anyway, or Cancel to return.`))return;await finish();}
   async function finish(){if(autoSubmitted)return;autoSubmitted=true;clearInterval(quizTimer);try{await studentApi.submit(attemptId);go(`/student/results/${attemptId}`);}catch(e){autoSubmitted=false;alert(e.message);}}
   function updateTimer(){const el=document.querySelector('#timer');if(!el)return;const r=remainingSeconds(payload.expires_at);el.textContent=`${String(Math.floor(r/60)).padStart(2,'0')}:${String(r%60).padStart(2,'0')}`;if(r<=0)finish();}
@@ -385,13 +597,236 @@ async function reviewPage(attemptId, admin=false) { if(!await requireProfile(adm
 async function resultsPage(id){return reviewPage(id,false);}
 
 async function adminDashboard(){if(!await requireProfile('admin'))return;loading();const s=await adminApi.summary();shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>Dashboard</h1></div><a class="btn primary" href="/admin/students" data-link>Manage Students</a></div><section class="stats"><div class="stat"><b>${s.totalStudents}</b><span>Total Students</span></div><div class="stat"><b>${s.activeToday}</b><span>Active Today</span></div><div class="stat"><b>${s.activeThisWeek}</b><span>Active This Week</span></div><div class="stat"><b>${s.totalAttempts}</b><span>Total Attempts</span></div><div class="stat"><b>${pct(s.averageScore)}</b><span>Average Score</span></div></section><section class="card"><h2>Monitoring</h2><p>Students inactive for 14 days: <b>${s.inactive14Days}</b></p></section>`,'admin');}
+async function adminPlaceholder(title){if(!await requireProfile('admin'))return;shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>${escapeHtml(title)}</h1></div></div><section class="card"><h2>Coming in the next Milestone 2 stage</h2><p>This area is not active yet.</p></section>`,'admin');}
+async function questionBankPage(){
+  if(!await requireProfile('admin'))return;
+  loading('Loading Question Bank…');
+  const taxonomy=await adminApi.taxonomy();
+  const filters={subjectId:'',status:'',difficulty:'',search:''};
+  const subjectOptions=(taxonomy.subjects||[]).map(s=>`<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)}</option>`).join('');
+  shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>Question Bank</h1><p class="muted">Create and manage A–D multiple-choice questions.</p></div><a class="btn primary" href="/admin/questions/new" data-link>Add Question</a></div>
+  <section class="card"><div class="admin-toolbar">
+    <label>Search<input id="qb-search" type="search" placeholder="Search question text"></label>
+    <label>Subject<select id="qb-subject"><option value="">All subjects</option>${subjectOptions}</select></label>
+    <label>Status<select id="qb-status"><option value="">All statuses</option><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
+    <label>Difficulty<select id="qb-difficulty"><option value="">All difficulties</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></label>
+  </div><div id="qb-count" class="muted small"></div><div class="table-wrap"><table class="question-bank-table"><thead><tr><th>Subject</th><th>Question</th><th>Topic</th><th>Difficulty</th><th>Status</th><th>Version</th><th>Updated</th><th>Actions</th></tr></thead><tbody id="qb-body"><tr><td colspan="8">Loading…</td></tr></tbody></table></div></section>`,'admin');
+
+  const body=document.querySelector('#qb-body');
+  const count=document.querySelector('#qb-count');
+  async function loadRows(){
+    body.innerHTML='<tr><td colspan="8">Loading…</td></tr>';
+    try{
+      const rows=await adminApi.questionBank(filters)||[];
+      count.textContent=`${rows.length} question${rows.length===1?'':'s'}`;
+      body.innerHTML=rows.length?rows.map(row=>{
+        const status=String(row.status||'draft').toLowerCase();
+        const editLabel=status==='published'?'Create revision':'Edit';
+        const archive=status==='archived'?'':` · <button class="link-btn qb-action" data-action="archive" data-question="${row.questionId}" data-version="${row.versionId}">Archive</button>`;
+        return `<tr><td><b>${escapeHtml(row.subjectName||'')}</b></td><td class="question-preview-cell">${escapeHtml(row.promptPreview||'[Draft question]')}</td><td>${escapeHtml(row.topicName||'—')}</td><td>${escapeHtml(String(row.difficulty||'medium').replace(/^./,c=>c.toUpperCase()))}</td><td><span class="status-pill ${escapeHtml(status)}">${escapeHtml(status.replace(/^./,c=>c.toUpperCase()))}</span></td><td>v${Number(row.versionNo||1)}</td><td>${date(row.updatedAt)}</td><td class="qb-actions"><a href="/admin/questions/${row.questionId}/preview" data-link>Preview</a> · <a href="/admin/questions/${row.questionId}/edit" data-link>${editLabel}</a> · <button class="link-btn qb-action" data-action="duplicate" data-question="${row.questionId}" data-version="${row.versionId}">Duplicate</button>${archive}</td></tr>`;
+      }).join(''):'<tr><td colspan="8"><span class="muted">No questions match these filters.</span></td></tr>';
+      bindLinks();
+      document.querySelectorAll('.qb-action').forEach(btn=>btn.addEventListener('click',async()=>{
+        btn.disabled=true;
+        try{
+          if(btn.dataset.action==='duplicate'){
+            const created=await adminApi.duplicateQuestion(btn.dataset.version);
+            go(`/admin/questions/${created.questionId}/edit`);
+            return;
+          }
+          if(btn.dataset.action==='archive'){
+            if(!confirm('Archive this question? Historical attempts will be preserved.')){btn.disabled=false;return;}
+            await adminApi.archiveQuestion(btn.dataset.question);
+            await loadRows();
+          }
+        }catch(err){alert(err.message||'Unable to complete this action.');btn.disabled=false;}
+      }));
+    }catch(err){body.innerHTML=`<tr><td colspan="8" class="form-error">${escapeHtml(err.message||'Unable to load questions.')}</td></tr>`;}
+  }
+
+  let searchTimer;
+  document.querySelector('#qb-search').addEventListener('input',e=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{filters.search=e.target.value.trim();loadRows();},250);});
+  document.querySelector('#qb-subject').addEventListener('change',e=>{filters.subjectId=e.target.value;loadRows();});
+  document.querySelector('#qb-status').addEventListener('change',e=>{filters.status=e.target.value;loadRows();});
+  document.querySelector('#qb-difficulty').addEventListener('change',e=>{filters.difficulty=e.target.value;loadRows();});
+  await loadRows();
+}
+async function questionEditorPage(questionId){
+  if(!await requireProfile('admin'))return;
+  loading('Loading Question Editor…');
+  const taxonomy=await adminApi.taxonomy();
+  let draft=questionId?await adminApi.questionEditor(questionId,null):blankQuestionDraft();
+  if(draft.status==='archived') throw new Error('Archived questions cannot be edited. Duplicate the question to create a new Draft.');
+  if(draft.status==='published') draft=await adminApi.createQuestionRevision(draft.versionId);
+  editorDirty=false;
+
+  const subjectById=()=>new Map((taxonomy.subjects||[]).map(x=>[x.id,x]));
+  const currentMode=()=>subjectLanguageMode(draft.subjectCode||'');
+  const optionFor=(key)=>draft.options?.find(o=>o.key===key)||{key,textMs:'',textEn:'',imagePath:null};
+
+  function readQuestionEditorForm(){
+    const subjectId=document.querySelector('#qe-subject')?.value||draft.subjectId||'';
+    const subject=subjectById().get(subjectId);
+    const value=(id,fallback='')=>document.querySelector(id)?.value ?? fallback ?? '';
+    return {
+      ...draft,
+      subjectId,
+      subjectCode:subject?.code||draft.subjectCode||'',
+      topicId:document.querySelector('#qe-topic')?.value||null,
+      difficulty:document.querySelector('#qe-difficulty')?.value||'medium',
+      promptMs:value('#qe-prompt-ms',draft.promptMs),
+      promptEn:value('#qe-prompt-en',draft.promptEn),
+      promptImagePath:draft.promptImagePath||null,
+      options:['A','B','C','D'].map(key=>{
+        const old=optionFor(key);
+        return {key,textMs:value(`#qe-${key}-ms`,old.textMs),textEn:value(`#qe-${key}-en`,old.textEn),imagePath:old.imagePath||null};
+      }),
+      correctKey:document.querySelector('input[name="qe-correct"]:checked')?.value||null,
+      explanationMs:value('#qe-exp-ms',draft.explanationMs),
+      explanationEn:value('#qe-exp-en',draft.explanationEn),
+      explanationImagePath:draft.explanationImagePath||null
+    };
+  }
+
+  function showEditorErrors(errors=[]){
+    const box=document.querySelector('#qe-errors');
+    if(!box)return;
+    box.innerHTML=errors.length?`<ul class="validation-list">${errors.map(e=>`<li>${escapeHtml(e)}</li>`).join('')}</ul>`:'';
+  }
+
+  function languageFields(mode){
+    if(!draft.subjectId)return `<div class="empty editor-language-note">Choose a Subject to display the correct language fields.</div>`;
+    const ms=mode==='ms'||mode==='bilingual';
+    const en=mode==='en'||mode==='bilingual';
+    const prompt=[];
+    if(ms)prompt.push(`<label>Question / Soalan (Bahasa Melayu)<textarea id="qe-prompt-ms" rows="5">${escapeHtml(draft.promptMs||'')}</textarea></label>`);
+    if(en)prompt.push(`<label>Question (English)<textarea id="qe-prompt-en" rows="5">${escapeHtml(draft.promptEn||'')}</textarea></label>`);
+    return prompt.join('');
+  }
+
+  function mediaSlot(slot,path,label='Optional image'){
+    return `<div class="media-slot" data-slot="${escapeHtml(slot)}"><span class="muted small">${escapeHtml(label)}</span>${path?`<img class="media-preview media-loading" data-media-path="${escapeHtml(path)}" alt="${escapeHtml(label)}">`:''}<div class="media-controls"><label class="btn ghost file-button">${path?'Replace Image':'Upload Image'}<input class="qe-media-input" data-slot="${escapeHtml(slot)}" type="file" accept="image/jpeg,image/png,image/webp"></label>${path?`<button type="button" class="btn ghost qe-media-remove" data-slot="${escapeHtml(slot)}">Remove Image</button>`:''}</div></div>`;
+  }
+
+  function optionFields(key,mode){
+    const o=optionFor(key);const ms=mode==='ms'||mode==='bilingual';const en=mode==='en'||mode==='bilingual';
+    return `<section class="option-editor"><div class="option-editor-head"><h3>Option ${key}</h3><label class="correct-choice"><input type="radio" name="qe-correct" value="${key}" ${draft.correctKey===key?'checked':''}> Correct answer</label></div>${ms?`<label>Malay text<textarea id="qe-${key}-ms" rows="2">${escapeHtml(o.textMs||'')}</textarea></label>`:''}${en?`<label>English text<textarea id="qe-${key}-en" rows="2">${escapeHtml(o.textEn||'')}</textarea></label>`:''}${mediaSlot(`option-${key.toLowerCase()}`,o.imagePath,`Optional image for option ${key}`)}</section>`;
+  }
+
+  function explanationFields(mode){
+    const ms=mode==='ms'||mode==='bilingual';const en=mode==='en'||mode==='bilingual';
+    return `${ms?`<label>Explanation / Penerangan (Bahasa Melayu)<textarea id="qe-exp-ms" rows="4">${escapeHtml(draft.explanationMs||'')}</textarea></label>`:''}${en?`<label>Explanation (English)<textarea id="qe-exp-en" rows="4">${escapeHtml(draft.explanationEn||'')}</textarea></label>`:''}`;
+  }
+
+  function renderEditor(){
+    const mode=currentMode();
+    const subjects=(taxonomy.subjects||[]).map(x=>`<option value="${escapeHtml(x.id)}" ${x.id===draft.subjectId?'selected':''}>${escapeHtml(x.name)}</option>`).join('');
+    const topics=(taxonomy.topics||[]).filter(x=>x.subject_id===draft.subjectId).map(x=>`<option value="${escapeHtml(x.id)}" ${x.id===draft.topicId?'selected':''}>${escapeHtml(x.name)}</option>`).join('');
+    shell(`<div class="page-head"><div><span class="eyebrow">Question Bank</span><h1>${draft.questionId?`Edit Question · v${Number(draft.versionNo||1)}`:'Add Question'}</h1><p class="muted">A–D single-answer multiple choice only.</p></div><a class="btn ghost" href="/admin/questions" data-link>Back to Question Bank</a></div>
+    <div class="question-editor-grid"><section class="card editor-main"><div id="qe-errors" class="form-error"></div>
+      <div class="editor-meta"><label>Subject<select id="qe-subject"><option value="">Choose subject</option>${subjects}</select></label><label>Topic <span class="muted small">(optional)</span><select id="qe-topic"><option value="">No topic</option>${topics}</select></label><label>Difficulty<select id="qe-difficulty"><option value="easy" ${draft.difficulty==='easy'?'selected':''}>Easy</option><option value="medium" ${(!draft.difficulty||draft.difficulty==='medium')?'selected':''}>Medium</option><option value="hard" ${draft.difficulty==='hard'?'selected':''}>Hard</option></select></label></div>
+      <section class="editor-section"><h2>Question</h2>${languageFields(mode)}${mediaSlot('prompt',draft.promptImagePath,'Optional question image')}</section>
+      <section class="editor-section"><h2>Answer Choices</h2>${['A','B','C','D'].map(k=>optionFields(k,mode)).join('')}</section>
+      <section class="editor-section"><h2>Explanation</h2><p class="muted small">Can be blank while Draft. Required before Publish.</p>${explanationFields(mode)}</section>
+    </section><aside class="card editor-side"><div class="status-pill ${escapeHtml(draft.status||'draft')}">${escapeHtml(String(draft.status||'draft').replace(/^./,c=>c.toUpperCase()))}</div><p class="muted small">Question ID</p><p class="mono small">${escapeHtml(draft.questionId||'Not saved yet')}</p><div class="editor-actions">${button('Save Draft','ghost','id="qe-save"')}${button('Preview as Student','ghost','id="qe-preview"')}${button('Publish','primary','id="qe-publish"')}</div></aside></div>`,'admin');
+
+    const markDirty=()=>{editorDirty=true;};
+    document.querySelectorAll('#app input,#app textarea,#app select').forEach(el=>el.addEventListener('input',markDirty));
+    document.querySelectorAll('#app select,#app input[type="radio"]').forEach(el=>el.addEventListener('change',markDirty));
+
+    document.querySelector('#qe-subject').addEventListener('change',e=>{
+      const current=readQuestionEditorForm();
+      const subject=subjectById().get(e.target.value);
+      draft={...current,subjectId:e.target.value,subjectCode:subject?.code||'',topicId:null};
+      editorDirty=true;
+      renderEditor();
+    });
+
+    const setDraftMedia=(slot,path)=>{
+      if(slot==='prompt'){draft.promptImagePath=path;return;}
+      const match=/^option-([a-d])$/.exec(slot);if(!match)return;
+      const key=match[1].toUpperCase();
+      draft.options=['A','B','C','D'].map(k=>{const o=optionFor(k);return k===key?{...o,imagePath:path}:{...o};});
+    };
+
+    document.querySelectorAll('.qe-media-input').forEach(input=>input.addEventListener('change',async()=>{
+      const file=input.files?.[0];if(!file)return;
+      try{
+        draft=readQuestionEditorForm();
+        if(!draft.versionId){const saved=await saveCurrent(false);if(!saved)return;}
+        const {blob,extension}=await compressQuestionImage(file);
+        const slot=input.dataset.slot;
+        const path=`questions/${draft.questionId}/versions/${draft.versionId}/${slot}-${crypto.randomUUID()}.${extension}`;
+        await adminApi.uploadQuestionMedia(path,blob);
+        setDraftMedia(slot,path);
+        draft=await adminApi.saveQuestionDraft(readQuestionEditorForm());
+        editorDirty=false;
+        renderEditor();
+      }catch(err){showEditorErrors([err.message||'Unable to upload image.']);}
+    }));
+
+    document.querySelectorAll('.qe-media-remove').forEach(btn=>btn.addEventListener('click',async()=>{
+      try{
+        draft=readQuestionEditorForm();setDraftMedia(btn.dataset.slot,null);
+        draft=await adminApi.saveQuestionDraft(readQuestionEditorForm());editorDirty=false;renderEditor();
+      }catch(err){showEditorErrors([err.message||'Unable to remove image.']);}
+    }));
+
+    hydratePrivateImages(root).catch(()=>{});
+
+    async function saveCurrent(showToast=true){
+      const payload=readQuestionEditorForm();
+      const errors=validateQuestionDraft(payload,'draft');
+      if(errors.length){showEditorErrors(errors);return null;}
+      const saved=await adminApi.saveQuestionDraft(payload);
+      draft=saved;editorDirty=false;
+      if(location.hash==='#/admin/questions/new') history.replaceState(null,'',`#/admin/questions/${draft.questionId}/edit`);
+      if(showToast) showEditorErrors(['Draft saved.']);
+      return saved;
+    }
+
+    document.querySelector('#qe-save').addEventListener('click',async e=>{e.currentTarget.disabled=true;try{await saveCurrent(true);}catch(err){showEditorErrors([err.message||'Unable to save Draft.']);}finally{e.currentTarget.disabled=false;}});
+    document.querySelector('#qe-preview').addEventListener('click',async e=>{e.currentTarget.disabled=true;try{const saved=await saveCurrent(false);if(saved)go(`/admin/questions/${saved.questionId}/preview`);}catch(err){showEditorErrors([err.message||'Unable to preview.']);}finally{e.currentTarget.disabled=false;}});
+    document.querySelector('#qe-publish').addEventListener('click',async e=>{
+      e.currentTarget.disabled=true;
+      try{
+        const payload=readQuestionEditorForm();
+        const errors=validateQuestionDraft(payload,'publish');
+        if(errors.length){showEditorErrors(errors);return;}
+        const saved=await adminApi.saveQuestionDraft(payload);
+        await adminApi.publishQuestion(saved.versionId);
+        editorDirty=false;
+        go('/admin/questions');
+      }catch(err){showEditorErrors(String(err.message||'Unable to publish.').split('\n').filter(Boolean));}
+      finally{e.currentTarget.disabled=false;}
+    });
+  }
+  renderEditor();
+}
+async function questionPreviewPage(questionId){
+  if(!await requireProfile('admin'))return;
+  loading('Loading student preview…');
+  const latest=await adminApi.questionEditor(questionId,null);
+  const p=await adminApi.questionPreview(latest.versionId);
+  const q={
+    question_type:'mcq_single',
+    language_mode:p.languageMode,
+    prompt_ms:p.promptMs,
+    prompt_en:p.promptEn,
+    prompt_image_path:p.promptImagePath,
+    options:(p.options||[]).map(o=>({id:o.id||o.key,key:o.key,text_ms:o.textMs,text_en:o.textEn,image_path:o.imagePath})),
+    saved_answer:{}
+  };
+  shell(`<div class="page-head"><div><span class="eyebrow">Preview as Student</span><h1>${escapeHtml(p.subjectName||'Question Preview')} · v${Number(p.versionNo||1)}</h1><p class="muted">This uses the same question layout as the student simulator.</p></div><div class="preview-actions"><a class="btn ghost" href="/admin/questions/${p.questionId}/edit" data-link>Back to Editor</a><a class="btn ghost" href="/admin/questions" data-link>Question Bank</a></div></div><section class="preview-stage"><div class="phone-preview"><div class="preview-phone-top"><span>Question Preview</span><span>01:30:00</span></div><div class="question-panel preview-question"><div class="question-meta"><span class="subject-pill">${escapeHtml(p.subjectName||'')}</span><span>${escapeHtml(p.topicName||'')}</span></div>${studentQuestionMarkup(q,{preview:true})}</div></div></section>`,'admin');
+  hydratePrivateImages(root).catch(()=>{});
+}
 async function studentsPage(){if(!await requireProfile('admin'))return;loading();const students=await adminApi.listStudents();shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>Students</h1></div>${button('Add Student','primary','id="add-student"')}</div><section class="card"><div class="table-wrap"><table><thead><tr><th>Student</th><th>Email</th><th>Status</th><th>Last Activity</th><th></th></tr></thead><tbody>${(students||[]).map(s=>`<tr><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.email)}</td><td>${s.active?'Active':'Inactive'}</td><td>${date(s.lastActivityAt||s.lastSignInAt)}</td><td><a href="/admin/students/${s.userId}" data-link>View</a> · <button class="link-btn reset" data-id="${s.userId}">Reset password</button> · <button class="link-btn active" data-id="${s.userId}" data-active="${s.active}">${s.active?'Deactivate':'Activate'}</button></td></tr>`).join('')}</tbody></table></div></section>`,'admin'); document.querySelector('#add-student').onclick=()=>studentModal(); document.querySelectorAll('.reset').forEach(b=>b.onclick=async()=>{const p=prompt('Enter a new temporary password (minimum 6 characters):');if(p){await adminApi.resetPassword(b.dataset.id,p);alert('Password reset.');}}); document.querySelectorAll('.active').forEach(b=>b.onclick=async()=>{await adminApi.setActive(b.dataset.id,b.dataset.active!=='true');location.reload();});}
 function studentModal(){const wrap=document.createElement('div');wrap.className='modal-backdrop';wrap.innerHTML=`<div class="modal"><h2>Add Student</h2><form id="student-form"><label>Name<input name="name" required></label><label>Email<input name="email" type="email" required></label><label>Temporary Password<input name="temporaryPassword" type="password" minlength="6" required></label><label>School Year / Level<input name="schoolYear" value="Year 6"></label><div id="modal-error" class="form-error"></div><div class="modal-actions">${button('Cancel','ghost','type="button" id="cancel"')}${button('Create Student','primary','type="submit"')}</div></form></div>`;document.body.append(wrap);wrap.querySelector('#cancel').onclick=()=>wrap.remove();wrap.querySelector('#student-form').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target);try{await adminApi.createStudent(Object.fromEntries(fd));wrap.remove();location.reload();}catch(err){wrap.querySelector('#modal-error').textContent=err.message;}};}
 async function studentDetail(userId){if(!await requireProfile('admin'))return;loading();const d=await adminApi.studentHistory(userId);shell(`<div class="page-head"><div><span class="eyebrow">Student</span><h1>${escapeHtml(d.profile.displayName)}</h1><p>${escapeHtml(d.profile.email)} · ${d.profile.active?'Active':'Inactive'} · ${escapeHtml(d.profile.schoolYear||'')}</p></div></div><section class="stats"><div class="stat"><b>${d.summary.totalAttempts}</b><span>Attempts</span></div><div class="stat"><b>${pct(d.summary.bestPercentage)}</b><span>Best</span></div><div class="stat"><b>${pct(d.summary.averagePercentage)}</b><span>Average</span></div><div class="stat"><b>${pct(d.summary.latestPercentage)}</b><span>Latest</span></div></section><section class="card"><h2>Subject Performance</h2><div class="subject-grid">${(d.subjectPerformance||[]).map(s=>`<div class="stat"><b>${pct(s.percentage)}</b><span>${escapeHtml(s.name)}</span></div>`).join('')}</div></section><section class="card"><h2>Attempt History</h2>${adminHistoryTable(d.attempts||[])}</section>`,'admin');}
 function adminHistoryTable(rows){if(!rows.length)return'<p class="muted">No completed attempts yet.</p>';return`<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'')}</td><td>${formatDuration(r.elapsedSeconds)}</td><td>${date(r.submittedAt)}</td><td><a href="/admin/review/${r.attemptId}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`;}
 
-async function render(){clearInterval(quizTimer);try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
-window.addEventListener('hashchange', render);render();})();
+async function render(){clearInterval(quizTimer);try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return adminPlaceholder('Simulation Sets');if(p==='/admin/results')return adminPlaceholder('Results');if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
+window.addEventListener('beforeunload',e=>{if(editorDirty){e.preventDefault();e.returnValue='';}});window.addEventListener('hashchange', render);render();})();
 </script>
 </body>
 </html>
