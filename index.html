@@ -1009,8 +1009,12 @@ const go = (path) => {
 };
 const button = (label, cls='primary', attrs='') => `<button class="btn ${cls}" ${attrs}>${escapeHtml(label)}</button>`;
 
-function brandMarkup() {
-  return `<div class="brand" aria-label="PKSK Pro — Prepare, Revise, Outperform">
+function brandMarkup(homePath = '') {
+  const openTag = homePath
+    ? `<a href="${escapeHtml(homePath)}" class="brand" data-link aria-label="PKSK Pro — Home">`
+    : `<div class="brand" aria-label="PKSK Pro — Prepare, Revise, Outperform">`;
+  const closeTag = homePath ? '</a>' : '</div>';
+  return `${openTag}
     <svg class="brand-logo" viewBox="0 0 64 64" role="img" aria-label="PKSK Pro graduation cap logo" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="pkskProGradient" x1="0" y1="0" x2="1" y2="1">
@@ -1034,19 +1038,19 @@ function brandMarkup() {
       <path d="M5.5 42h5L9 51H7l-1.5-9Z" fill="#9b82eb"/>
     </svg>
     <div class="brand-copy"><div class="brand-name">PKSK Pro</div><div class="brand-tagline">Prepare • Revise • Outperform</div></div>
-  </div>`;
+  ${closeTag}`;
 }
 
 function shell(content, role = profile?.role) {
   document.body.dataset.role = role || '';
   if (role === 'admin') {
     const nav = `<a href="/admin" data-link>Dashboard</a><a href="/admin/students" data-link>Students</a><a href="/admin/questions" data-link>Question Bank</a><a href="/admin/references" data-link>Reference Library</a><a href="/admin/generator" data-link>AI Generator</a><a href="/admin/sets" data-link>Simulation Sets</a><a href="/admin/results" data-link>Results</a>`;
-    root.innerHTML = `<header class="topbar">${brandMarkup()}<nav>${nav}</nav><button id="logout" class="btn ghost">Logout</button></header><main class="page">${content}</main>`;
+    root.innerHTML = `<header class="topbar">${brandMarkup('/admin')}<nav>${nav}</nav><button id="logout" class="btn ghost">Logout</button></header><main class="page">${content}</main>`;
   } else {
     const nav = `<a href="/student" data-link>Quiz Hub</a><a href="/student/history" data-link>My Results</a><a href="/student/performance" data-link>My Performance</a><a href="/student/leaderboard" data-link>Leaderboard</a><a href="/student/profile" data-link>Profile</a>`;
     const displayName = studentIdentity?.displayNickname || profile?.display_nickname || profile?.display_name || 'Student';
     const avatar = studentIdentity?.avatarSymbol || '🎓';
-    root.innerHTML = `<header class="topbar student-topbar">${brandMarkup()}<nav>${nav}</nav><div class="student-top-actions"><a href="/student/profile" class="student-identity" data-link aria-label="Open profile"><span class="student-avatar">${escapeHtml(avatar)}</span><span class="student-identity-name">${escapeHtml(displayName)}</span></a><button id="logout" class="btn ghost">Logout</button></div></header><div class="student-mobile-nav">${nav}</div><main class="page student-page">${content}</main>`;
+    root.innerHTML = `<header class="topbar student-topbar">${brandMarkup('/student')}<nav>${nav}</nav><div class="student-top-actions"><a href="/student/profile" class="student-identity" data-link aria-label="Open profile"><span class="student-avatar">${escapeHtml(avatar)}</span><span class="student-identity-name">${escapeHtml(displayName)}</span></a><button id="logout" class="btn ghost">Logout</button></div></header><div class="student-mobile-nav">${nav}</div><main class="page student-page">${content}</main>`;
   }
   document.querySelector('#logout')?.addEventListener('click', async () => { stopStudentActivityTracking(); await auth.signOut(); profile = null; studentIdentity = null; go('/'); });
   bindLinks();
