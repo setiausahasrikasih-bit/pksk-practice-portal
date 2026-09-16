@@ -646,6 +646,23 @@ function recommendedAction(subject = {}) {
   return { mode: 'quick', reason: 'Keep the skill fresh with a short focused practice.' };
 }
 
+function diversityBadge(meta = {}) {
+  const status = String(meta.reviewStatus || meta.review_status || '').toLowerCase();
+  if (!meta.conceptId && !meta.conceptKey) return '<span class="status-pill draft">Missing diversity</span>';
+  if (status === 'accepted') return '<span class="status-pill published">Diversity accepted</span>';
+  return '<span class="status-pill draft">Needs diversity review</span>';
+}
+
+function diversityConflict(candidate = {}, selected = []) {
+  const concept = String(candidate.conceptKey || '').trim().toLowerCase();
+  const template = String(candidate.templateKey || '').trim().toLowerCase();
+  for (const row of selected || []) {
+    if (concept && concept === String(row.conceptKey || '').trim().toLowerCase()) return { type: 'duplicate_concept', row };
+    if (template && template === String(row.templateKey || '').trim().toLowerCase()) return { type: 'duplicate_template', row };
+  }
+  return null;
+}
+
 function examCountdownMeta(examDate, todayDate) {
   if (!examDate) return { state: 'unset', days: null, headline: 'Set your PKSK exam date' };
   const parseDay = (value) => {
@@ -666,7 +683,7 @@ function examCountdownMeta(examDate, todayDate) {
   return { state: 'future', days, headline: `${days} day${days === 1 ? '' : 's'} to PKSK` };
 }
 
-window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceModeConfig, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, REFERENCE_MAX_BYTES, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES, allocateGapDifficulty, buildGapGenerationDraft, applySetSuggestions, masteryLabel, trendMeta, performanceReviewRoute, isStudentQuizRoute, shouldTrackPortalStudy, recommendedAction, examCountdownMeta };
+window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceModeConfig, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, REFERENCE_MAX_BYTES, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES, allocateGapDifficulty, buildGapGenerationDraft, applySetSuggestions, masteryLabel, trendMeta, performanceReviewRoute, isStudentQuizRoute, shouldTrackPortalStudy, recommendedAction, diversityBadge, diversityConflict, examCountdownMeta };
 </script>
 <script>(() => {
   const SUPABASE_URL = 'https://wwjtpfexvqaipvvupsai.supabase.co';
@@ -881,6 +898,9 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceM
       p_question_id: questionId,
       p_version_id: versionId,
     }),
+    diversityAudit: () => rpc('admin_question_diversity_audit'),
+    diversityReviewQueue: () => rpc('admin_diversity_review_queue'),
+    saveQuestionDiversity: (payload) => rpc('admin_save_question_diversity_metadata', { p_payload: payload }),
     saveQuestionDraft: (payload) => rpc('admin_save_question_draft', { p_payload: payload }),
     duplicateQuestion: (versionId) => rpc('admin_duplicate_question', { p_question_version_id: versionId }),
     createQuestionRevision: (versionId) => rpc('admin_create_question_revision', { p_question_version_id: versionId }),
@@ -936,7 +956,8 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceM
     rejectGeneratedCandidate: (itemId) => rpc('admin_reject_generated_candidate', { p_item_id: itemId }),
     regenerateGeneratedCandidate: (itemId) => rpc('admin_regenerate_generated_candidate', { p_item_id: itemId }),
     simulationSets: () => rpc('admin_simulation_set_list'),
-    setCandidates: (filters = {}) => rpc('admin_simulation_set_candidates', {
+    setCandidates: (setVersionId, filters = {}) => rpc('admin_simulation_set_candidates_v2', {
+      p_set_version_id: setVersionId,
       p_subject_id: filters.subjectId || null,
       p_difficulty: filters.difficulty || null,
       p_search: filters.search || null,
@@ -979,7 +1000,7 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceM
 </script>
 <script>(() => {
 const { auth, studentApi, adminApi } = window.PKSK_API;
-const { formatDuration, navigatorState, simulationAction, practiceModeConfig, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES, allocateGapDifficulty, buildGapGenerationDraft, applySetSuggestions, masteryLabel, trendMeta, performanceReviewRoute, isStudentQuizRoute, shouldTrackPortalStudy, recommendedAction, examCountdownMeta } = window.PKSK_CORE;
+const { formatDuration, navigatorState, simulationAction, practiceModeConfig, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES, allocateGapDifficulty, buildGapGenerationDraft, applySetSuggestions, masteryLabel, trendMeta, performanceReviewRoute, isStudentQuizRoute, shouldTrackPortalStudy, recommendedAction, diversityBadge, diversityConflict, examCountdownMeta } = window.PKSK_CORE;
 
 const root = document.querySelector('#app');
 let profile = null;
@@ -1669,7 +1690,7 @@ async function generationJobsPage(){
 async function generationCoveragePage(){
   if(!await requireProfile('admin'))return;
   loading('Loading Question Coverage…');
-  const coverage=await adminApi.questionPoolCoverage(null);
+  const [coverage,diversityAudit]=await Promise.all([adminApi.questionPoolCoverage(null),adminApi.diversityAudit()]);
   const subjects=coverage.subjects||[];
   const totalShortage=subjects.reduce((n,row)=>n+Number(row.poolShortage||0),0);
   const ready=totalShortage===0;
@@ -1685,6 +1706,11 @@ async function generationCoveragePage(){
   <div class="reference-notice ${ready?'neutral':'warning'}"><b>${ready?'Published pool is ready for one standard set.':'Published pool has real shortages.'}</b> ${ready?'No new generation is required for subject quotas.':'Generate only the missing pool questions below; existing Published questions are never replaced by unnecessary AI generation.'}</div>
   <section class="card"><div class="set-total"><div><span class="eyebrow">Published Pool</span><h2>Subject Readiness</h2></div><strong>${ready?'Ready':`${totalShortage} missing`}</strong></div><div class="table-wrap"><table class="set-quota-table"><thead><tr><th>Subject</th><th>Required</th><th>Published Pool</th><th>AI Drafts</th><th>AI Published</th><th>Pool Shortage</th></tr></thead><tbody>${rows}</tbody></table></div><div class="generator-actions" style="margin-top:16px"><button id="coverage-generate" class="btn primary" ${ready?'disabled':''}>Generate Missing Questions</button><a class="btn ghost" href="/admin/questions" data-link>Open Question Bank</a></div><div id="coverage-result" class="generator-review-result"></div></section>
   <section class="card"><h2>Published Difficulty Mix</h2><p class="muted small">Advisory target for a standard set: 20 Easy / 55 Medium / 25 Hard. Subject quota readiness above remains the hard gate.</p><div class="difficulty-grid"><div class="difficulty-box"><span>Easy</span><b>${Number(diff.easy||0)} / 20</b></div><div class="difficulty-box"><span>Medium</span><b>${Number(diff.medium||0)} / 55</b></div><div class="difficulty-box"><span>Hard</span><b>${Number(diff.hard||0)} / 25</b></div></div></section>
+  <section class="card"><div class="set-total"><div><span class="eyebrow">Question Diversity</span><h2>Diversity Audit</h2></div><strong>${Number(diversityAudit.acceptedMetadata||0)} / ${Number(diversityAudit.publishedQuestions||0)} classified</strong></div>
+    <div class="difficulty-grid"><div class="difficulty-box"><span>Active concepts</span><b>${Number(diversityAudit.concepts||0)}</b></div><div class="difficulty-box"><span>Missing metadata</span><b>${Number(diversityAudit.missingMetadata||0)}</b></div><div class="difficulty-box"><span>Needs review</span><b>${Number(diversityAudit.needsReview||0)}</b></div><div class="difficulty-box"><span>Missing topic</span><b>${Number(diversityAudit.missingTopic||0)}</b></div></div>
+    <p class="muted small" style="margin-top:12px">Strict Full Simulations hard-block unresolved metadata, duplicate concepts/templates, historically overused concepts, and high-similarity conflicts. There is no Publish override.</p>
+    ${(diversityAudit.overusedConcepts||[]).length?`<div class="reference-notice warning"><b>Historically repeated concepts detected.</b> ${(diversityAudit.overusedConcepts||[]).slice(0,6).map(x=>`${escapeHtml(x.conceptLabel||x.conceptKey)} (${Number(x.priorSetCount||0)} sets)`).join(' · ')}</div>`:''}
+  </section>
   <section class="card"><h2>Topic Coverage</h2>${topics}</section>`,'admin');
   bindLinks();
   document.querySelector('#coverage-generate')?.addEventListener('click',async e=>{
@@ -1789,6 +1815,12 @@ function generationPlanPayload(job,items){
     subjectCode:item.subjectCode,topicId:item.topicId||null,topicName:item.topicName||null,difficulty:item.difficulty,
     questionCount:Number(item.questionCount)||0,sourcePolicy:item.sourcePolicy,sourceDocumentId:item.sourceDocumentId||null,
     variationMode:item.variationMode,rationale:item.rationale||'',
+    conceptId:item.conceptId||null,conceptKey:item.conceptKey||null,conceptLabel:item.conceptLabel||null,
+    conceptDescription:item.conceptDescription||null,primaryEntityKey:item.primaryEntityKey||null,
+    reasoningType:item.reasoningType||null,questionStyle:item.questionStyle||null,templateKey:item.templateKey||null,
+    avoidConceptKeys:Array.isArray(item.avoidConceptKeys)?item.avoidConceptKeys:[],
+    avoidTemplateKeys:Array.isArray(item.avoidTemplateKeys)?item.avoidTemplateKeys:[],
+    avoidEntityKeys:Array.isArray(item.avoidEntityKeys)?item.avoidEntityKeys:[],
   })),summary:{pdfInspiredCount:summary.pdfInspiredCount,freshAiCount:summary.freshAiCount,externalKnowledgeCount:summary.externalKnowledgeCount,notes:job?.planSummary?.notes||''}};
 }
 
@@ -1812,7 +1844,8 @@ async function generationJobPage(jobId){
     const topics=(taxonomy.topics||[]).filter(t=>t.subject_id===item.subjectId);
     const docs=(job.sourceDocuments||[]);
     const disabled=planLocked?'disabled':'';
-    return `<article class="generator-plan-row ${planLocked?'generator-readonly':''}" data-i="${i}"><div class="generator-plan-row-grid"><label>Subject<input value="${escapeHtml(item.subjectName||SUBJECT_LABELS[item.subjectCode]||item.subjectCode)}" disabled></label><label>Topic<select class="gen-plan-topic" ${disabled}><option value="">Unspecified / AI skill</option>${topics.map(t=>`<option value="${escapeHtml(t.id)}" ${t.id===item.topicId?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}</select></label><label>Difficulty<select class="gen-plan-difficulty" ${disabled}><option value="easy" ${item.difficulty==='easy'?'selected':''}>Easy</option><option value="medium" ${item.difficulty==='medium'?'selected':''}>Medium</option><option value="hard" ${item.difficulty==='hard'?'selected':''}>Hard</option></select></label><label>Count<input class="gen-plan-count" type="number" min="1" max="200" value="${Number(item.questionCount||0)}" ${disabled}></label><label>Source policy<select class="gen-plan-source-policy" ${disabled}>${STANDARD_SOURCE_POLICIES.map(v=>`<option value="${v}" ${v===item.sourcePolicy?'selected':''}>${v.replaceAll('_',' ')}</option>`).join('')}</select></label><label>Source document<select class="gen-plan-source-doc" ${disabled}><option value="">None / fresh</option>${docs.map(d=>`<option value="${escapeHtml(d.documentId)}" ${d.documentId===item.sourceDocumentId?'selected':''}>${escapeHtml(d.title)}</option>`).join('')}</select></label><label>Variation mode<select class="gen-plan-variation" ${disabled}><option value="mixed" ${item.variationMode==='mixed'?'selected':''}>Mixed</option><option value="close_variant" ${item.variationMode==='close_variant'?'selected':''}>Close Variant</option><option value="fresh_variant" ${item.variationMode==='fresh_variant'?'selected':''}>Fresh Variant</option></select></label></div><div class="generator-rationale"><b>AI rationale:</b> ${escapeHtml(item.rationale||'No rationale provided.')}</div></article>`;
+    const diversityMeta=item.conceptKey?`<div class="generator-rationale"><b>Concept:</b> ${escapeHtml(item.conceptLabel||item.conceptKey)} <span class="muted small">(${escapeHtml(item.conceptKey)})</span><br><b>Reasoning:</b> ${escapeHtml((item.reasoningType||'—').replaceAll('_',' '))} · <b>Style:</b> ${escapeHtml((item.questionStyle||'—').replaceAll('_',' '))}<br><b>Template:</b> ${escapeHtml(item.templateKey||'—')}${item.primaryEntityKey?` · <b>Entity:</b> ${escapeHtml(item.primaryEntityKey)}`:''}</div>`:'';
+    return `<article class="generator-plan-row ${planLocked?'generator-readonly':''}" data-i="${i}"><div class="generator-plan-row-grid"><label>Subject<input value="${escapeHtml(item.subjectName||SUBJECT_LABELS[item.subjectCode]||item.subjectCode)}" disabled></label><label>Topic<select class="gen-plan-topic" ${disabled}><option value="">Unspecified / AI skill</option>${topics.map(t=>`<option value="${escapeHtml(t.id)}" ${t.id===item.topicId?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}</select></label><label>Difficulty<select class="gen-plan-difficulty" ${disabled}><option value="easy" ${item.difficulty==='easy'?'selected':''}>Easy</option><option value="medium" ${item.difficulty==='medium'?'selected':''}>Medium</option><option value="hard" ${item.difficulty==='hard'?'selected':''}>Hard</option></select></label><label>Count<input class="gen-plan-count" type="number" min="1" max="200" value="${Number(item.questionCount||0)}" ${disabled}></label><label>Source policy<select class="gen-plan-source-policy" ${disabled}>${STANDARD_SOURCE_POLICIES.map(v=>`<option value="${v}" ${v===item.sourcePolicy?'selected':''}>${v.replaceAll('_',' ')}</option>`).join('')}</select></label><label>Source document<select class="gen-plan-source-doc" ${disabled}><option value="">None / fresh</option>${docs.map(d=>`<option value="${escapeHtml(d.documentId)}" ${d.documentId===item.sourceDocumentId?'selected':''}>${escapeHtml(d.title)}</option>`).join('')}</select></label><label>Variation mode<select class="gen-plan-variation" ${disabled}><option value="mixed" ${item.variationMode==='mixed'?'selected':''}>Mixed</option><option value="close_variant" ${item.variationMode==='close_variant'?'selected':''}>Close Variant</option><option value="fresh_variant" ${item.variationMode==='fresh_variant'?'selected':''}>Fresh Variant</option></select></label></div>${diversityMeta}<div class="generator-rationale"><b>AI rationale:</b> ${escapeHtml(item.rationale||'No rationale provided.')}</div></article>`;
   }).join(''):'<div class="reference-empty">No plan has been created yet.</div>';
 
   const generationSection=planLocked?`<section class="card"><div class="set-total"><div><span class="eyebrow">Milestone 3C</span><h2>Question Generation + QA</h2></div><div class="generator-actions">${generationAction}<button id="gen-pause-generation" class="btn ghost" disabled>Pause After Current Batch</button></div></div><div class="reference-notice warning"><b>Paid API.</b> The portal processes up to <b>10 questions per batch</b>; each batch uses <b>generation + independent QA</b> API calls. You can pause after the current batch and resume later.</div><p class="muted small">You can <b>View Approved Plan</b> below at any time. Generated candidates remain Admin-only and are never published automatically.</p><div id="gen-progress"></div></section><section class="card"><div class="set-total"><div><span class="eyebrow">Staging Queue</span><h2>Generated Candidates</h2></div><strong id="gen-candidate-count"></strong></div><div class="reference-notice neutral">Read-only in 3C. <b>Bulk Review in Milestone 3D</b> will add accept, reject, regenerate and edit actions.</div><div id="gen-candidates" class="generator-candidate-list"></div></section>`:'';
@@ -2116,7 +2149,7 @@ async function simulationSetBuilderPage(setVersionId){
   let draft=await adminApi.getSimulationSet(setVersionId);
   if(String(draft.status).toLowerCase()!=='draft')return go(`/admin/sets/${setVersionId}/preview`);
   editorDirty=false;
-  const [candidates,coverage]=await Promise.all([adminApi.setCandidates({}),adminApi.questionPoolCoverage(setVersionId)]);
+  const [candidates,coverage]=await Promise.all([adminApi.setCandidates(setVersionId,{}),adminApi.questionPoolCoverage(setVersionId)]);
   let selected=(draft.questions||[]).map(q=>({...q}));
   const filters={search:'',subjectId:'',difficulty:''};
 
@@ -2129,6 +2162,7 @@ async function simulationSetBuilderPage(setVersionId){
     <div id="set-message" class="set-builder-message" aria-live="polite"></div>
   </section>
   <section class="card"><div class="set-total"><div><span class="eyebrow">Milestone 3E</span><h2>Coverage Assistant</h2></div><div class="generator-actions"><button id="set-suggest" class="btn ghost">Suggest Published Questions</button>${(coverage.subjects||[]).some(r=>Number(r.poolShortage)>0)?'<a class="btn ghost" href="/admin/generator/coverage" data-link>Generate Pool Gaps</a>':''}</div></div><div class="table-wrap"><table class="set-quota-table"><thead><tr><th>Subject</th><th>Required</th><th>Selected</th><th>Published Available</th><th>Pool Shortage</th></tr></thead><tbody>${(coverage.subjects||[]).map(r=>`<tr class="${Number(r.poolShortage)>0?'shortage':''}"><td><b>${escapeHtml(r.subjectName)}</b></td><td>${Number(r.required)}</td><td>${Number(r.selected)}</td><td>${Number(r.publishedAvailable)}</td><td>${Number(r.poolShortage)}</td></tr>`).join('')}</tbody></table></div><div id="set-suggestion-preview" style="margin-top:14px"></div></section>
+  <section class="card" id="set-diversity-card"><div id="set-diversity"></div></section>
   <div class="set-builder-layout">
     <div class="set-builder-panel">
       <section class="card">
@@ -2176,6 +2210,36 @@ async function simulationSetBuilderPage(setVersionId){
     };
   }
 
+  function renderDiversity(){
+    const box=document.querySelector('#set-diversity');if(!box)return;
+    if(String(draft.diversityPolicy||'legacy')!=='strict_v1'){
+      box.innerHTML='<div class="set-total"><div><span class="eyebrow">Diversity Gate</span><h2>Legacy set</h2></div><strong>Not enforced</strong></div><p class="muted small">Published legacy sets remain grandfathered.</p>';
+      return;
+    }
+    const missing=selected.filter(q=>!q.topicId||!q.conceptKey||q.reviewStatus!=='accepted');
+    const conceptMap=new Map(),templateMap=new Map(),entityMap=new Map();
+    for(const q of selected){
+      if(q.conceptKey){const k=q.conceptKey.toLowerCase();conceptMap.set(k,[...(conceptMap.get(k)||[]),q]);}
+      if(q.templateKey){const k=q.templateKey.toLowerCase();templateMap.set(k,[...(templateMap.get(k)||[]),q]);}
+      if(q.primaryEntityKey){const k=q.primaryEntityKey.toLowerCase();entityMap.set(k,[...(entityMap.get(k)||[]),q]);}
+    }
+    const dupConcept=[...conceptMap.entries()].filter(([,rows])=>rows.length>1);
+    const dupTemplate=[...templateMap.entries()].filter(([,rows])=>rows.length>1);
+    const entityWarn=[...entityMap.entries()].filter(([,rows])=>rows.length>1);
+    const localPass=!missing.length&&!dupConcept.length&&!dupTemplate.length;
+    const server=draft.diversity||{};
+    const status=localPass&&server.canPass!==false?'PASS':'BLOCKED';
+    const failures=[];
+    if(missing.length)failures.push(`${missing.length} selected question(s) have missing/unaccepted metadata`);
+    if(dupConcept.length)failures.push(`${dupConcept.length} duplicate concept group(s)`);
+    if(dupTemplate.length)failures.push(`${dupTemplate.length} duplicate template group(s)`);
+    for(const msg of server.errors||[])if(!failures.includes(msg))failures.push(msg);
+    box.innerHTML=`<div class="set-total"><div><span class="eyebrow">Diversity Gate · ${escapeHtml(draft.diversityPolicy||'strict_v1')}</span><h2>Question Diversity</h2></div><strong>${status}</strong></div>
+      <div class="difficulty-grid"><div class="difficulty-box"><span>Unique concepts</span><b>${conceptMap.size} / ${selected.length}</b></div><div class="difficulty-box"><span>Missing metadata</span><b>${missing.length}</b></div><div class="difficulty-box"><span>Duplicate concepts</span><b>${dupConcept.length}</b></div><div class="difficulty-box"><span>Duplicate templates</span><b>${dupTemplate.length}</b></div></div>
+      ${failures.length?`<div class="set-alert error" style="margin-top:12px"><b>Publish blocked.</b><br>${failures.map(escapeHtml).join('<br>')}</div>`:`<div class="reference-notice neutral" style="margin-top:12px"><b>Current local selection has no concept/template conflicts.</b> Save and Validate for the authoritative database check.</div>`}
+      ${entityWarn.length?`<p class="muted small">Entity warning: ${entityWarn.slice(0,5).map(([k,rows])=>`${escapeHtml(k)} × ${rows.length}`).join(' · ')}</p>`:''}`;
+  }
+
   function renderQuota(){
     const summary=currentSummary();
     document.querySelector('#set-total').textContent=`${summary.total} / ${Number(draft.expectedQuestionCount||100)}`;
@@ -2205,7 +2269,10 @@ async function simulationSetBuilderPage(setVersionId){
       const already=selected.some(x=>x.versionId===q.versionId);
       const quota=quotaFor(q.subjectCode);
       const full=quota&&(summary.subjects[q.subjectCode]||0)>=Number(quota.required||0);
-      return `<article class="set-question-row"><div class="set-question-top"><div><div class="set-question-code">${escapeHtml(q.questionCode)} · v${Number(q.versionNo||1)}</div><div class="set-question-meta"><span>${escapeHtml(q.subjectName||q.subjectCode)}</span><span>${escapeHtml(q.topicName||'No topic')}</span><span>${escapeHtml(q.difficulty||'medium')}</span></div></div><button class="set-mini-btn set-add-question" data-version="${escapeHtml(q.versionId)}" ${already||full?'disabled':''}>${already?'Added':full?'Quota full':'Add'}</button></div><p class="set-question-preview">${escapeHtml(q.promptPreview||'[Question]')}</p></article>`;
+      const localConflict=diversityConflict(q,selected);
+      const gateReason=q.eligibility?.canAdd===false?q.eligibility.reason:(localConflict?.type==='duplicate_concept'?'Concept already used':localConflict?.type==='duplicate_template'?'Template already used':'');
+      const blocked=Boolean(gateReason);
+      return `<article class="set-question-row"><div class="set-question-top"><div><div class="set-question-code">${escapeHtml(q.questionCode)} · v${Number(q.versionNo||1)} ${diversityBadge({conceptId:q.conceptId,conceptKey:q.conceptKey,reviewStatus:q.reviewStatus||'accepted'})}</div><div class="set-question-meta"><span>${escapeHtml(q.subjectName||q.subjectCode)}</span><span>${escapeHtml(q.topicName||'No topic')}</span><span>${escapeHtml(q.difficulty||'medium')}</span></div><div class="muted small">Concept: ${escapeHtml(q.conceptLabel||q.conceptKey||'—')} · Template: ${escapeHtml(q.templateKey||'—')}</div>${gateReason?`<div class="form-error small">${escapeHtml(gateReason)}</div>`:''}</div><button class="set-mini-btn set-add-question" data-version="${escapeHtml(q.versionId)}" ${already||full||blocked?'disabled':''}>${already?'Added':full?'Quota full':blocked?'Blocked':'Add'}</button></div><p class="set-question-preview">${escapeHtml(q.promptPreview||'[Question]')}</p></article>`;
     }).join(''):'<div class="empty">No published questions match these filters.</div>';
     document.querySelectorAll('.set-add-question').forEach(btn=>btn.addEventListener('click',()=>{
       const q=candidates.find(x=>x.versionId===btn.dataset.version);if(!q)return;
@@ -2215,7 +2282,7 @@ async function simulationSetBuilderPage(setVersionId){
     }));
   }
   function renderSelected(){
-    document.querySelector('#set-selected').innerHTML=selected.length?selected.map((q,i)=>`<article class="set-question-row selected"><div class="set-question-top"><div><div class="set-question-code">${i+1}. ${escapeHtml(q.questionCode)} · v${Number(q.versionNo||1)}</div><div class="set-question-meta"><span>${escapeHtml(q.subjectName||q.subjectCode)}</span><span>${escapeHtml(q.difficulty||'medium')}</span></div></div><div class="set-question-actions"><button class="set-mini-btn set-selected-action" data-action="up" data-i="${i}" ${i===0?'disabled':''} aria-label="Move Up">↑</button><button class="set-mini-btn set-selected-action" data-action="down" data-i="${i}" ${i===selected.length-1?'disabled':''} aria-label="Move Down">↓</button><button class="set-mini-btn set-selected-action" data-action="remove" data-i="${i}">Remove</button></div></div><p class="set-question-preview">${escapeHtml(q.promptPreview||'[Question]')}</p></article>`).join(''):'<div class="empty">No questions selected yet. Add published questions from the Question Bank.</div>';
+    document.querySelector('#set-selected').innerHTML=selected.length?selected.map((q,i)=>`<article class="set-question-row selected"><div class="set-question-top"><div><div class="set-question-code">${i+1}. ${escapeHtml(q.questionCode)} · v${Number(q.versionNo||1)}</div><div class="set-question-meta"><span>${escapeHtml(q.subjectName||q.subjectCode)}</span><span>${escapeHtml(q.difficulty||'medium')}</span></div><div class="muted small">${escapeHtml(q.conceptLabel||q.conceptKey||'No concept')} · ${escapeHtml(q.templateKey||'No template')}</div></div><div class="set-question-actions"><button class="set-mini-btn set-selected-action" data-action="up" data-i="${i}" ${i===0?'disabled':''} aria-label="Move Up">↑</button><button class="set-mini-btn set-selected-action" data-action="down" data-i="${i}" ${i===selected.length-1?'disabled':''} aria-label="Move Down">↓</button><button class="set-mini-btn set-selected-action" data-action="remove" data-i="${i}">Remove</button></div></div><p class="set-question-preview">${escapeHtml(q.promptPreview||'[Question]')}</p></article>`).join(''):'<div class="empty">No questions selected yet. Add published questions from the Question Bank.</div>';
     document.querySelectorAll('.set-selected-action').forEach(btn=>btn.addEventListener('click',()=>{
       const i=Number(btn.dataset.i);const action=btn.dataset.action;
       if(action==='remove')selected.splice(i,1);
@@ -2224,7 +2291,7 @@ async function simulationSetBuilderPage(setVersionId){
       markDirty();showSetMessage('');renderAll();
     }));
   }
-  function renderAll(){renderQuota();renderAvailable();renderSelected();}
+  function renderAll(){renderQuota();renderDiversity();renderAvailable();renderSelected();}
 
   document.querySelector('#set-suggest').addEventListener('click',async e=>{
     const btn=e.currentTarget;btn.disabled=true;showSetMessage('');
@@ -2384,6 +2451,42 @@ async function questionEditorPage(questionId){
   const subjectById=()=>new Map((taxonomy.subjects||[]).map(x=>[x.id,x]));
   const currentMode=()=>subjectLanguageMode(draft.subjectCode||'');
   const optionFor=(key)=>draft.options?.find(o=>o.key===key)||{key,textMs:'',textEn:'',imagePath:null};
+  const REASONING_TYPES=['recall','classification','comparison','chronology','sequence_reasoning','deduction','inference','application','single_step_calculation','multi_step_calculation','data_interpretation','language_usage','error_detection','cause_effect','best_explanation'];
+  const QUESTION_STYLES=['direct_recall','scenario','short_passage','dialogue','sequence','odd_one_out','matching_relationship','statement_evaluation','table_or_data','calculation_word_problem','sentence_selection','fill_in_context','best_explanation','cause_effect'];
+
+  function readDiversityForm(versionId=draft.versionId){
+    const value=id=>document.querySelector(id)?.value?.trim()||'';
+    const conceptId=value('#qe-concept-id');
+    return {
+      questionVersionId:versionId||'',
+      topicId:document.querySelector('#qe-topic')?.value||draft.topicId||null,
+      conceptId:conceptId||null,
+      conceptKey:value('#qe-concept-key'),
+      conceptLabel:value('#qe-concept-label'),
+      conceptDescription:value('#qe-concept-description'),
+      primaryEntityKey:value('#qe-entity')||null,
+      reasoningType:value('#qe-reasoning'),
+      questionStyle:value('#qe-style'),
+      templateKey:value('#qe-template'),
+      confidence:Number(value('#qe-confidence')||1),
+      reviewStatus:value('#qe-review-status')||'accepted',
+      reviewNote:value('#qe-review-note')
+    };
+  }
+
+  function diversityFormErrors(meta,forPublish=false){
+    if(!forPublish && !meta.conceptId && !meta.conceptKey && !meta.templateKey) return [];
+    const errors=[];
+    if(!meta.topicId)errors.push('Topic is required for diversity metadata.');
+    if(!meta.conceptId&&!/^[a-z0-9_]{3,120}$/.test(meta.conceptKey||''))errors.push('Choose an existing concept or enter a lowercase snake_case concept key.');
+    if(!meta.conceptId&&!meta.conceptLabel)errors.push('Concept label is required for a new concept.');
+    if(!REASONING_TYPES.includes(meta.reasoningType))errors.push('Reasoning type is required.');
+    if(!QUESTION_STYLES.includes(meta.questionStyle))errors.push('Question style is required.');
+    if(!/^[a-z0-9_]{3,160}$/.test(meta.templateKey||''))errors.push('Template key must be lowercase snake_case.');
+    if(forPublish&&meta.reviewStatus!=='accepted')errors.push('Diversity metadata must be Accepted before publishing.');
+    return errors;
+  }
+
 
   function readQuestionEditorForm(){
     const subjectId=document.querySelector('#qe-subject')?.value||draft.subjectId||'';
@@ -2445,9 +2548,17 @@ async function questionEditorPage(questionId){
     const topics=(taxonomy.topics||[]).filter(x=>x.subject_id===draft.subjectId).map(x=>`<option value="${escapeHtml(x.id)}" ${x.id===draft.topicId?'selected':''}>${escapeHtml(x.name)}</option>`).join('');
     shell(`<div class="page-head"><div><span class="eyebrow">Question Bank</span><h1>${draft.questionId?`Edit Question · v${Number(draft.versionNo||1)}`:'Add Question'}</h1><p class="muted">A–D single-answer multiple choice only.</p></div><a class="btn ghost" href="/admin/questions" data-link>Back to Question Bank</a></div>
     <div class="question-editor-grid"><section class="card editor-main"><div id="qe-errors" class="form-error"></div>
-      <div class="editor-meta"><label>Subject<select id="qe-subject"><option value="">Choose subject</option>${subjects}</select></label><label>Topic <span class="muted small">(optional)</span><select id="qe-topic"><option value="">No topic</option>${topics}</select></label><label>Difficulty<select id="qe-difficulty"><option value="easy" ${draft.difficulty==='easy'?'selected':''}>Easy</option><option value="medium" ${(!draft.difficulty||draft.difficulty==='medium')?'selected':''}>Medium</option><option value="hard" ${draft.difficulty==='hard'?'selected':''}>Hard</option></select></label></div>
+      <div class="editor-meta"><label>Subject<select id="qe-subject"><option value="">Choose subject</option>${subjects}</select></label><label>Topic <span class="muted small">(required to publish)</span><select id="qe-topic"><option value="">Choose topic</option>${topics}</select></label><label>Difficulty<select id="qe-difficulty"><option value="easy" ${draft.difficulty==='easy'?'selected':''}>Easy</option><option value="medium" ${(!draft.difficulty||draft.difficulty==='medium')?'selected':''}>Medium</option><option value="hard" ${draft.difficulty==='hard'?'selected':''}>Hard</option></select></label></div>
       <section class="editor-section"><h2>Question</h2>${languageFields(mode)}${mediaSlot('prompt',draft.promptImagePath,'Optional question image')}</section>
       <section class="editor-section"><h2>Answer Choices</h2>${['A','B','C','D'].map(k=>optionFields(k,mode)).join('')}</section>
+      <section class="editor-section"><div class="set-total"><div><h2>Question Diversity</h2><p class="muted small">Required before Publish. This metadata powers the Set 7+ hard Diversity Gate.</p></div>${diversityBadge(draft.diversity||{})}</div>
+        <label>Existing concept<select id="qe-concept-id"><option value="">Create / enter concept below</option>${(draft.availableConcepts||[]).map(c=>`<option value="${escapeHtml(c.conceptId)}" ${c.conceptId===draft.diversity?.conceptId?'selected':''}>${escapeHtml(c.conceptLabel||c.conceptKey)} · ${escapeHtml(c.conceptKey)}</option>`).join('')}</select></label>
+        <div class="editor-meta"><label>Concept key<input id="qe-concept-key" value="${escapeHtml(draft.diversity?.conceptKey||'')}" placeholder="e.g. ratio_part_from_total"></label><label>Concept label<input id="qe-concept-label" value="${escapeHtml(draft.diversity?.conceptLabel||'')}"></label><label>Primary entity <span class="muted small">(optional)</span><input id="qe-entity" value="${escapeHtml(draft.diversity?.primaryEntityKey||'')}" placeholder="lowercase_snake_case"></label></div>
+        <label>Concept description <span class="muted small">(optional)</span><textarea id="qe-concept-description" rows="2">${escapeHtml(draft.diversity?.conceptDescription||'')}</textarea></label>
+        <div class="editor-meta"><label>Reasoning type<select id="qe-reasoning"><option value="">Choose</option>${REASONING_TYPES.map(x=>`<option value="${x}" ${x===draft.diversity?.reasoningType?'selected':''}>${escapeHtml(x.replaceAll('_',' '))}</option>`).join('')}</select></label><label>Question style<select id="qe-style"><option value="">Choose</option>${QUESTION_STYLES.map(x=>`<option value="${x}" ${x===draft.diversity?.questionStyle?'selected':''}>${escapeHtml(x.replaceAll('_',' '))}</option>`).join('')}</select></label><label>Template key<input id="qe-template" value="${escapeHtml(draft.diversity?.templateKey||'')}" placeholder="lowercase_snake_case"></label></div>
+        <div class="editor-meta"><label>Review status<select id="qe-review-status"><option value="accepted" ${(draft.diversity?.reviewStatus||'accepted')==='accepted'?'selected':''}>Accepted</option><option value="needs_review" ${draft.diversity?.reviewStatus==='needs_review'?'selected':''}>Needs review</option></select></label><label>Confidence<input id="qe-confidence" type="number" min="0" max="1" step="0.01" value="${Number(draft.diversity?.confidence??1)}"></label></div>
+        <label>Review note <span class="muted small">(optional)</span><textarea id="qe-review-note" rows="2">${escapeHtml(draft.diversity?.reviewNote||'')}</textarea></label>
+      </section>
       <section class="editor-section"><h2>Explanation</h2><p class="muted small">Can be blank while Draft. Required before Publish.</p>${explanationFields(mode)}</section>
     </section><aside class="card editor-side"><div class="status-pill ${escapeHtml(draft.status||'draft')}">${escapeHtml(String(draft.status||'draft').replace(/^./,c=>c.toUpperCase()))}</div><p class="muted small">Question ID</p><p class="visual-question-id mono">${escapeHtml(draft.questionCode||'Not saved yet')}</p><div class="editor-side-meta"><span class="muted small">Version</span><b>v${Number(draft.versionNo||1)}</b></div><div class="editor-actions">${button('Save Draft','ghost','id="qe-save"')}${button('Preview as Student','ghost','id="qe-preview"')}${button('Publish','primary','id="qe-publish"')}</div></aside></div>`,'admin');
 
@@ -2461,6 +2572,16 @@ async function questionEditorPage(questionId){
       draft={...current,subjectId:e.target.value,subjectCode:subject?.code||'',topicId:null};
       editorDirty=true;
       renderEditor();
+    });
+
+    document.querySelector('#qe-concept-id')?.addEventListener('change',e=>{
+      const concept=(draft.availableConcepts||[]).find(c=>c.conceptId===e.target.value);
+      if(!concept)return;
+      document.querySelector('#qe-concept-key').value=concept.conceptKey||'';
+      document.querySelector('#qe-concept-label').value=concept.conceptLabel||'';
+      document.querySelector('#qe-concept-description').value=concept.conceptDescription||'';
+      if(concept.topicId)document.querySelector('#qe-topic').value=concept.topicId;
+      editorDirty=true;
     });
 
     const setDraftMedia=(slot,path)=>{
@@ -2495,11 +2616,19 @@ async function questionEditorPage(questionId){
 
     hydratePrivateImages(root).catch(()=>{});
 
-    async function saveCurrent(showToast=true){
+    async function saveCurrent(showToast=true,requireDiversity=false){
       const payload=readQuestionEditorForm();
-      const errors=validateQuestionDraft(payload,'draft');
+      const contentErrors=validateQuestionDraft(payload,requireDiversity?'publish':'draft');
+      const metaBefore=readDiversityForm(payload.versionId||draft.versionId);
+      const metaErrors=diversityFormErrors(metaBefore,requireDiversity);
+      const errors=[...contentErrors,...metaErrors];
       if(errors.length){showEditorErrors(errors);return null;}
-      const saved=await adminApi.saveQuestionDraft(payload);
+      let saved=await adminApi.saveQuestionDraft(payload);
+      const meta={...metaBefore,questionVersionId:saved.versionId,topicId:saved.topicId||metaBefore.topicId};
+      if(meta.conceptId||meta.conceptKey||meta.templateKey){
+        await adminApi.saveQuestionDiversity(meta);
+        saved=await adminApi.questionEditor(saved.questionId,saved.versionId);
+      }
       draft=saved;editorDirty=false;
       if(location.hash==='#/admin/questions/new') history.replaceState(null,'',`#/admin/questions/${draft.questionId}/edit`);
       renderEditor();
@@ -2512,10 +2641,8 @@ async function questionEditorPage(questionId){
     document.querySelector('#qe-publish').addEventListener('click',async e=>{
       e.currentTarget.disabled=true;
       try{
-        const payload=readQuestionEditorForm();
-        const errors=validateQuestionDraft(payload,'publish');
-        if(errors.length){showEditorErrors(errors);return;}
-        const saved=await adminApi.saveQuestionDraft(payload);
+        const saved=await saveCurrent(false,true);
+        if(!saved)return;
         await adminApi.publishQuestion(saved.versionId);
         editorDirty=false;
         go('/admin/questions');
