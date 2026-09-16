@@ -689,6 +689,7 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceM
   const SUPABASE_URL = 'https://wwjtpfexvqaipvvupsai.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_lsaVuFvTx6QlkMEb8a_nvQ_94YGD3F1';
   const SESSION_KEY = 'pksk_session_v1';
+  const NETWORK_TIMEOUT_MS = 8000;
 
   function makeError(payload, status) {
     const message = payload?.message || payload?.error_description || payload?.msg || payload?.error || payload?.hint || `Request failed (${status})`;
@@ -708,8 +709,21 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceM
     return payload;
   }
 
+  async function fetchWithTimeout(url, options = {}, timeoutMs = NETWORK_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } catch (err) {
+      if (err?.name === 'AbortError') throw new Error('Network request timed out. Please check your connection and try again.');
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async function rawJson(url, options = {}) {
-    return parseResponse(await fetch(url, options));
+    return parseResponse(await fetchWithTimeout(url, options));
   }
 
   function loadSession() {
@@ -729,6 +743,14 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceM
 
   function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
+  function clearSessionIfCurrent(session) {
+    const current = loadSession();
+    if (!current) return;
+    const sameRefreshToken = Boolean(session?.refresh_token && current.refresh_token === session.refresh_token);
+    const sameAccessToken = Boolean(session?.access_token && current.access_token === session.access_token);
+    if (sameRefreshToken || sameAccessToken) clearSession();
+  }
+
   async function refreshSession(session) {
     if (!session?.refresh_token) { clearSession(); return null; }
     try {
@@ -742,7 +764,7 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceM
       });
       return saveSession(data);
     } catch (err) {
-      clearSession();
+      clearSessionIfCurrent(session);
       throw err;
     }
   }
@@ -1157,14 +1179,23 @@ async function requireProfile(role) {
 
 async function loginPage() {
   document.body.dataset.role = 'login';
-  const session = await auth.session();
-  if (session) { profile = await auth.profile(); return go(profile?.role === 'admin' ? '/admin' : '/student'); }
   root.innerHTML = `<main class="login-wrap"><section class="login-card"><div class="login-brand">${brandMarkup()}</div><h1>Welcome back</h1><p class="muted">Log in using the email and password provided by your administrator.</p><form id="login"><label>Email<input id="email" type="email" autocomplete="username" required></label><label>Password<input id="password" type="password" autocomplete="current-password" required></label><div id="login-error" class="form-error" aria-live="polite"></div>${button('Log In','primary','type="submit"')}</form><div class="login-credit"><span>Designed and developed by afifiakib for</span><span class="login-credit-names">adra | addin | arif</span></div></section></main>`;
   document.querySelector('#login').addEventListener('submit', async e => {
     e.preventDefault(); const msg = document.querySelector('#login-error'); msg.textContent='';
     try { await auth.signIn(document.querySelector('#email').value.trim(), document.querySelector('#password').value); profile=await auth.profile(); go(profile.role==='admin'?'/admin':'/student'); }
     catch (err) { msg.textContent = err.message || 'Unable to log in.'; }
   });
+
+  void (async () => {
+    try {
+      const session = await auth.session();
+      if (!session || (location.hash.slice(1) || '/') !== '/') return;
+      profile = await auth.profile();
+      if (profile && (location.hash.slice(1) || '/') === '/') go(profile.role === 'admin' ? '/admin' : '/student');
+    } catch (err) {
+      console.warn('Saved session could not be restored; staying on login.', err);
+    }
+  })();
 }
 
 function subjectIcon(code) {
