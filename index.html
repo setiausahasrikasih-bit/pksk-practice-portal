@@ -1495,17 +1495,22 @@ async function practiceReviewPage(attemptId) {
   if(!await requireProfile('student'))return;
   loading('Loading answer review…');
   const r=await studentApi.practiceReview(attemptId);
-  const rows=(r.questions||[]).map(q=>{
-    const display={language_mode:q.language_mode,prompt_ms:q.prompt_ms,prompt_en:q.prompt_en};
-    const prompts=languageBlocks(display).map((part,i)=>`<p class="question-text ${i?'translation':''}">${escapeHtml(part.text)}</p>`).join('');
-    const image=q.prompt_image_path?`<img class="question-media media-loading" data-media-path="${escapeHtml(q.prompt_image_path)}" alt="Question diagram">`:'';
-    const hasOptions=Array.isArray(q.options)&&q.options.length>0;
-    const optionsMarkup=hasOptions?reviewOptionsMarkup(q,{actorLabel:'Your answer'}):'';
-    const answerSummary=hasOptions?'':`<div class="answer-review review-answer ${q.is_correct?'correct':'wrong'}"><p><b>Your answer:</b> ${escapeHtml(answerLabel(q,q.selected_option_id))}</p><p><b>Correct answer:</b> ${escapeHtml(answerLabel(q,q.correct_option_id))}</p></div>`;
-    return `<article class="review-card ${q.is_correct?'correct-card':'wrong-card'}"><div class="review-head"><b>Question ${Number(q.position)} · ${escapeHtml(r.subjectName)}</b><span>${q.is_correct?'✓ Correct':'✕ Incorrect'}</span></div>${prompts}${image}${optionsMarkup}${answerSummary}<div class="explanation"><b>Explanation</b>${q.explanation_ms?`<p>${escapeHtml(q.explanation_ms)}</p>`:''}${q.explanation_en?`<p class="translation">${escapeHtml(q.explanation_en)}</p>`:''}</div></article>`;
-  }).join('');
-  shell(`<div class="page-head"><div><span class="eyebrow">Answer Review</span><h1>${escapeHtml(r.title)}</h1><p class="muted">${Number(r.correctCount||0)} correct · ${pct(r.percentage)} · ${formatDuration(r.elapsedSeconds||0)}</p></div><div class="preview-actions"><a class="btn ghost" href="/student/practice/results/${attemptId}" data-link>Result</a><a class="btn ghost" href="/student" data-link>Quiz Hub</a></div></div><section class="review-list">${rows||'<div class="empty-playful">No questions to review.</div>'}</section>`);
-  hydratePrivateImages(root).catch(()=>{});
+  let filter='all';
+  const draw=()=>{
+    const questions=filterReviewQuestions(r.questions||[],filter);
+    const rows=questions.map(q=>{
+      const display={language_mode:q.language_mode,prompt_ms:q.prompt_ms,prompt_en:q.prompt_en};
+      const prompts=languageBlocks(display).map((part,i)=>`<p class="question-text ${i?'translation':''}">${escapeHtml(part.text)}</p>`).join('');
+      const image=q.prompt_image_path?`<img class="question-media media-loading" data-media-path="${escapeHtml(q.prompt_image_path)}" alt="Question diagram">`:'';
+      const optionsMarkup=reviewOptionsMarkup(q,{actorLabel:'Your answer'});
+      const answerSummary=(q.options||[]).length?'':`<div class="answer-review review-answer ${q.is_correct?'correct':'wrong'}"><p><b>Your answer:</b> ${escapeHtml(answerLabel(q,q.selected_option_id))}</p><p><b>Correct answer:</b> ${escapeHtml(answerLabel(q,q.correct_option_id))}</p></div>`;
+      return `<article class="review-card ${q.is_correct?'correct-card':'wrong-card'}"><div class="review-head"><b>Question ${Number(q.position)} · ${escapeHtml(r.subjectName)}</b><span>${q.is_correct?'✓ Correct':'✕ Incorrect'}</span></div>${prompts}${image}${optionsMarkup}${answerSummary}<div class="explanation"><b>Explanation</b>${q.explanation_ms?`<p>${escapeHtml(q.explanation_ms)}</p>`:''}${q.explanation_en?`<p class="translation">${escapeHtml(q.explanation_en)}</p>`:''}</div></article>`;
+    }).join('');
+    shell(`<div class="page-head"><div><span class="eyebrow">Answer Review</span><h1>${escapeHtml(r.title)}</h1><p class="muted">${Number(r.correctCount||0)} correct · ${pct(r.percentage)} · ${formatDuration(r.elapsedSeconds||0)}</p></div><div class="preview-actions"><a class="btn ghost" href="/student/practice/results/${attemptId}" data-link>Result</a><a class="btn ghost" href="/student" data-link>Quiz Hub</a></div></div><div class="review-tabs">${['all','wrong','correct','flagged'].map(f=>`<button class="btn ${filter===f?'primary':'ghost'}" data-filter="${f}">${f[0].toUpperCase()+f.slice(1)}</button>`).join('')}</div><section class="review-list">${rows||'<div class="empty-playful">No questions in this filter.</div>'}</section>`);
+    document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;draw();});
+    hydratePrivateImages(root).catch(()=>{});
+  };
+  draw();
 }
 
 function answerLabel(q,id){const o=(q.options||[]).find(x=>x.id===id);if(!o)return 'No answer';return `${o.key}. ${(o.text_ms||o.text_en||'')}`;}
