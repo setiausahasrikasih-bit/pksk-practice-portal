@@ -1401,12 +1401,32 @@ async function quizPage(attemptId) {
   let payload=await studentApi.payload(attemptId); if(payload.status!=='in_progress') return go(`/student/results/${attemptId}`);
   const legacyQuestion=(payload.questions||[]).find(q=>q.question_type!=='mcq_single'||!isExactAbcd((q.options||[]).map(o=>({key:o.key}))));
   if(legacyQuestion) throw new Error('This simulation contains a legacy question format. Please return to the dashboard and start the current version.');
-  let index=0, saving=false, autoSubmitted=false;
+  let index=0, saveQueue=Promise.resolve(), failedSaves=new Map(), autoSubmitted=false;
   const draw=()=>{ const q=payload.questions[index]; const unanswered=countUnanswered(payload.questions); root.innerHTML=`<header class="exam-top"><div><b>${escapeHtml(payload.title)}</b><span>Question ${index+1}/${payload.question_count}</span></div><div id="timer" class="timer"></div></header><main class="exam-page"><section class="question-panel"><div class="question-meta"><span class="subject-pill">${escapeHtml(q.subject_name)}</span><span>${escapeHtml(q.topic_name||'')}</span></div>${renderQuestion(q)}<div id="save-status" class="save-status" aria-live="polite"></div><div class="exam-actions">${button('Previous','ghost',index===0?'disabled':'')}<button id="flag" class="btn ${q.saved_answer?.flagged?'flag-on':'ghost'}">${q.saved_answer?.flagged?'★ Flagged':'☆ Flag for Review'}</button>${button(index===payload.questions.length-1?'Review / Submit':'Next','primary')}</div></section><aside class="navigator"><h3>Jump to Question</h3><div class="nav-grid">${payload.questions.map((x,i)=>`<button class="nav-q ${navigatorState({current:i===index,answered:isAnswered(x),flagged:x.saved_answer?.flagged})}" data-i="${i}" aria-label="Question ${i+1}${isAnswered(x)?', answered':', unanswered'}${x.saved_answer?.flagged?', flagged':''}">${i+1}</button>`).join('')}</div><div class="legend"><span>● Current</span><span>● Answered</span><span>● Flagged</span><span>● Unanswered</span></div><p class="muted">${unanswered} unanswered</p></aside></main>`;
     const actions=document.querySelector('.exam-actions').querySelectorAll('button'); actions[0].onclick=()=>{if(index>0){index--;draw();}}; actions[1].onclick=async()=>{q.saved_answer={...(q.saved_answer||{}),flagged:!q.saved_answer?.flagged}; await saveQ(q); draw();}; actions[2].onclick=()=>{if(index<payload.questions.length-1){index++;draw();}else submitFlow();}; document.querySelectorAll('.nav-q').forEach(b=>b.onclick=()=>{index=Number(b.dataset.i);draw();}); document.querySelectorAll('.option').forEach(b=>b.onclick=async()=>{q.saved_answer={...(q.saved_answer||{}),selected_option_id:b.dataset.option}; draw(); await saveQ(q);}); hydratePrivateImages(root).catch(()=>{}); updateTimer(); };
-  async function saveQ(q){ if(saving)return; saving=true; const el=document.querySelector('#save-status'); if(el)el.textContent='Saving…'; try{await studentApi.save({attemptQuestionId:q.attempt_question_id,selectedOptionId:q.saved_answer?.selected_option_id,flagged:!!q.saved_answer?.flagged}); if(el)el.textContent='Saved';}catch(e){if(el)el.textContent='Save failed — please try again.';}finally{saving=false;}}
+  function setSimulationSaveStatus(questionId,text){if(payload.questions[index]?.attempt_question_id!==questionId)return;const el=document.querySelector('#save-status');if(el)el.textContent=text;}
+  async function saveQ(q){
+    const snapshot={attemptQuestionId:q.attempt_question_id,selectedOptionId:q.saved_answer?.selected_option_id||null,flagged:!!q.saved_answer?.flagged};
+    const questionId=snapshot.attemptQuestionId;
+    setSimulationSaveStatus(questionId,'Saving…');
+    const task=saveQueue.then(()=>studentApi.save(snapshot));
+    saveQueue=task.catch(()=>{});
+    try{await task;failedSaves.delete(questionId);setSimulationSaveStatus(questionId,'Saved');return true;}
+    catch(e){failedSaves.set(questionId,snapshot);setSimulationSaveStatus(questionId,'Save failed — will retry before submission.');return false;}
+  }
+  async function flushSimulationSaves(){
+    await saveQueue;
+    if(!failedSaves.size)return;
+    const retry=[...failedSaves.entries()];
+    failedSaves.clear();
+    for(const [questionId,snapshot] of retry){
+      try{await studentApi.save(snapshot);failedSaves.delete(questionId);}
+      catch(e){failedSaves.set(questionId,snapshot);}
+    }
+    if(failedSaves.size)throw new Error('One or more answers could not be saved. Please check your connection and try submitting again.');
+  }
   async function submitFlow(){const n=countUnanswered(payload.questions);if(n&&!confirm(`You still have ${n} unanswered questions.\n\nPress OK to submit anyway, or Cancel to return.`))return;await finish();}
-  async function finish(){if(autoSubmitted)return;autoSubmitted=true;clearInterval(quizTimer);try{await submitSimulationWithRecovery(attemptId);go(`/student/results/${attemptId}`);}catch(e){autoSubmitted=false;alert(e.message||'Unable to submit simulation. Please try again.');}}
+  async function finish(){if(autoSubmitted)return;autoSubmitted=true;clearInterval(quizTimer);document.querySelectorAll('.option,.exam-actions button,.nav-q').forEach(el=>el.disabled=true);try{const status=document.querySelector('#save-status');if(status)status.textContent='Saving final answers…';await flushSimulationSaves();await submitSimulationWithRecovery(attemptId);go(`/student/results/${attemptId}`);}catch(e){autoSubmitted=false;document.querySelectorAll('.option,.exam-actions button,.nav-q').forEach(el=>el.disabled=false);alert(e.message||'Unable to submit simulation. Please try again.');}}
   function updateTimer(){const el=document.querySelector('#timer');if(!el)return;const r=remainingSeconds(payload.expires_at);el.textContent=`${String(Math.floor(r/60)).padStart(2,'0')}:${String(r%60).padStart(2,'0')}`;if(r<=0)finish();}
   clearInterval(quizTimer);quizTimer=setInterval(updateTimer,1000);draw();
 }
