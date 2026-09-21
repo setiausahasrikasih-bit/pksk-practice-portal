@@ -148,6 +148,27 @@ body[data-role="student"] .student-page{max-width:1240px;padding-top:26px}
 </head>
 <body>
 <div id="app"></div>
+<script id="pksk-startup-guard">
+(() => {
+  const showStartupProblem = (detail = '') => {
+    if (window.__PKSK_APP_STARTED__) return;
+    const app = document.querySelector('#app');
+    if (!app || app.children.length) return;
+    const safeDetail = String(detail || '').replace(/[<>&"]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));
+    app.innerHTML = `<main class="center"><div class="card error"><h2>PKSK Pro could not start</h2><p>Please refresh the page. If it stays blank, try Chrome/Safari directly or switch network temporarily.</p>${safeDetail ? `<p class="muted small">${safeDetail}</p>` : ''}<button class="btn primary" type="button" onclick="location.reload()">Refresh</button></div></main>`;
+  };
+  window.__PKSK_SHOW_STARTUP_PROBLEM__ = showStartupProblem;
+  window.addEventListener('error', event => {
+    if (!window.__PKSK_APP_STARTED__) setTimeout(() => showStartupProblem(event?.message || 'A startup script could not load.'), 0);
+  });
+  window.addEventListener('unhandledrejection', event => {
+    if (!window.__PKSK_APP_STARTED__) setTimeout(() => showStartupProblem(event?.reason?.message || 'A startup request failed.'), 0);
+  });
+  setTimeout(() => {
+    if (!window.__PKSK_APP_STARTED__) showStartupProblem('Startup took longer than expected.');
+  }, 6000);
+})();
+</script>
 
 <style>
 .results-filter-grid{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:12px;align-items:end}.results-filter-grid label{font-size:.82rem}.results-filter-grid select{border:1px solid var(--border);border-radius:10px;padding:12px 13px;background:#fff;min-height:44px}.results-filter-actions{display:flex;gap:8px;align-items:end}.performance-stat-note{font-size:.76rem;color:var(--muted);margin-top:4px}.performance-status{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 9px;font-size:.76rem;font-weight:850;background:#f0f2f6;color:#596276}.performance-status.strong{background:#e3f7ec;color:#247451}.performance-status.developing{background:#fff4d9;color:#885f12}.performance-status.focus{background:#ffe7e7;color:#a73a3a}.performance-status.sparse{background:#eef1f6;color:#667085}.performance-status.improving{background:#e3f7ec;color:#247451}.performance-status.declining{background:#ffe7e7;color:#a73a3a}.performance-status.stable{background:#e8efff;color:#3b5f9e}.performance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.performance-panel{background:#fff;border:1px solid var(--border);border-radius:16px;padding:17px}.performance-panel h3{margin:0 0 7px}.performance-evidence{font-size:.78rem;color:var(--muted)}.mastery-list,.insight-list{display:grid;gap:10px}.mastery-row,.insight-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:13px}.mastery-main b,.insight-main b{display:block}.mastery-meta,.insight-meta{font-size:.78rem;color:var(--muted);margin-top:3px}.mastery-score{text-align:right;font-weight:900}.performance-section{margin:24px 0}.performance-section>.hub-section-head{margin-bottom:12px}.performance-section .card{margin-bottom:0}.cohort-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}.priority-high{border-left:4px solid #c53d3d}.priority-medium{border-left:4px solid #d89b1d}.priority-low{border-left:4px solid #8aa0bf}.results-table td{vertical-align:top}.results-table .score-cell{font-weight:850}.tracking-note{padding:11px 13px;border-radius:12px;background:#f7f4ff;color:#65528e;font-size:.82rem}.performance-actions{display:flex;gap:8px;flex-wrap:wrap}.performance-ai-placeholder{border:2px dashed #ddd5ee;background:#fbf9ff;border-radius:16px;padding:18px;color:#6d6480}.performance-empty{padding:18px;border:1px dashed #dfe3eb;border-radius:14px;color:var(--muted);text-align:center}.performance-student-link{font-weight:850}.section-spread{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.metric-inline{display:flex;gap:10px;flex-wrap:wrap}.metric-chip{padding:6px 9px;border-radius:999px;background:#f1f3f7;font-size:.75rem;font-weight:800}.result-student-table{min-width:0;width:100%;table-layout:fixed;font-size:.82rem}.compact-performance-wrap{overflow-x:hidden}.result-student-table.compact-performance th,.result-student-table.compact-performance td{padding:9px 7px;line-height:1.25;overflow-wrap:anywhere}.result-student-table.compact-performance th{white-space:nowrap;overflow-wrap:normal;word-break:normal;font-size:.74rem;letter-spacing:.025em}.result-student-table.compact-performance .performance-sort-btn{white-space:nowrap;overflow-wrap:normal;word-break:normal;gap:3px}.result-student-table.compact-performance .performance-sort-arrow{flex:0 0 auto}.result-student-table.compact-performance th:nth-child(1){width:4%}.result-student-table.compact-performance th:nth-child(2){width:17%}.result-student-table.compact-performance th:nth-child(3){width:7%}.result-student-table.compact-performance th:nth-child(4){width:8%}.result-student-table.compact-performance th:nth-child(5){width:16%}.result-student-table.compact-performance th:nth-child(6){width:9%}.result-student-table.compact-performance th:nth-child(7){width:11%}.result-student-table.compact-performance th:nth-child(8){width:9%}.result-student-table.compact-performance th:nth-child(9){width:9%}.result-student-table.compact-performance th:nth-child(10){width:10%}.result-student-table.compact-performance .performance-status{padding:4px 7px;font-size:.7rem}.result-student-table.compact-performance .performance-student-link{font-size:.92rem}.result-student-table.compact-performance .small{font-size:.72rem}.performance-ranking-toolbar{display:grid;grid-template-columns:minmax(230px,1.45fr) minmax(160px,.75fr) auto;gap:10px;align-items:end;margin-bottom:14px}.performance-ranking-toolbar label{font-size:.78rem}.performance-ranking-toolbar select{width:100%;border:1px solid var(--border);border-radius:10px;padding:11px 12px;background:#fff;min-height:44px}.performance-ranking-meta{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin:4px 0 12px}.performance-ranking-count{font-size:.8rem;color:var(--muted);font-weight:750}.performance-sort-btn{border:0;background:none;padding:0;color:inherit;font:inherit;font-weight:850;cursor:pointer;display:inline-flex;align-items:center;gap:5px;text-transform:uppercase;letter-spacing:.05em}.performance-sort-btn:hover,.performance-sort-btn.active{color:var(--primary)}.performance-sort-arrow{font-size:.7rem}.performance-rank-number{font-weight:900;color:var(--primary);text-align:center}.ai-report{display:grid;gap:14px}.ai-report-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.ai-report-section{padding:14px;border:1px solid var(--border);border-radius:14px;background:#fff}.ai-report-section h4{margin:0 0 8px}.ai-report-section ul,.ai-report-section ol{margin:7px 0 0;padding-left:22px}.ai-report-section li{margin:7px 0}.ai-evidence{display:block;color:var(--muted);font-size:.78rem;margin-top:2px}.ai-action{display:block;font-size:.78rem;font-weight:750;margin-top:2px}.ai-meta{font-size:.75rem;color:var(--muted)}.ai-control-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.ai-toggle{display:inline-flex;gap:8px;align-items:center;font-weight:800}.ai-toggle input{width:18px;height:18px}.ai-disabled-note{padding:10px 12px;border-radius:12px;background:#fff6df;color:#805c16;font-size:.82rem}.activity-daily-list{display:grid;gap:8px;margin-top:12px}.activity-day{display:grid;grid-template-columns:82px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:.78rem}.activity-day-track{height:8px;background:#edf0f5;border-radius:999px;overflow:hidden}.activity-day-fill{height:100%;background:linear-gradient(90deg,#9b82eb,#73c9e8);border-radius:999px}.activity-split{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.activity-split span{background:#f2f4f8;border-radius:999px;padding:5px 8px;font-size:.72rem;font-weight:800}.performance-ranking-card{padding:14px 16px}.performance-ranking-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px}.performance-ranking-toolbar label{display:flex;align-items:center;gap:7px;font-size:.72rem;font-weight:850;color:var(--muted);white-space:nowrap}.performance-ranking-toolbar label:first-child{flex:0 1 330px}.performance-ranking-toolbar label:nth-child(2){flex:0 1 205px}.performance-ranking-toolbar select{width:100%;min-height:36px;height:36px;border:1px solid var(--border);border-radius:9px;padding:6px 30px 6px 10px;background:#fff;font-size:.78rem;font-weight:750}.performance-ranking-toolbar .btn{min-height:36px;height:36px;padding:6px 12px;border-radius:9px}.performance-ranking-toolbar .toolbar-count{margin-left:auto;font-size:.74rem;color:var(--muted);font-weight:800;white-space:nowrap}.result-student-table.compact-performance{width:100%;min-width:0;table-layout:fixed;font-size:.76rem}.result-student-table.compact-performance th,.result-student-table.compact-performance td{padding:10px 5px;line-height:1.2}.result-student-table.compact-performance th{font-size:.66rem;letter-spacing:.025em;white-space:nowrap;overflow:visible}.result-student-table.compact-performance td{overflow-wrap:normal}.result-student-table.compact-performance .performance-sort-btn{font-size:inherit;letter-spacing:inherit;gap:3px;white-space:nowrap}.performance-colgroup .c-rank{width:3%}.performance-colgroup .c-student{width:22%}.performance-colgroup .c-attempts{width:7%}.performance-colgroup .c-accuracy{width:8%}.performance-colgroup .c-sim{width:12%}.performance-colgroup .c-time{width:10%}.performance-colgroup .c-trend{width:11%}.performance-colgroup .c-quiz{width:9%}.performance-colgroup .c-study{width:9%}.performance-colgroup .c-open{width:9%}.result-student-table.compact-performance th:nth-child(1),.result-student-table.compact-performance td:nth-child(1),.result-student-table.compact-performance th:nth-child(3),.result-student-table.compact-performance td:nth-child(3),.result-student-table.compact-performance th:nth-child(4),.result-student-table.compact-performance td:nth-child(4),.result-student-table.compact-performance th:nth-child(6),.result-student-table.compact-performance td:nth-child(6),.result-student-table.compact-performance th:nth-child(7),.result-student-table.compact-performance td:nth-child(7),.result-student-table.compact-performance th:nth-child(8),.result-student-table.compact-performance td:nth-child(8),.result-student-table.compact-performance th:nth-child(9),.result-student-table.compact-performance td:nth-child(9),.result-student-table.compact-performance th:nth-child(10),.result-student-table.compact-performance td:nth-child(10){text-align:center}.result-student-table.compact-performance th:nth-child(2),.result-student-table.compact-performance td:nth-child(2){text-align:left}.result-student-table.compact-performance th:nth-child(5),.result-student-table.compact-performance td:nth-child(5){text-align:center}.result-student-table.compact-performance .performance-student-link{font-size:.84rem;line-height:1.15}.result-student-table.compact-performance .small{font-size:.67rem;line-height:1.2}.result-student-table.compact-performance .performance-status{padding:4px 7px;font-size:.64rem;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}.latest-sim-compact{display:flex;align-items:baseline;justify-content:center;gap:4px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.latest-sim-compact b{font-size:.8rem;flex:0 0 auto}.latest-sim-compact span{color:var(--muted);font-size:.68rem;overflow:hidden;text-overflow:ellipsis}.performance-open-link{display:inline-flex;align-items:center;justify-content:center;min-width:42px;padding:5px 8px;border-radius:8px;background:#f4f1ff;font-size:.7rem;font-weight:850;text-decoration:none}.compact-performance-wrap{overflow-x:hidden}
@@ -693,7 +714,6 @@ function examCountdownMeta(examDate, todayDate) {
 
 window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceModeConfig, languageBlocks, optionLanguageBlocks, filterReviewQuestions, isAnswered, countUnanswered, remainingSeconds, escapeHtml, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, REFERENCE_MAX_BYTES, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES, allocateGapDifficulty, buildGapGenerationDraft, applySetSuggestions, masteryLabel, trendMeta, performanceReviewRoute, isStudentQuizRoute, shouldTrackPortalStudy, recommendedAction, diversityBadge, diversityConflict, examCountdownMeta };
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>(() => {
   const SUPABASE_URL = 'https://wwjtpfexvqaipvvupsai.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_lsaVuFvTx6QlkMEb8a_nvQ_94YGD3F1';
@@ -828,11 +848,71 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceM
     return authedJson('/auth/v1/user', { method: 'GET' });
   }
 
+  const REALTIME_LIBRARY_URLS = [
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js',
+    'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js',
+  ];
+  let realtimeLibraryPromise = null;
   let realtimeClient = null;
+
+  function loadExternalScript(url, timeoutMs = 8000) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      let settled = false;
+      const finish = (fn, value) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        script.onload = null;
+        script.onerror = null;
+        fn(value);
+      };
+      const timer = setTimeout(() => {
+        script.remove();
+        finish(reject, new Error(`Realtime library timed out: ${url}`));
+      }, timeoutMs);
+      script.src = url;
+      script.async = true;
+      script.onload = () => {
+        if (window.supabase?.createClient) finish(resolve, window.supabase);
+        else {
+          script.remove();
+          finish(reject, new Error(`Realtime library loaded without a browser client: ${url}`));
+        }
+      };
+      script.onerror = () => {
+        script.remove();
+        finish(reject, new Error(`Realtime library could not load: ${url}`));
+      };
+      document.head.appendChild(script);
+    });
+  }
+
+  async function ensureRealtimeLibrary() {
+    if (window.supabase?.createClient) return window.supabase;
+    if (realtimeLibraryPromise) return realtimeLibraryPromise;
+    realtimeLibraryPromise = (async () => {
+      let lastError = null;
+      for (const url of REALTIME_LIBRARY_URLS) {
+        try { return await loadExternalScript(url); }
+        catch (error) {
+          lastError = error;
+          console.warn('Realtime CDN unavailable; trying fallback:', error?.message || error);
+        }
+      }
+      throw new Error(`Live Lounge updates are unavailable on this network.${lastError?.message ? ` ${lastError.message}` : ''}`);
+    })();
+    try { return await realtimeLibraryPromise; }
+    catch (error) {
+      realtimeLibraryPromise = null;
+      throw error;
+    }
+  }
+
   async function getRealtimeClient() {
-    if (!window.supabase?.createClient) throw new Error('Realtime library is unavailable. Please refresh and try again.');
+    const realtimeLibrary = await ensureRealtimeLibrary();
     if (!realtimeClient) {
-      realtimeClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      realtimeClient = realtimeLibrary.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
         auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
       });
     }
@@ -1097,6 +1177,7 @@ let lastStudentInteractionAt = Date.now();
 let activityListenersBound = false;
 let chatRealtimeUnsubscribe = null;
 let chatRefreshTimer = null;
+let chatPollingTimer = null;
 
 function currentRoute(){ return location.hash.slice(1) || '/'; }
 function markStudentInteraction(){ lastStudentInteractionAt = Date.now(); }
@@ -1125,6 +1206,7 @@ function stopStudentActivityTracking(){
 }
 function stopChatRealtime(){
   if(chatRefreshTimer){clearTimeout(chatRefreshTimer);chatRefreshTimer=null;}
+  if(chatPollingTimer){clearInterval(chatPollingTimer);chatPollingTimer=null;}
   if(chatRealtimeUnsubscribe){
     try{chatRealtimeUnsubscribe();}catch(error){console.warn('Chat realtime cleanup skipped:',error?.message||error);}
     chatRealtimeUnsubscribe=null;
@@ -1644,6 +1726,7 @@ async function studentChatLounge(){
     const label=live.querySelector('span:last-child');
     live.classList.remove('connecting','offline');
     if(status==='SUBSCRIBED'){if(label)label.textContent='Live';return;}
+    if(status==='POLLING'){live.classList.add('offline');if(label)label.textContent='Refresh mode';return;}
     if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){live.classList.add('offline');if(label)label.textContent='Offline';return;}
     live.classList.add('connecting');if(label)label.textContent='Connecting…';
   }
@@ -1701,7 +1784,14 @@ async function studentChatLounge(){
       onSettings:()=>render(),
       onStatus:setLive,
     });
-  }catch(error){setLive('CHANNEL_ERROR');console.warn('Chat realtime unavailable:',error?.message||error);}
+  }catch(error){
+    setLive('POLLING');
+    console.warn('Chat realtime unavailable; using polling fallback:',error?.message||error);
+    chatPollingTimer=setInterval(()=>{
+      if(currentRoute()!=='/student/lounge')return;
+      refreshMessages(false).catch(refreshError=>console.warn('Chat polling refresh skipped:',refreshError?.message||refreshError));
+    },15000);
+  }
 }
 
 async function adminDashboard(){
@@ -3242,7 +3332,7 @@ async function studentDetail(userId){if(!await requireProfile('admin'))return;lo
 function adminHistoryTable(rows){if(!rows.length)return'<p class="muted">No completed attempts yet.</p>';return`<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'')}</td><td>${formatDuration(r.elapsedSeconds)}</td><td>${date(r.submittedAt)}</td><td><a href="/admin/review/${r.attemptId}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`;}
 
 async function render(){clearInterval(quizTimer);stopChatRealtime();try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/history')return studentHistory();if(p==='/student/performance')return studentPerformancePage();if(p==='/student/leaderboard')return studentLeaderboard();if(p==='/student/lounge')return studentChatLounge();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/practice/attempt/'))return practiceAttemptPage(p.split('/').pop());if(p.startsWith('/student/practice/results/'))return practiceResultsPage(p.split('/').pop());if(p.startsWith('/student/practice/review/'))return practiceReviewPage(p.split('/').pop());if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/references')return referenceLibraryPage();if(/^\/admin\/references\/[^/]+$/.test(p))return referenceDocumentPage(p.split('/')[3]);if(p==='/admin/ai')return go('/admin/generator');if(p==='/admin/generator')return generationJobsPage();if(p==='/admin/generator/coverage')return generationCoveragePage();if(p==='/admin/generator/new')return generationJobNewPage();if(/^\/admin\/generator\/[^/]+\/review$/.test(p))return generationReviewPage(p.split('/')[3]);if(/^\/admin\/generator\/[^/]+$/.test(p))return generationJobPage(p.split('/')[3]);if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return simulationSetsPage();if(p==='/admin/sets/new')return simulationSetNewPage();if(/^\/admin\/sets\/[^/]+\/edit$/.test(p))return simulationSetBuilderPage(p.split('/')[3]);if(/^\/admin\/sets\/[^/]+\/preview$/.test(p))return simulationSetPreviewPage(p.split('/')[3]);if(p==='/admin/results')return adminResultsPage();if(/^\/admin\/results\/student\/[^/]+$/.test(p))return adminStudentPerformancePage(p.split('/').pop());if(p.startsWith('/admin/practice/review/'))return adminPracticeReviewPage(p.split('/').pop());if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
-window.addEventListener('beforeunload',e=>{if(editorDirty){e.preventDefault();e.returnValue='';}});window.addEventListener('hashchange', render);render();})();
+window.addEventListener('beforeunload',e=>{if(editorDirty){e.preventDefault();e.returnValue='';}});window.addEventListener('hashchange', render);window.__PKSK_APP_STARTED__=true;render();})();
 </script>
 </body>
 </html>
