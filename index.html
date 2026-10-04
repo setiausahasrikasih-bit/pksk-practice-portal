@@ -75,6 +75,13 @@ body[data-role="login"] .login-credit .login-credit-names{margin-top:2px;color:#
 @media(max-width:420px){.topbar .brand span:last-child{display:initial}.brand-tagline{font-size:.4rem}.brand-name{font-size:.86rem}}
 </style>
 
+<style id="personalised-training-styles">
+body[data-role="student"] .personalized-training-section{position:relative}
+body[data-role="student"] .personalized-training-section .hub-section-head{padding:14px 16px;border-radius:16px;background:linear-gradient(120deg,#fff5d6,#f7eaff,#e7f4ff);border:1px solid #eadffc}
+body[data-role="student"] .personalized-training-card{background:linear-gradient(135deg,#fff 0 54%,#f5efff 100%);border-color:#d9c9fb}
+body[data-role="student"] .personalized-training-card:before{background:linear-gradient(90deg,#8f68dd,#e98cbd,#79c8e8)}
+</style>
+
 
 <style>
 .admin-toolbar{display:flex;gap:.75rem;flex-wrap:wrap;align-items:end;margin-bottom:12px}
@@ -1359,7 +1366,12 @@ async function studentDashboard() {
   const d = await studentApi.quizHub();
   studentIdentity = d.profile || null;
 
-  const simCards = (d.simulations||[]).map(sim => `<article class="student-sim-card"><div><span class="eyebrow">Full Simulation</span><h3>${escapeHtml(sim.title)}</h3><div class="sim-metrics"><span class="mini-chip">📝 ${Number(sim.questionCount||0)} questions</span><span class="mini-chip">⏱ ${Math.round(Number(sim.timeLimitSeconds||0)/60)} min</span></div><p class="muted small">Best: ${pct(sim.bestPercentage)} · Last: ${pct(sim.lastPercentage)}</p></div><button class="btn primary sim-action" data-set="${escapeHtml(sim.setVersionId)}" data-attempt="${escapeHtml(sim.activeAttemptId||'')}">${escapeHtml(simulationAction(sim.status))}</button></article>`).join('') || `<div class="empty-playful">No published simulations yet. Your teacher/admin can publish one when it is ready.</div>`;
+  const fullSimulationSets = d.fullSimulations || (d.simulations||[]).filter(sim => (sim.setKind||'standard') !== 'personalized');
+  const personalizedSets = d.personalizedTraining || (d.simulations||[]).filter(sim => sim.setKind === 'personalized');
+
+  const simCards = fullSimulationSets.map(sim => `<article class="student-sim-card"><div><span class="eyebrow">Full Simulation</span><h3>${escapeHtml(sim.title)}</h3><div class="sim-metrics"><span class="mini-chip">📝 ${Number(sim.questionCount||0)} questions</span><span class="mini-chip">⏱ ${Math.round(Number(sim.timeLimitSeconds||0)/60)} min</span></div><p class="muted small">Best: ${pct(sim.bestPercentage)} · Last: ${pct(sim.lastPercentage)}</p></div><button class="btn primary sim-action" data-set="${escapeHtml(sim.setVersionId)}" data-attempt="${escapeHtml(sim.activeAttemptId||'')}">${escapeHtml(simulationAction(sim.status))}</button></article>`).join('') || `<div class="empty-playful">No published simulations yet. Your teacher/admin can publish one when it is ready.</div>`;
+
+  const personalizedCards = personalizedSets.map(sim => `<article class="student-sim-card personalized-training-card"><div><span class="eyebrow">Personalised Training</span><h3>${escapeHtml(sim.title)}</h3><div class="sim-metrics"><span class="mini-chip">🎯 ${Number(sim.questionCount||0)} targeted questions</span><span class="mini-chip">⏱ ${Math.round(Number(sim.timeLimitSeconds||0)/60)} min</span></div><p class="muted small">Private set built around your current strengths and weaknesses. Best: ${pct(sim.bestPercentage)} · Last: ${pct(sim.lastPercentage)}</p></div><button class="btn primary sim-action" data-set="${escapeHtml(sim.setVersionId)}" data-attempt="${escapeHtml(sim.activeAttemptId||'')}">${escapeHtml(simulationAction(sim.status))}</button></article>`).join('');
 
   const quickCards = (d.practiceSubjects||[]).map(subject => {
     const quick = subject.quick || {};
@@ -1392,6 +1404,7 @@ async function studentDashboard() {
   <div class="hub-dashboard-layout">
     <div class="hub-dashboard-main">
       <section class="hub-section"><div class="hub-section-head"><div><h2>Full Simulation</h2><p class="muted">Insaniah • Mathematics • Science • English • Bahasa Melayu • IQ / Logical Reasoning • General Knowledge</p></div></div><div class="student-sim-grid">${simCards}</div></section>
+      ${personalizedCards ? `<section class="hub-section personalized-training-section"><div class="hub-section-head"><div><h2>🎯 Personalised Training</h2><p class="muted">Private targeted simulations prepared specifically for you based on your performance.</p></div></div><div class="student-sim-grid">${personalizedCards}</div></section>` : ''}
       <section class="hub-section"><div class="hub-section-head"><div><h2>Quick Quiz</h2><p class="muted">10 questions · 10 minutes · change answers before submit.</p></div></div><div class="practice-grid">${quickCards||'<div class="empty-playful">No subjects available yet.</div>'}</div></section>
       <section class="hub-section"><div class="hub-section-head"><div><h2>Speed Quiz</h2><p class="muted">20 questions · 5 minutes · one-way, answers lock.</p></div></div><div class="practice-grid">${speedCards||'<div class="empty-playful">No subjects available yet.</div>'}</div></section>
     </div>
@@ -1635,7 +1648,7 @@ async function studentLeaderboard() {
   studentIdentity=hub.profile||studentIdentity;
   const viewerName=hub.profile?.displayNickname||'Player';
   const viewerAvatar=hub.profile?.avatarSymbol||'🎓';
-  const simulationTargets=(hub.simulations||[]).map(x=>({id:x.setVersionId,label:x.title,questionCount:x.questionCount,timeLimitSeconds:x.timeLimitSeconds,viewerName,viewerAvatar}));
+  const simulationTargets=(hub.fullSimulations || (hub.simulations||[]).filter(x=>(x.setKind||'standard')!=='personalized')).map(x=>({id:x.setVersionId,label:x.title,questionCount:x.questionCount,timeLimitSeconds:x.timeLimitSeconds,viewerName,viewerAvatar}));
   const quickTargets=(hub.practiceSubjects||[]).filter(subject=>subject.quick?.enabled).map(subject=>({label:subject.subjectName,subjectCode:subject.subjectCode,viewerName,viewerAvatar}));
   const speedTargets=(hub.practiceSubjects||[]).filter(subject=>subject.speed?.enabled).map(subject=>({label:subject.subjectName,subjectCode:subject.subjectCode,viewerName,viewerAvatar}));
   shell(`<div class="page-head"><div><span class="eyebrow">Best Score Counts</span><h1>Leaderboard</h1><p class="muted">Fun podium view for every published category. Highest score wins; ties go to the faster time.</p></div><a class="btn ghost" href="/student" data-link>Quiz Hub</a></div><section class="leaderboard-collection"><div class="leaderboard-group"><div class="leaderboard-group-head"><div><h2>Full Simulation</h2><p>Top 3 for each published simulation set.</p></div></div><div class="leaderboard-card-grid" id="leaderboard-simulation-grid"><div class="muted">Loading simulations…</div></div></div><div class="leaderboard-group"><div class="leaderboard-group-head"><div><h2>Quick Quiz</h2><p>All subjects shown together — no dropdown needed.</p></div></div><div class="leaderboard-card-grid" id="leaderboard-quick-grid"><div class="muted">Loading quick quizzes…</div></div></div><div class="leaderboard-group"><div class="leaderboard-group-head"><div><h2>Speed Quiz</h2><p>Top 3 plus your own rank below each card.</p></div></div><div class="leaderboard-card-grid" id="leaderboard-speed-grid"><div class="muted">Loading speed quizzes…</div></div></div></section>`);
