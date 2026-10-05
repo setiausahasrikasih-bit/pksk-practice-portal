@@ -2186,6 +2186,115 @@ async function adminPersonalizedTrainingDetailPage(setVersionId){
     '<section class="card"><div class="hub-section-head"><div><h2>Topic Comparison & Next-Cycle Signals</h2><p class="muted">Increase focus &lt;60% · Continue 60–74% · Improving 75–79% · Maintenance ≥80%. One-question topics remain low evidence.</p></div></div>'+topics+'</section>','admin');
 }
 
+function adminEssayActionLabel(type){
+  return ({stage_unlock:'Stage unlocked',stage_lock:'Stage locked',reset_training:'Essay training reset',score_override:'Score overridden',ai_rerun:'AI marking re-run'})[type]||type||'Admin action';
+}
+function adminEssayStatusMarkup(status){
+  const s=String(status||'not_started');
+  const tone=s==='completed'?'green':s==='failed'?'gold':s==='in_progress'||s==='evaluating'||s==='submitted'?'blue':'';
+  return `<span class="essay-chip ${tone}">${escapeHtml(s.replaceAll('_',' '))}</span>`;
+}
+function adminEssayAttemptRows(rows=[]){
+  if(!rows.length)return '<div class="admin-essay-empty">No Essay Training attempts yet.</div>';
+  return `<div class="table-wrap"><table class="admin-essay-table"><thead><tr><th>Stage / Topic</th><th>Status</th><th>Score</th><th>Words / Time</th><th>Model</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(a=>`<tr><td><b>${escapeHtml(essayStageLabel(a.stage))}</b><div class="admin-essay-sub">${escapeHtml(a.title||'')}</div></td><td>${adminEssayStatusMarkup(a.status)}</td><td class="admin-essay-score">${a.score==null?'—':(Number(a.score)/10).toFixed(1)+'/10'}</td><td>${Number(a.wordCount||0)} words<div class="admin-essay-sub">${a.durationSeconds==null?'—':formatDuration(a.durationSeconds)}</div></td><td>${escapeHtml(a.modelVersion||'—')}<div class="admin-essay-sub">${escapeHtml(a.rubricVersion||'')}</div></td><td>${date(a.submittedAt||a.createdAt)}</td><td><a href="/admin/essay/attempt/${escapeHtml(a.attemptId)}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+async function adminEssayDashboard(){
+  if(!await requireProfile('admin'))return;
+  loading('Loading Essay Training dashboard…');
+  const d=await adminApi.essayOverview();
+  const s=d.stats||{}, students=d.students||[], recent=d.recent||[];
+  const rows=students.map(x=>{
+    const latest=x.latestAttempt;
+    return `<tr><td><a class="admin-essay-student" href="/admin/essay/student/${escapeHtml(x.userId)}" data-link>${escapeHtml(x.displayNickname||x.displayName||'Student')}</a><div class="admin-essay-sub">${escapeHtml(x.displayName||'')} · ${escapeHtml(x.schoolYear||'')}</div></td><td>${x.completedBaseline?'<span class="essay-chip green">Completed</span>':'<span class="essay-chip">Not started</span>'}<div class="admin-essay-sub">${x.baselineScore==null?'—':(Number(x.baselineScore)/10).toFixed(1)+'/10'}</div></td><td class="admin-essay-score">${x.writingAbility==null?'—':Number(x.writingAbility).toFixed(0)+'/100'}</td><td>${escapeHtml(essayStageLabel(x.currentStage||0))}</td><td>${Number(x.stage1Attempts||0)} sessions<div class="admin-essay-sub">${x.stage1Average==null?'—':'Avg '+Number(x.stage1Average).toFixed(0)+'/100'}</div></td><td>${latest?`${adminEssayStatusMarkup(latest.status)}<div class="admin-essay-sub">${escapeHtml(latest.title||'')} · ${date(latest.submittedAt||latest.createdAt)}</div>`:'—'}</td><td><a class="btn ghost" href="/admin/essay/student/${escapeHtml(x.userId)}" data-link>Open</a></td></tr>`;
+  }).join('');
+  const recentRows=recent.length?`<div class="table-wrap"><table><thead><tr><th>Student</th><th>Stage</th><th>Topic</th><th>Status</th><th>Score</th><th>Date</th><th></th></tr></thead><tbody>${recent.map(a=>`<tr><td>${escapeHtml(a.studentNickname||a.studentName||'')}</td><td>${escapeHtml(essayStageLabel(a.stage))}</td><td>${escapeHtml(a.title||'')}</td><td>${adminEssayStatusMarkup(a.status)}</td><td>${a.score==null?'—':(Number(a.score)/10).toFixed(1)+'/10'}</td><td>${date(a.submittedAt||a.createdAt)}</td><td><a href="/admin/essay/attempt/${escapeHtml(a.attemptId)}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`:'<div class="admin-essay-empty">No essay submissions yet.</div>';
+  shell(`<div class="page-head"><div><span class="eyebrow">Administration · Artikulasi Penulisan</span><h1>Essay Training Dashboard</h1><p class="muted">Baseline, writing ability, Stage 1 progress, AI marking and admin review in one place.</p></div></div>
+  <section class="stats"><div class="stat"><b>${Number(s.activeStudents||0)}</b><span>Active Students</span></div><div class="stat"><b>${Number(s.baselineCompleted||0)}</b><span>Baselines Completed</span></div><div class="stat"><b>${Number(s.stage1Started||0)}</b><span>Stage 1 Started</span></div><div class="stat"><b>${Number(s.completedEssayAttempts||0)}</b><span>Completed Essay Tasks</span></div><div class="stat"><b>${s.averageBaseline==null?'—':(Number(s.averageBaseline)/10).toFixed(1)}</b><span>Average Baseline /10</span></div></section>
+  <section class="card"><div class="hub-section-head"><div><h2>Student Writing Progress</h2><p class="muted">Open a student to manage stages or review every attempt.</p></div></div><div class="table-wrap"><table class="admin-essay-table"><thead><tr><th>Student</th><th>Baseline</th><th>Writing Ability</th><th>Current Stage</th><th>Idea Builder</th><th>Latest</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>
+  <section class="card"><div class="hub-section-head"><div><h2>Recent Essay Activity</h2><p class="muted">Latest 30 Essay Training attempts across the cohort.</p></div></div>${recentRows}</section>`,'admin');
+}
+
+async function adminEssayStudentPage(userId){
+  if(!await requireProfile('admin'))return;
+  loading('Loading student writing profile…');
+  const d=await adminApi.essayStudent(userId);
+  const p=d.profile||{}, w=d.writingProfile||{}, progress=d.progress||[], attempts=d.attempts||[], actions=d.adminActions||[];
+  const stageRows=progress.map(sp=>{
+    const stage=Number(sp.stage||0),status=sp.status||'locked';
+    const disabled=stage===0||status==='completed';
+    const unlock=status==='locked';
+    const action=disabled?'':`<button class="btn ghost essay-stage-toggle" data-stage="${stage}" data-unlock="${unlock}">${unlock?'Unlock':'Lock'} Stage</button>`;
+    return `<div class="admin-stage-row ${escapeHtml(status)}"><div class="admin-stage-title"><b>Stage ${stage} · ${escapeHtml(essayStageLabel(stage))}</b><span>${adminEssayStatusMarkup(status)}</span></div><div><b>${Number(sp.attempts||0)}</b><div class="admin-essay-sub">Attempts</div></div><div><b>${sp.averageScore==null?'—':Number(sp.averageScore).toFixed(0)}</b><div class="admin-essay-sub">Average</div></div><div><b>${sp.bestScore==null?'—':Number(sp.bestScore).toFixed(0)}</b><div class="admin-essay-sub">Best</div></div><div class="admin-stage-action">${action}</div></div>`;
+  }).join('');
+  const audit=actions.length?actions.map(a=>`<div class="admin-essay-audit-row"><b>${escapeHtml(adminEssayActionLabel(a.actionType))}</b><span>${date(a.createdAt)}${a.note?' · '+escapeHtml(a.note):''}</span></div>`).join(''):'<div class="admin-essay-empty">No admin actions recorded.</div>';
+  shell(`<div class="page-head"><div><span class="eyebrow">Essay Training · Student</span><h1>${escapeHtml(p.displayNickname||p.displayName||'Student')}</h1><p class="muted">${escapeHtml(p.displayName||'')} · ${escapeHtml(p.schoolYear||'')} · Last portal activity ${date(p.lastActivityAt)}</p></div><div class="admin-essay-controls"><a class="btn ghost" href="/admin/essay" data-link>Back to Essay Dashboard</a><button class="btn danger" id="essay-reset-training">Reset Essay Training</button></div></div>
+  <section class="stats"><div class="stat"><b>${w.writingAbility==null?'—':Number(w.writingAbility).toFixed(0)}</b><span>Writing Ability /100</span></div><div class="stat"><b>${w.baselineScore==null?'—':(Number(w.baselineScore)/10).toFixed(1)}</b><span>Baseline /10</span></div><div class="stat"><b>${w.ideaScore==null?'—':Number(w.ideaScore).toFixed(0)}</b><span>Idea Builder /100</span></div><div class="stat"><b>${escapeHtml(essayStageLabel(w.currentStage||0))}</b><span>Current Stage</span></div></section>
+  <section class="card"><div class="hub-section-head"><div><h2>Writing Skill Profile</h2><p class="muted">Baseline language dimensions update from full writing assessments.</p></div></div><div class="essay-stats"><div class="essay-stat"><b>${w.grammarScore==null?'—':Number(w.grammarScore).toFixed(0)}</b><span>Grammar</span></div><div class="essay-stat"><b>${w.structureScore==null?'—':Number(w.structureScore).toFixed(0)}</b><span>Structure</span></div><div class="essay-stat"><b>${w.vocabularyScore==null?'—':Number(w.vocabularyScore).toFixed(0)}</b><span>Vocabulary</span></div><div class="essay-stat"><b>${w.sentenceScore==null?'—':Number(w.sentenceScore).toFixed(0)}</b><span>Sentence Maturity</span></div><div class="essay-stat"><b>${w.expressionScore==null?'—':Number(w.expressionScore).toFixed(0)}</b><span>Peribahasa / Style</span></div></div></section>
+  <section class="card"><div class="hub-section-head"><div><h2>Stage Controls</h2><p class="muted">Completed stages are protected. Other stages may be unlocked or relocked by Admin.</p></div></div><div class="admin-stage-list">${stageRows||'<div class="admin-essay-empty">Writing profile has not been initialised yet.</div>'}</div></section>
+  <section class="card"><div class="hub-section-head"><div><h2>Attempt History</h2></div></div>${adminEssayAttemptRows(attempts)}</section>
+  <section class="card"><div class="hub-section-head"><div><h2>Admin Audit Trail</h2><p class="muted">Manual changes are recorded with date and reason.</p></div></div><div class="admin-essay-audit">${audit}</div></section>`,'admin');
+
+  document.querySelectorAll('.essay-stage-toggle').forEach(btn=>btn.addEventListener('click',async()=>{
+    const stage=Number(btn.dataset.stage),unlock=btn.dataset.unlock==='true';
+    const note=prompt(`${unlock?'Unlock':'Lock'} Stage ${stage}: enter a short reason (optional).`)||'Admin stage control';
+    if(!confirm(`${unlock?'Unlock':'Lock'} Stage ${stage} for ${p.displayNickname||p.displayName}?`))return;
+    btn.disabled=true;
+    try{await adminApi.setEssayStage(userId,stage,unlock,note);await adminEssayStudentPage(userId);}
+    catch(error){alert(error.message||'Unable to update stage.');btn.disabled=false;}
+  }));
+  document.querySelector('#essay-reset-training')?.addEventListener('click',async e=>{
+    if(!confirm(`Reset ALL Essay Training data for ${p.displayNickname||p.displayName}? This removes essay attempts, scores and stage progress. Normal PKSK quiz results are NOT affected.`))return;
+    if(!confirm('This cannot be undone from the portal. Confirm reset?'))return;
+    const reason=prompt('Enter the reset reason (required):');
+    if(!reason?.trim())return alert('Reset cancelled — a reason is required.');
+    e.currentTarget.disabled=true;
+    try{await adminApi.resetEssayTraining(userId,reason.trim());await adminEssayStudentPage(userId);}
+    catch(error){alert(error.message||'Unable to reset Essay Training.');e.currentTarget.disabled=false;}
+  });
+}
+
+async function adminEssayAttemptPage(attemptId){
+  if(!await requireProfile('admin'))return;
+  loading('Loading essay review…');
+  const a=await adminApi.essayAttempt(attemptId);
+  const s=a.scores||{},f=a.feedback||{},data=a.responseData||{},baseline=Number(a.stage)===0;
+  const breakdown=baseline
+    ? [essayScoreRow('Kehendak & Relevance',s.relevance),essayScoreRow('Isi & Huraian',s.development),essayScoreRow('Structure',s.structure),essayScoreRow('Grammar',s.grammar),essayScoreRow('Vocabulary',s.vocabulary),essayScoreRow('Sentence Maturity',s.sentenceMaturity),essayScoreRow('Peribahasa / Style',s.languageEnrichment),essayScoreRow('Exam Control',s.examControl)].join('')
+    : [essayScoreRow('Understand Question',s.questionUnderstanding),essayScoreRow('Idea Relevance',s.relevance),essayScoreRow('Idea Variety',s.ideaVariety),essayScoreRow('Potential / Huraian',s.development),essayScoreRow('Examples',s.exampleQuality)].join('');
+  const selected=Array.isArray(data.selectedIdeas)?data.selectedIdeas:[];
+  const framework=Array.isArray(data.framework)?data.framework:[];
+  const stage1Plan=!baseline?`<section class="card"><h2>Student Planning</h2><p><b>Question type chosen:</b> ${escapeHtml(essayTaskTypeLabel(data.taskTypeChoice||''))}</p><h3>Selected Ideas</h3><ul>${selected.map(x=>`<li>${escapeHtml(x)}</li>`).join('')||'<li>None saved.</li>'}</ul><h3>I-H-C-K</h3><div class="admin-essay-ihck">${framework.map(x=>`<div class="admin-essay-ihck-row"><b>${escapeHtml(x.isi||'')}</b><p><strong>H:</strong> ${escapeHtml(x.huraian||'')}</p><p><strong>C:</strong> ${escapeHtml(x.contoh||'')}</p><p><strong>K:</strong> ${escapeHtml(x.kesan||'')}</p></div>`).join('')||'<div class="admin-essay-empty">No framework saved.</div>'}</div></section>`:'';
+  const replay=baseline&&a.status==='completed'?`<section class="card"><h2>Essay Replay</h2><h3>Corrected</h3><div class="admin-essay-raw">${escapeHtml(f.correctedText||'—')}</div><h3>Excellent Version</h3><div class="admin-essay-raw">${escapeHtml(f.excellentText||'—')}</div></section>`:'';
+  const actions=Array.isArray(a.adminActions)?a.adminActions:[];
+  const audit=actions.length?actions.map(x=>`<div class="admin-essay-audit-row"><b>${escapeHtml(adminEssayActionLabel(x.actionType))}</b><span>${date(x.createdAt)}${x.note?' · '+escapeHtml(x.note):''}</span></div>`).join(''):'<div class="admin-essay-empty">No admin changes to this attempt.</div>';
+  shell(`<div class="page-head"><div><span class="eyebrow">Admin Essay Review</span><h1>${escapeHtml(a.studentNickname||a.studentName||'Student')} · ${escapeHtml(a.topic?.title||'')}</h1><p class="muted">${escapeHtml(essayStageLabel(a.stage))} · ${adminEssayStatusMarkup(a.status)} · ${date(a.submittedAt||a.createdAt)}</p></div><div class="admin-essay-controls"><a class="btn ghost" href="/admin/essay/student/${escapeHtml(a.studentId)}" data-link>Student Writing Profile</a>${a.status==='completed'?'<button class="btn ghost" id="essay-rerun-ai">Re-run AI Marking</button><button class="btn primary" id="essay-override-score">Override Score</button>':''}</div></div>
+  <section class="stats"><div class="stat"><b>${a.scoreTotal==null?'—':(Number(a.scoreTotal)/10).toFixed(1)}</b><span>Training Score /10</span></div><div class="stat"><b>${Number(a.wordCount||0)}</b><span>Word Count</span></div><div class="stat"><b>${a.durationSeconds==null?'—':formatDuration(a.durationSeconds)}</b><span>Time Used</span></div><div class="stat"><b>${escapeHtml(a.modelVersion||'—')}</b><span>AI Model</span></div><div class="stat"><b>${escapeHtml(a.rubricVersion||'—')}</b><span>Rubric Version</span></div></section>
+  <section class="card"><h2>Question</h2><div class="essay-prompt">${escapeHtml(a.topic?.prompt||'')}</div></section>
+  ${baseline?`<section class="card"><h2>Original Student Essay</h2><div class="admin-essay-raw">${escapeHtml(a.essayText||'—')}</div></section>`:stage1Plan}
+  ${a.status==='completed'?`<section class="card"><h2>Score Breakdown</h2><div class="essay-breakdown">${breakdown}</div></section><section class="essay-feedback-grid"><div class="essay-feedback-box"><h3>Strengths</h3><ul>${(f.strengths||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')||'<li>—</li>'}</ul></div><div class="essay-feedback-box"><h3>Improvements</h3><ul>${(f.improvements||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')||'<li>—</li>'}</ul></div></section>`:''}
+  ${replay}
+  <section class="card"><div class="hub-section-head"><div><h2>Admin Audit Trail</h2></div></div><div class="admin-essay-audit">${audit}</div></section>`,'admin');
+
+  document.querySelector('#essay-rerun-ai')?.addEventListener('click',async e=>{
+    if(!confirm('Re-run AI marking? This will replace the current AI score and feedback, while recording the action in the audit trail.'))return;
+    e.currentTarget.disabled=true;e.currentTarget.textContent='Re-marking…';
+    try{await adminApi.rerunEssay(attemptId,baseline?'evaluate_baseline':'finalize_stage1');await adminEssayAttemptPage(attemptId);}
+    catch(error){alert(error.message||'Unable to re-run AI marking.');e.currentTarget.disabled=false;e.currentTarget.textContent='Re-run AI Marking';}
+  });
+  document.querySelector('#essay-override-score')?.addEventListener('click',async e=>{
+    const current=a.scoreTotal==null?'':String(Number(a.scoreTotal).toFixed(1));
+    const value=prompt('Enter new overall score from 0 to 100:',current);
+    if(value==null)return;
+    const score=Number(value);if(!Number.isFinite(score)||score<0||score>100)return alert('Enter a valid score from 0 to 100.');
+    const reason=prompt('Reason for manual score override (required):');if(!reason?.trim())return alert('Override cancelled — a reason is required.');
+    if(!confirm(`Change overall training score to ${score.toFixed(1)}/100?`))return;
+    e.currentTarget.disabled=true;
+    try{await adminApi.overrideEssayScore(attemptId,score,reason.trim());await adminEssayAttemptPage(attemptId);}
+    catch(error){alert(error.message||'Unable to override score.');e.currentTarget.disabled=false;}
+  });
+}
+
 async function adminDashboard(){
   if(!await requireProfile('admin'))return;
   loading();
