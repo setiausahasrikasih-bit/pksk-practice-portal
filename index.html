@@ -1508,6 +1508,81 @@ async function studentDashboard() {
   }));
 }
 
+function essayTaskTypeLabel(code){
+  return ({CARA:'Cara / Langkah / Usaha',FAEDAH:'Faedah / Kepentingan',KESAN:'Kesan / Keburukan',TINDAKAN:'Tindakan Saya',CIRI:'Ciri / Nilai',NARATIF:'Pengalaman / Cerita',PENDIRIAN:'Pendapat / Pendirian',KBAT:'Cadangan / Inovasi'})[code]||code||'—';
+}
+function essayStageLabel(stage){
+  return ['Writing Baseline','Idea Builder','Ayat Power','Peribahasa & Vocabulary','Paragraph Builder','Guided Essay','Independent Essay','PKSK Simulation','Personalised Essay Training'][Number(stage)]||`Stage ${stage}`;
+}
+function essayWordCount(text=''){
+  const t=String(text||'').trim();
+  return t?t.split(/\s+/).filter(Boolean).length:0;
+}
+function essayClearTimers(){
+  if(essayTimer){clearInterval(essayTimer);essayTimer=null;}
+  if(essayAutosaveTimer){clearInterval(essayAutosaveTimer);essayAutosaveTimer=null;}
+  if(ideaBurstTimer){clearInterval(ideaBurstTimer);ideaBurstTimer=null;}
+}
+function essayRoadmapMarkup(progress=[]){
+  const labels=['Writing Baseline','Idea Builder','Ayat Power','Peribahasa & Vocabulary','Paragraph Builder','Guided Essay','Independent Essay','PKSK Simulation','Personalised Essay Training'];
+  const byStage=new Map((progress||[]).map(x=>[Number(x.stage),x]));
+  return `<div class="essay-roadmap">${labels.map((label,stage)=>{
+    const p=byStage.get(stage)||{status:stage===0?'unlocked':'locked'};
+    const state=p.status||'locked';
+    const icon=state==='completed'?'✓':state==='locked'?'🔒':String(stage);
+    return `<div class="essay-stage-card ${escapeHtml(state)}"><span class="essay-stage-no">${escapeHtml(icon)}</span><h3>${escapeHtml(label)}</h3><div class="essay-stage-status">${escapeHtml(stage>=2&&state!=='completed'?'Coming next':state.replace('_',' '))}</div>${p.averageScore!=null?`<div class="muted small" style="margin-top:5px">Avg ${Number(p.averageScore).toFixed(0)}/100</div>`:''}</div>`;
+  }).join('')}</div>`;
+}
+function essayScoreRow(label,value){
+  if(value==null||value==='')return '';
+  const n=Math.max(0,Math.min(100,Number(value)||0));
+  return `<div class="essay-breakdown-row"><span>${escapeHtml(label)}</span><div class="essay-score-track"><div class="essay-score-fill" style="width:${n}%"></div></div><b>${n.toFixed(0)}</b></div>`;
+}
+
+async function essayTrainingHome(){
+  if(!await requireProfile('student'))return;
+  essayClearTimers();
+  loading('Loading Essay Training…');
+  const d=await studentApi.essayHome();
+  const p=d.profile||{}, baseline=d.baseline||{}, stage1=d.stage1||{};
+  const ability=p.writingAbility==null?'—':Number(p.writingAbility).toFixed(0);
+  const baselineScore=p.baselineScore==null?'—':(Number(p.baselineScore)/10).toFixed(1);
+  const ideaScore=p.ideaScore==null?'—':Number(p.ideaScore).toFixed(0);
+
+  let trainingBody='';
+  if(!baseline.completed){
+    if(baseline.inProgressAttemptId){
+      trainingBody=`<section class="performance-section"><div class="hub-section-head"><div><h2>Stage 0 · Writing Baseline</h2><p class="muted">Your 45-minute baseline has already started.</p></div></div><div class="card"><h3>Continue your baseline</h3><p class="muted">The timer continues from the original start time.</p><a class="btn primary" href="/student/essay/attempt/${escapeHtml(baseline.inProgressAttemptId)}" data-link>Resume Writing Baseline</a></div></section>`;
+    }else{
+      const cards=(baseline.topics||[]).map(t=>`<article class="essay-topic-card"><div><div class="essay-topic-meta"><span class="essay-chip">${escapeHtml(essayTaskTypeLabel(t.taskType))}</span><span class="essay-chip blue">${escapeHtml(t.theme||'')}</span></div><h3>${escapeHtml(t.title)}</h3><p>${escapeHtml(t.prompt)}</p></div><button class="btn primary start-baseline" data-topic="${escapeHtml(t.id)}">Choose This Topic</button></article>`).join('');
+      trainingBody=`<section class="performance-section"><div class="hub-section-head"><div><h2>Stage 0 · Writing Baseline</h2><p class="muted">Choose ONE unseen topic. No hints. 45 minutes. This establishes your real starting point.</p></div></div><div class="card"><div class="tracking-note">Write naturally. Do not use AI or model answers. You may submit below 100 words, but PKSK Pro will flag it.</div></div><div class="essay-topic-grid">${cards}</div></section>`;
+    }
+  }else{
+    const cards=(stage1.topics||[]).map(t=>`<article class="essay-topic-card"><div><div class="essay-topic-meta"><span class="essay-chip">${escapeHtml(essayTaskTypeLabel(t.taskType))}</span><span class="essay-chip blue">${escapeHtml(t.theme||'')}</span>${Number(t.completedAttempts||0)>0?`<span class="essay-chip green">Done ${Number(t.completedAttempts)}</span>`:''}</div><h3>${escapeHtml(t.title)}</h3><p>${escapeHtml(t.prompt)}</p><div class="muted small" style="margin-top:9px">Best: ${t.bestScore==null?'—':Number(t.bestScore).toFixed(0)+'/100'}</div></div><button class="btn primary start-stage1" data-topic="${escapeHtml(t.id)}">Start Idea Builder</button></article>`).join('');
+    trainingBody=`<section class="performance-section"><div class="hub-section-head"><div><h2>Stage 1 · 🧠 Idea Builder</h2><p class="muted">Understand the question, generate ideas, choose your best three, then build I → H → C → K.</p></div><div class="metric-inline"><span class="metric-chip">${Number(stage1.attemptsCompleted||0)}/5 sessions</span><span class="metric-chip">Avg ${stage1.averageScore==null?'—':Number(stage1.averageScore).toFixed(0)}/100</span></div></div><div class="card"><div class="tracking-note">Unlock Stage 2 after at least 5 sessions, average ≥70, and consistent understanding of the question in the latest sessions.</div></div><div class="essay-topic-grid">${cards}</div></section>`;
+  }
+
+  const recent=(d.recent||[]).length?(d.recent||[]).map(r=>`<a class="activity-row" href="/student/essay/attempt/${escapeHtml(r.attemptId)}" data-link><span class="activity-badge essay">ESSAY</span><div class="activity-main"><b>${escapeHtml(r.title)}</b><span>${escapeHtml(essayStageLabel(r.stage))} · ${date(r.createdAt)}</span></div><div class="activity-score">${r.score==null?escapeHtml(r.status||''):(Number(r.score)/10).toFixed(1)+'/10'}</div></a>`).join(''):'<div class="empty-playful">Your writing attempts will appear here.</div>';
+
+  shell(`<div class="page-head"><div><span class="eyebrow">Artikulasi Penulisan</span><h1>✍️ Essay Training</h1><p class="muted">Teach → Practise → Remove assistance → Test → Analyse → Personalise.</p></div><a class="btn ghost" href="/student" data-link>Back to Quiz Hub</a></div>
+  <section class="essay-stats"><div class="essay-stat"><b>${ability}</b><span>Writing Ability /100</span></div><div class="essay-stat"><b>${baselineScore}</b><span>Baseline /10</span></div><div class="essay-stat"><b>${ideaScore}</b><span>Idea Builder /100</span></div><div class="essay-stat"><b>${Number(stage1.attemptsCompleted||0)}</b><span>Idea Builder Sessions</span></div></section>
+  <section class="performance-section"><div class="hub-section-head"><div><h2>Your Writing Roadmap</h2><p class="muted">Stages unlock progressively so strong writing is built from strong thinking.</p></div></div>${essayRoadmapMarkup(d.progress||[])}</section>
+  ${trainingBody}
+  <section class="performance-section"><div class="hub-section-head"><div><h2>Recent Essay Activity</h2></div></div><div class="card">${recent}</div></section>`);
+
+  document.querySelectorAll('.start-baseline').forEach(btn=>btn.addEventListener('click',async()=>{
+    btn.disabled=true;
+    if(!confirm('Start the 45-minute Writing Baseline now? The timer begins immediately.')){btn.disabled=false;return;}
+    try{const r=await studentApi.startEssay(btn.dataset.topic,0,'baseline');go(`/student/essay/attempt/${r.attemptId}`);}
+    catch(error){alert(error.message||'Unable to start baseline.');btn.disabled=false;}
+  }));
+  document.querySelectorAll('.start-stage1').forEach(btn=>btn.addEventListener('click',async()=>{
+    btn.disabled=true;
+    try{const r=await studentApi.startEssay(btn.dataset.topic,1,'idea_builder');go(`/student/essay/attempt/${r.attemptId}`);}
+    catch(error){alert(error.message||'Unable to start Idea Builder.');btn.disabled=false;}
+  }));
+}
+
 function historyTable(rows) { if(!rows.length) return `<p class="muted">No completed attempts yet.</p>`; return `<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle||r.set_title)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'—')}</td><td>${formatDuration(r.elapsedSeconds??r.elapsed_seconds)}</td><td>${date(r.submittedAt??r.submitted_at)}</td><td><a href="/student/review/${r.attemptId??r.attempt_id}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`; }
 
 async function studentHistory() {
