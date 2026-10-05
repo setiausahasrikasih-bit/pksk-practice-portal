@@ -1628,6 +1628,57 @@ function essayBaselineEditor(a){
   document.querySelector('#essay-submit').addEventListener('click',()=>submit(false));
 }
 
+function essayStage1Editor(a){
+  const data=a.responseData||{}, ideaCheck=data.ideaCheck||null;
+  if(!ideaCheck){
+    const taskTypes=['CARA','FAEDAH','KESAN','TINDAKAN','CIRI','NARATIF','PENDIRIAN','KBAT'];
+    const ideas=Array.isArray(data.ideas)?data.ideas:[];
+    shell(`<div class="page-head"><div><span class="eyebrow">Stage 1 \u00b7 Idea Builder</span><h1>${escapeHtml(a.topic.title)}</h1><p class="muted">Step 1: Faham soalan \u00b7 Step 2: Idea Burst</p></div><a class="btn ghost" href="/student/essay" data-link>Back</a></div>
+    <section class="card"><div class="essay-prompt">${escapeHtml(a.topic.prompt)}</div><h3 style="margin-top:22px">1. Soalan ini sebenarnya minta apa?</h3><div class="essay-task-grid">${taskTypes.map(code=>`<label class="essay-task-option"><input type="radio" name="essay-task-type" value="${code}" ${data.taskTypeChoice===code?'checked':''}><span>${escapeHtml(essayTaskTypeLabel(code))}</span></label>`).join('')}</div><div class="section-spread"><div><h3 style="margin-bottom:4px">2. Idea Burst</h3><p class="muted small">Berikan sekurang-kurangnya 3 idea. Jangan risau tentang ayat cantik dahulu.</p></div><div>\u23f1 <span id="idea-burst-timer" class="idea-burst-timer">01:30</span></div></div><div class="idea-inputs">${[0,1,2,3,4].map(i=>`<input class="idea-entry" maxlength="180" placeholder="Idea ${i+1}" value="${escapeHtml(ideas[i]||'')}">`).join('')}</div><div class="essay-actions"><button class="btn primary" id="check-ideas">Check My Ideas</button></div><div id="idea-check-msg" class="essay-save-state"></div></section>`);
+    let left=90;const burst=document.querySelector('#idea-burst-timer');
+    ideaBurstTimer=setInterval(()=>{left=Math.max(0,left-1);burst.textContent=`${String(Math.floor(left/60)).padStart(2,'0')}:${String(left%60).padStart(2,'0')}`;if(left===0){clearInterval(ideaBurstTimer);ideaBurstTimer=null;}},1000);
+    document.querySelector('#check-ideas').addEventListener('click',async e=>{
+      const btn=e.currentTarget,msg=document.querySelector('#idea-check-msg');
+      const taskTypeChoice=document.querySelector('input[name="essay-task-type"]:checked')?.value||'';
+      const entered=[...document.querySelectorAll('.idea-entry')].map(x=>x.value.trim()).filter(Boolean);
+      if(!taskTypeChoice){msg.textContent='Choose the type of question first.';return;}
+      if(entered.length<3){msg.textContent='Enter at least 3 ideas.';return;}
+      btn.disabled=true;msg.textContent='Checking your ideas\u2026';
+      try{await studentApi.saveEssay(a.attemptId,null,{...data,taskTypeChoice,ideas:entered});await studentApi.evaluateEssay(a.attemptId,'check_ideas');essayClearTimers();await essayAttemptPage(a.attemptId);}
+      catch(error){btn.disabled=false;msg.textContent=error.message||'Unable to check ideas.';}
+    });
+    return;
+  }
+
+  const ideas=Array.isArray(data.ideas)?data.ideas:[], feedback=Array.isArray(ideaCheck.ideaFeedback)?ideaCheck.ideaFeedback:[];
+  const selectedExisting=Array.isArray(data.selectedIdeas)?data.selectedIdeas:[], frameworkExisting=Array.isArray(data.framework)?data.framework:[];
+  shell(`<div class="page-head"><div><span class="eyebrow">Stage 1 \u00b7 Idea Builder</span><h1>${escapeHtml(a.topic.title)}</h1><p class="muted">Step 3: Pick your best 3 \u00b7 Step 4: Build I \u2192 H \u2192 C \u2192 K</p></div><a class="btn ghost" href="/student/essay" data-link>Back</a></div>
+  <section class="card"><div class="essay-prompt">${escapeHtml(a.topic.prompt)}</div><div class="essay-feedback-box" style="margin-top:16px"><h3>Question Type</h3><p><b>Your choice:</b> ${escapeHtml(essayTaskTypeLabel(data.taskTypeChoice))} \u00b7 <span class="essay-chip ${ideaCheck.taskTypeCorrect?'green':'gold'}">${ideaCheck.taskTypeCorrect?'Correct':'Review'}</span></p><p class="muted">${escapeHtml(ideaCheck.taskTypeFeedback||'')}</p></div><h3>Your Idea Check</h3><div class="idea-feedback-list">${ideas.map((idea,i)=>{const f=feedback.find(x=>Number(x.index)===i)||{},q=f.quality||'relevant';return `<div class="idea-feedback-row ${escapeHtml(q)}"><div class="idea-quality">${escapeHtml(q.replace('_',' '))}</div><b>${escapeHtml(idea)}</b><div class="muted small" style="margin-top:4px">${escapeHtml(f.feedback||'')}</div></div>`;}).join('')}</div><div class="tracking-note">${escapeHtml(ideaCheck.overallAdvice||'Choose three ideas that are relevant and different from one another.')}</div><h3 style="margin-top:22px">3. Choose exactly 3 ideas</h3><div id="idea-select-list">${ideas.map(idea=>`<label class="idea-select-row"><input type="checkbox" class="idea-select" value="${escapeHtml(idea)}" ${selectedExisting.includes(idea)?'checked':''}><span>${escapeHtml(idea)}</span></label>`).join('')}</div><div id="selected-count" class="essay-save-state"></div><div id="ihck-zone"></div><div class="essay-actions"><button class="btn primary" id="complete-idea-builder">Complete Idea Builder</button></div><div id="stage1-msg" class="essay-save-state"></div></section>`);
+  const state=new Map(frameworkExisting.map(x=>[x.isi,x]));
+  const preserve=()=>document.querySelectorAll('.ihck-card').forEach(card=>{const isi=card.dataset.isi;state.set(isi,{isi,huraian:card.querySelector('[data-kind="huraian"]')?.value||'',contoh:card.querySelector('[data-kind="contoh"]')?.value||'',kesan:card.querySelector('[data-kind="kesan"]')?.value||''});});
+  const renderFramework=()=>{
+    preserve();
+    const selected=[...document.querySelectorAll('.idea-select:checked')].map(x=>x.value);
+    document.querySelector('#selected-count').textContent=`${selected.length}/3 ideas selected`;
+    document.querySelectorAll('.idea-select').forEach(x=>{x.disabled=selected.length>=3&&!x.checked;});
+    const zone=document.querySelector('#ihck-zone');
+    if(selected.length!==3){zone.innerHTML='';return;}
+    zone.innerHTML=`<h3 style="margin-top:22px">4. Build I \u2192 H \u2192 C \u2192 K</h3><p class="muted small">Isi is your chosen idea. Complete Huraian, Contoh and Kesan.</p>${selected.map((isi,idx)=>{const f=state.get(isi)||{isi,huraian:'',contoh:'',kesan:''};return `<div class="ihck-card" data-isi="${escapeHtml(isi)}"><h4>Isi ${idx+1}: ${escapeHtml(isi)}</h4><div class="ihck-grid"><label>Huraian<textarea data-kind="huraian" placeholder="Mengapa / bagaimana idea ini penting?">${escapeHtml(f.huraian||'')}</textarea></label><label>Contoh<textarea data-kind="contoh" placeholder="Berikan contoh yang jelas dan sesuai.">${escapeHtml(f.contoh||'')}</textarea></label><label>Kesan<textarea data-kind="kesan" placeholder="Apakah hasil / kesannya?">${escapeHtml(f.kesan||'')}</textarea></label></div></div>`;}).join('')}`;
+  };
+  document.querySelectorAll('.idea-select').forEach(x=>x.addEventListener('change',renderFramework));renderFramework();
+  document.querySelector('#complete-idea-builder').addEventListener('click',async e=>{
+    const btn=e.currentTarget,msg=document.querySelector('#stage1-msg');preserve();
+    const selected=[...document.querySelectorAll('.idea-select:checked')].map(x=>x.value);
+    if(selected.length!==3){msg.textContent='Choose exactly 3 ideas.';return;}
+    const framework=selected.map(isi=>state.get(isi)||{isi,huraian:'',contoh:'',kesan:''});
+    if(framework.some(x=>!String(x.huraian||'').trim()||!String(x.contoh||'').trim()||!String(x.kesan||'').trim())){msg.textContent='Complete Huraian, Contoh and Kesan for all 3 ideas.';return;}
+    const response={...data,selectedIdeas:selected,framework};
+    btn.disabled=true;msg.textContent='Saving your plan\u2026';
+    try{await studentApi.saveEssay(a.attemptId,null,response);await studentApi.submitEssay(a.attemptId,null,response);await essayRunEvaluation(a.attemptId,'finalize_stage1');}
+    catch(error){btn.disabled=false;msg.textContent=error.message||'Unable to complete Idea Builder.';}
+  });
+}
+
 function historyTable(rows) { if(!rows.length) return `<p class="muted">No completed attempts yet.</p>`; return `<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle||r.set_title)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'—')}</td><td>${formatDuration(r.elapsedSeconds??r.elapsed_seconds)}</td><td>${date(r.submittedAt??r.submitted_at)}</td><td><a href="/student/review/${r.attemptId??r.attempt_id}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`; }
 
 async function studentHistory() {
