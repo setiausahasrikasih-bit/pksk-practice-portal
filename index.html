@@ -1581,7 +1581,7 @@ function essayRoadmapMarkup(progress=[]){
     const p=byStage.get(stage)||{status:stage===0?'unlocked':'locked'};
     const state=p.status||'locked';
     const icon=state==='completed'?'✓':state==='locked'?'🔒':String(stage);
-    return `<div class="essay-stage-card ${escapeHtml(state)}"><span class="essay-stage-no">${escapeHtml(icon)}</span><h3>${escapeHtml(label)}</h3><div class="essay-stage-status">${escapeHtml(stage>=2&&state!=='completed'?'Coming next':state.replace('_',' '))}</div>${p.averageScore!=null?`<div class="muted small" style="margin-top:5px">Avg ${Number(p.averageScore).toFixed(0)}/100</div>`:''}</div>`;
+    return `<div class="essay-stage-card ${escapeHtml(state)}"><span class="essay-stage-no">${escapeHtml(icon)}</span><h3>${escapeHtml(label)}</h3><div class="essay-stage-status">${escapeHtml(state==='locked'?'Locked':state.replace('_',' '))}</div>${p.averageScore!=null?`<div class="muted small" style="margin-top:5px">Avg ${Number(p.averageScore).toFixed(0)}/100</div>`:''}</div>`;
   }).join('')}</div>`;
 }
 function essayScoreRow(label,value){
@@ -1596,10 +1596,11 @@ async function essayTrainingHome(){
   essayClearTimers();
   loading('Loading Essay Training…');
   const d=await studentApi.essayHome();
-  const p=d.profile||{}, baseline=d.baseline||{}, stage1=d.stage1||{};
+  const p=d.profile||{}, baseline=d.baseline||{}, stage1=d.stage1||{}, stage2=d.stage2||{};
   const ability=p.writingAbility==null?'—':Number(p.writingAbility).toFixed(0);
   const baselineScore=p.baselineScore==null?'—':(Number(p.baselineScore)/10).toFixed(1);
   const ideaScore=p.ideaScore==null?'—':Number(p.ideaScore).toFixed(0);
+  const ayatScore=stage2.averageScore==null?'—':Number(stage2.averageScore).toFixed(0);
 
   let trainingBody='';
   if(!baseline.completed){
@@ -1609,15 +1610,21 @@ async function essayTrainingHome(){
       const cards=(baseline.topics||[]).map(t=>`<article class="essay-topic-card"><div><div class="essay-topic-meta"><span class="essay-chip">${escapeHtml(essayTaskTypeLabel(t.taskType))}</span><span class="essay-chip blue">${escapeHtml(t.theme||'')}</span></div><h3>${escapeHtml(t.title)}</h3><p>${escapeHtml(t.prompt)}</p></div><button class="btn primary start-baseline" data-topic="${escapeHtml(t.id)}">Choose This Topic</button></article>`).join('');
       trainingBody=`<section class="performance-section"><div class="hub-section-head"><div><h2>Stage 0 · Writing Baseline</h2><p class="muted">Choose ONE unseen topic. No hints. 45 minutes. This establishes your real starting point.</p></div></div><div class="card"><div class="tracking-note">Write naturally. Do not use AI or model answers. You may submit below 100 words, but PKSK Pro will flag it.</div></div><div class="essay-topic-grid">${cards}</div></section>`;
     }
+  }else if(stage2.unlocked && Number(p.currentStage||0)>=2){
+    const cards=(stage2.topics||[]).map(t=>{
+      const tasks=Array.isArray(t.exercise?.sentenceTasks)?t.exercise.sentenceTasks:[];
+      return `<article class="essay-topic-card"><div><div class="essay-topic-meta"><span class="essay-chip blue">${escapeHtml(t.theme||'')}</span><span class="essay-chip">${tasks.length||4} ayat</span>${Number(t.completedAttempts||0)>0?`<span class="essay-chip green">Done ${Number(t.completedAttempts)}</span>`:''}</div><h3>${escapeHtml(t.title)}</h3><p>${escapeHtml(t.prompt)}</p><div class="muted small" style="margin-top:9px">Best: ${t.bestScore==null?'—':Number(t.bestScore).toFixed(0)+'/100'}</div></div><button class="btn primary start-stage2" data-topic="${escapeHtml(t.id)}">Start Ayat Power</button></article>`;
+    }).join('');
+    trainingBody=`<section class="performance-section"><div class="hub-section-head"><div><h2>Stage 2 · ⚡ Ayat Power</h2><p class="muted">Turn basic sentences into clear, grammatical and mature sentences without changing their meaning.</p></div><div class="metric-inline"><span class="metric-chip">${Number(stage2.attemptsCompleted||0)}/5 drills</span><span class="metric-chip">Avg ${stage2.averageScore==null?'—':Number(stage2.averageScore).toFixed(0)}/100</span></div></div><div class="card"><div class="tracking-note"><b>Mastery rule:</b> at least 5 drills, average ≥75, and the latest 3 drills must each score ≥70 overall, ≥70 Grammar and ≥70 Sentence Maturity.</div><div class="essay-feedback-box" style="margin-top:14px"><h3>Ayat Power rule</h3><p class="muted" style="margin-bottom:0">Keep the original meaning. Improve flow with natural links such as <b>kerana, supaya, apabila, manakala, oleh itu</b> only when they fit. Clear is better than bombastic.</p></div></div><div class="essay-topic-grid">${cards}</div></section>`;
   }else{
     const cards=(stage1.topics||[]).map(t=>`<article class="essay-topic-card"><div><div class="essay-topic-meta"><span class="essay-chip">${escapeHtml(essayTaskTypeLabel(t.taskType))}</span><span class="essay-chip blue">${escapeHtml(t.theme||'')}</span>${Number(t.completedAttempts||0)>0?`<span class="essay-chip green">Done ${Number(t.completedAttempts)}</span>`:''}</div><h3>${escapeHtml(t.title)}</h3><p>${escapeHtml(t.prompt)}</p><div class="muted small" style="margin-top:9px">Best: ${t.bestScore==null?'—':Number(t.bestScore).toFixed(0)+'/100'}</div></div><button class="btn primary start-stage1" data-topic="${escapeHtml(t.id)}">Start Idea Builder</button></article>`).join('');
-    trainingBody=`<section class="performance-section"><div class="hub-section-head"><div><h2>Stage 1 · 🧠 Idea Builder</h2><p class="muted">Understand the question, generate ideas, choose your best three, then build I → H → C → K.</p></div><div class="metric-inline"><span class="metric-chip">${Number(stage1.attemptsCompleted||0)}/5 sessions</span><span class="metric-chip">Avg ${stage1.averageScore==null?'—':Number(stage1.averageScore).toFixed(0)}/100</span></div></div><div class="card"><div class="tracking-note">Unlock Stage 2 after at least 5 sessions, average ≥70, and consistent understanding of the question in the latest sessions.</div></div><div class="essay-topic-grid">${cards}</div></section>`;
+    trainingBody=`<section class="performance-section"><div class="hub-section-head"><div><h2>Stage 1 · 🧠 Idea Builder</h2><p class="muted">Understand the question, generate ideas, choose your best three, then build I → H → C → K.</p></div><div class="metric-inline"><span class="metric-chip">${Number(stage1.attemptsCompleted||0)}/5 sessions</span><span class="metric-chip">Avg ${stage1.averageScore==null?'—':Number(stage1.averageScore).toFixed(0)}/100</span></div></div><div class="card"><div class="tracking-note">Unlock Stage 2 after at least 5 sessions, average ≥70, and Question Understanding ≥70 in each of the latest 3 sessions.</div></div><div class="essay-topic-grid">${cards}</div></section>`;
   }
 
   const recent=(d.recent||[]).length?(d.recent||[]).map(r=>`<a class="activity-row" href="/student/essay/attempt/${escapeHtml(r.attemptId)}" data-link><span class="activity-badge essay">ESSAY</span><div class="activity-main"><b>${escapeHtml(r.title)}</b><span>${escapeHtml(essayStageLabel(r.stage))} · ${date(r.createdAt)}</span></div><div class="activity-score">${r.score==null?escapeHtml(r.status||''):(Number(r.score)/10).toFixed(1)+'/10'}</div></a>`).join(''):'<div class="empty-playful">Your writing attempts will appear here.</div>';
 
   shell(`<div class="page-head"><div><span class="eyebrow">Artikulasi Penulisan</span><h1>✍️ Essay Training</h1><p class="muted">Teach → Practise → Remove assistance → Test → Analyse → Personalise.</p></div><a class="btn ghost" href="/student" data-link>Back to Quiz Hub</a></div>
-  <section class="essay-stats"><div class="essay-stat"><b>${ability}</b><span>Writing Ability /100</span></div><div class="essay-stat"><b>${baselineScore}</b><span>Baseline /10</span></div><div class="essay-stat"><b>${ideaScore}</b><span>Idea Builder /100</span></div><div class="essay-stat"><b>${Number(stage1.attemptsCompleted||0)}</b><span>Idea Builder Sessions</span></div></section>
+  <section class="essay-stats"><div class="essay-stat"><b>${ability}</b><span>Writing Ability /100</span></div><div class="essay-stat"><b>${baselineScore}</b><span>Baseline /10</span></div><div class="essay-stat"><b>${ideaScore}</b><span>Idea Builder /100</span></div><div class="essay-stat"><b>${ayatScore}</b><span>Ayat Power /100</span></div><div class="essay-stat"><b>${Number(stage2.unlocked?stage2.attemptsCompleted||0:stage1.attemptsCompleted||0)}</b><span>${stage2.unlocked?'Ayat Power Drills':'Idea Builder Sessions'}</span></div></section>
   <section class="performance-section"><div class="hub-section-head"><div><h2>Your Writing Roadmap</h2><p class="muted">Stages unlock progressively so strong writing is built from strong thinking.</p></div></div>${essayRoadmapMarkup(d.progress||[])}</section>
   ${trainingBody}
   <section class="performance-section"><div class="hub-section-head"><div><h2>Recent Essay Activity</h2></div></div><div class="card">${recent}</div></section>`);
@@ -1633,6 +1640,11 @@ async function essayTrainingHome(){
     try{const r=await studentApi.startEssay(btn.dataset.topic,1,'idea_builder');go(`/student/essay/attempt/${r.attemptId}`);}
     catch(error){alert(error.message||'Unable to start Idea Builder.');btn.disabled=false;}
   }));
+  document.querySelectorAll('.start-stage2').forEach(btn=>btn.addEventListener('click',async()=>{
+    btn.disabled=true;
+    try{const r=await studentApi.startEssay(btn.dataset.topic,2,'sentence_power');go(`/student/essay/attempt/${r.attemptId}`);}
+    catch(error){alert(error.message||'Unable to start Ayat Power.');btn.disabled=false;}
+  }));
 }
 
 async function essayRunEvaluation(attemptId,action){
@@ -1643,10 +1655,11 @@ async function essayRunEvaluation(attemptId,action){
 }
 
 function essayPendingPage(a){
-  const action=Number(a.stage)===0?'evaluate_baseline':'finalize_stage1';
+  const stage=Number(a.stage);
+  const action=stage===0?'evaluate_baseline':stage===1?'finalize_stage1':stage===2?'finalize_stage2':'';
   const failed=a.status==='failed';
-  shell(`<div class="page-head"><div><span class="eyebrow">${escapeHtml(essayStageLabel(a.stage))}</span><h1>${failed?'Evaluation needs another try':'Evaluation pending'}</h1><p class="muted">Your response is safely saved.</p></div><a class="btn ghost" href="/student/essay" data-link>Essay Training</a></div><section class="card essay-pending">${failed?'<div style="font-size:2.2rem">⚠️</div>':'<div class="loader"></div>'}<h2>${failed?'The AI marker did not finish.':'Continue the marking process'}</h2><p class="muted">${failed?'No work was lost. Retry below.':'If the page was refreshed during marking, continue below.'}</p><button class="btn primary" id="essay-retry-eval">${failed?'Retry Evaluation':'Continue Evaluation'}</button></section>`);
-  document.querySelector('#essay-retry-eval')?.addEventListener('click',()=>essayRunEvaluation(a.attemptId,action));
+  shell(`<div class="page-head"><div><span class="eyebrow">${escapeHtml(essayStageLabel(a.stage))}</span><h1>${failed?'Evaluation needs another try':'Evaluation pending'}</h1><p class="muted">Your response is safely saved.</p></div><a class="btn ghost" href="/student/essay" data-link>Essay Training</a></div><section class="card essay-pending">${failed?'<div style="font-size:2.2rem">⚠️</div>':'<div class="loader"></div>'}<h2>${failed?'The AI marker did not finish.':'Continue the marking process'}</h2><p class="muted">${failed?'No work was lost. Retry below.':'If the page was refreshed during marking, continue below.'}</p><button class="btn primary" id="essay-retry-eval" ${action?'':'disabled'}>${failed?'Retry Evaluation':'Continue Evaluation'}</button></section>`);
+  document.querySelector('#essay-retry-eval')?.addEventListener('click',()=>{if(action)essayRunEvaluation(a.attemptId,action);});
 }
 
 function essayBaselineEditor(a){
@@ -1753,20 +1766,106 @@ function essayStage1Editor(a){
   });
 }
 
+function essayStage2Editor(a){
+  const data=a.responseData||{};
+  const exercise=a.topic?.exercise||{};
+  const tasks=Array.isArray(exercise.sentenceTasks)?exercise.sentenceTasks:[];
+  if(tasks.length!==4){
+    shell(`<div class="page-head"><div><span class="eyebrow">Stage 2 · Ayat Power</span><h1>${escapeHtml(a.topic?.title||'Ayat Power')}</h1></div><a class="btn ghost" href="/student/essay" data-link>Back</a></div><section class="card"><div class="admin-essay-empty">This Ayat Power exercise is not configured correctly. Please tell Admin.</div></section>`);
+    return;
+  }
+  const existing=Array.isArray(data.sentences)?data.sentences:[];
+  const activeKey=`pksk-essay-active-${a.attemptId}`;
+  let activeSeconds=Math.max(Number(data.activeSeconds||0),Number(sessionStorage.getItem(activeKey)||0)||0);
+  let activeLastTick=Date.now();
+  let dirty=false;
+  let saving=false;
+  markStudentInteraction();
+
+  const captureActive=()=>{
+    const now=Date.now();
+    const delta=Math.max(0,Math.min(5,(now-activeLastTick)/1000));
+    if(!document.hidden && (now-lastStudentInteractionAt)<=60000)activeSeconds+=delta;
+    activeLastTick=now;
+    const rounded=Math.round(activeSeconds);
+    sessionStorage.setItem(activeKey,String(rounded));
+    return rounded;
+  };
+  essayActiveTimer=setInterval(captureActive,1000);
+
+  const prior=new Map(existing.map(x=>[Number(x.index),x]));
+  shell(`<div class="page-head"><div><span class="eyebrow">Stage 2 · ⚡ Ayat Power</span><h1>${escapeHtml(a.topic.title)}</h1><p class="muted">4 ayat · improve the sentence, not the idea</p></div><a class="btn ghost" href="/student/essay" data-link>Exit & Save</a></div>
+  <section class="card"><div class="essay-prompt">${escapeHtml(a.topic.prompt)}</div><div class="tracking-note" style="margin-top:14px"><b>Focus:</b> ${escapeHtml(exercise.teachingFocus||'Kekalkan maksud asal dan bina ayat yang lebih jelas, gramatis dan matang.')}</div><div class="essay-feedback-box" style="margin-top:14px"><b>Remember:</b> Ayat yang baik tidak semestinya panjang. Jangan tambah isi baharu semata-mata untuk nampak hebat.</div></section>
+  <section class="card"><div class="idea-feedback-list">${tasks.map((task,i)=>{
+    const old=prior.get(Number(task.index??i))||{};
+    return `<div class="ihck-card" style="margin-bottom:16px"><div class="essay-topic-meta"><span class="essay-chip">Ayat ${i+1}</span></div><h4 style="margin:.55rem 0 .35rem">Ayat asas</h4><div class="essay-prompt" style="margin-bottom:10px">${escapeHtml(task.basic||'')}</div><div class="muted small" style="margin-bottom:8px"><b>Fokus:</b> ${escapeHtml(task.focus||'')}</div><label>Ayat anda<textarea class="ayat-power-rewrite" data-index="${Number(task.index??i)}" spellcheck="true" maxlength="420" placeholder="Tulis semula ayat ini dengan lebih jelas dan matang…" style="min-height:92px">${escapeHtml(old.rewrite||'')}</textarea></label></div>`;
+  }).join('')}</div><div class="essay-actions"><button class="btn ghost" id="stage2-save">Save Draft</button><button class="btn primary" id="stage2-submit">Complete Ayat Power</button></div><div id="stage2-save-state" class="essay-save-state"></div></section>`);
+
+  const stateEl=document.querySelector('#stage2-save-state');
+  const collect=()=>tasks.map((task,i)=>{
+    const idx=Number(task.index??i);
+    const box=document.querySelector(`.ayat-power-rewrite[data-index="${idx}"]`);
+    return {index:idx,source:String(task.basic||''),focus:String(task.focus||''),rewrite:String(box?.value||'').trim()};
+  });
+  const response=()=>({...data,sentences:collect(),activeSeconds:captureActive(),activeTimeBasis:'active_v1'});
+  const save=async(silent=false)=>{
+    if(saving)return;
+    saving=true;
+    try{
+      if(!silent)stateEl.textContent='Saving…';
+      await studentApi.saveEssay(a.attemptId,null,response());
+      dirty=false;
+      stateEl.textContent=`Saved · ${new Date().toLocaleTimeString('en-MY',{hour:'2-digit',minute:'2-digit'})}`;
+    }catch(error){
+      stateEl.textContent='Save failed — try again.';
+      if(!silent)alert(error.message||'Unable to save Ayat Power draft.');
+    }finally{saving=false;}
+  };
+  document.querySelectorAll('.ayat-power-rewrite').forEach(x=>x.addEventListener('input',()=>{dirty=true;markStudentInteraction();stateEl.textContent='Unsaved changes';}));
+  essayAutosaveTimer=setInterval(()=>{if(dirty)save(true);},10000);
+  document.querySelector('#stage2-save')?.addEventListener('click',()=>save(false));
+  document.querySelector('#stage2-submit')?.addEventListener('click',async e=>{
+    const rows=collect();
+    if(rows.some(x=>!x.rewrite)){stateEl.textContent='Complete all 4 rewritten sentences first.';return;}
+    if(!confirm('Submit these 4 sentences for Ayat Power marking? You cannot edit them after submission.'))return;
+    e.currentTarget.disabled=true;
+    stateEl.textContent='Submitting…';
+    essayClearTimers();
+    const finalResponse={...data,sentences:rows,activeSeconds:captureActive(),activeTimeBasis:'active_v1'};
+    try{
+      await studentApi.saveEssay(a.attemptId,null,finalResponse);
+      await studentApi.submitEssay(a.attemptId,null,finalResponse);
+      await essayRunEvaluation(a.attemptId,'finalize_stage2');
+    }catch(error){
+      e.currentTarget.disabled=false;
+      stateEl.textContent=error.message||'Unable to complete Ayat Power.';
+      await essayAttemptPage(a.attemptId);
+    }
+  });
+}
+
 function essayAttemptResultPage(a){
-  if(Number(a.stage)===1)sessionStorage.removeItem(`pksk-essay-active-${a.attemptId}`);
-  const s=a.scores||{},f=a.feedback||{},total=Number(a.scoreTotal??s.totalScore??0), baseline=Number(a.stage)===0;
+  const stage=Number(a.stage);
+  const baseline=stage===0, stage1=stage===1, stage2=stage===2;
+  if(stage1||stage2)sessionStorage.removeItem(`pksk-essay-active-${a.attemptId}`);
+  const s=a.scores||{},f=a.feedback||{},total=Number(a.scoreTotal??s.totalScore??0);
   const strengths=Array.isArray(f.strengths)?f.strengths:[], improvements=Array.isArray(f.improvements)?f.improvements:[], ev=f.evaluation||{};
   const breakdown=baseline
     ? [essayScoreRow('Kehendak & Relevance',s.relevance),essayScoreRow('Isi & Huraian',s.development),essayScoreRow('Structure',s.structure),essayScoreRow('Grammar',s.grammar),essayScoreRow('Vocabulary',s.vocabulary),essayScoreRow('Sentence Maturity',s.sentenceMaturity),essayScoreRow('Peribahasa / Style',s.languageEnrichment),essayScoreRow('Exam Control',s.examControl)].join('')
-    : [essayScoreRow('Understand Question',s.questionUnderstanding),essayScoreRow('Idea Relevance',s.relevance),essayScoreRow('Idea Variety',s.ideaVariety),essayScoreRow('Potential / Huraian',s.development),essayScoreRow('Examples',s.exampleQuality)].join('');
-  const stage1Details=!baseline?`<section class="card"><h2>Thinking Analysis</h2><p>${escapeHtml(ev.summary||'')}</p>${Array.isArray(ev.ideaAnalysis)&&ev.ideaAnalysis.length?`<h3>Ideas</h3><div class="idea-feedback-list">${ev.ideaAnalysis.map(x=>`<div class="idea-feedback-row relevant"><b>${escapeHtml(x.idea||'')}</b><div class="muted small">${escapeHtml(x.assessment||'')}</div></div>`).join('')}</div>`:''}${Array.isArray(ev.frameworkAnalysis)&&ev.frameworkAnalysis.length?`<h3>I-H-C-K</h3><div class="idea-feedback-list">${ev.frameworkAnalysis.map(x=>`<div class="idea-feedback-row strong"><b>${escapeHtml(x.isi||'')}</b><div class="muted small">${escapeHtml(x.assessment||'')}</div></div>`).join('')}</div>`:''}</section>`:'';
-  const replay=baseline?`<section class="card"><h2>Essay Replay</h2><p class="muted">Original \u2192 correction-only \u2192 strong version using the same core ideas.</p><div class="essay-replay-tabs"><button class="btn ghost essay-replay-tab active" data-replay="original">Original</button><button class="btn ghost essay-replay-tab" data-replay="corrected">Corrected</button><button class="btn ghost essay-replay-tab" data-replay="excellent">Excellent Version</button></div><div id="essay-replay-text" class="essay-text-preview">${escapeHtml(a.essayText||'')}</div></section>`:'';
-  shell(`<div class="page-head"><div><span class="eyebrow">${escapeHtml(essayStageLabel(a.stage))} \u00b7 Result</span><h1>${escapeHtml(a.topic.title)}</h1><p class="muted">PKSK Pro Training Score \u2014 not an official PKSK mark.</p></div><a class="btn ghost" href="/student/essay" data-link>Essay Training</a></div>
-  <section class="essay-score-hero"><div class="essay-score-ring"><div><b>${(total/10).toFixed(1)}</b><span>/ 10</span></div></div><div><span class="eyebrow">${baseline?'Writing Baseline':'Idea Builder'}</span><h2 style="margin:.3rem 0">${total.toFixed(0)} / 100</h2><p class="muted" style="margin:0">${escapeHtml(ev.summary||ev.taskUnderstanding||'Your work has been analysed against the PKSK Pro training rubric.')}</p></div></section>
+    : stage2
+      ? [essayScoreRow('Meaning Preservation',s.relevance),essayScoreRow('Grammar',s.grammar),essayScoreRow('Sentence Maturity',s.sentenceMaturity),essayScoreRow('Word Precision',s.vocabulary)].join('')
+      : [essayScoreRow('Understand Question',s.questionUnderstanding),essayScoreRow('Idea Relevance',s.relevance),essayScoreRow('Idea Variety',s.ideaVariety),essayScoreRow('Potential / Huraian',s.development),essayScoreRow('Examples',s.exampleQuality)].join('');
+  const stage1Details=stage1?`<section class="card"><h2>Thinking Analysis</h2><p>${escapeHtml(ev.summary||'')}</p>${Array.isArray(ev.ideaAnalysis)&&ev.ideaAnalysis.length?`<h3>Ideas</h3><div class="idea-feedback-list">${ev.ideaAnalysis.map(x=>`<div class="idea-feedback-row relevant"><b>${escapeHtml(x.idea||'')}</b><div class="muted small">${escapeHtml(x.assessment||'')}</div></div>`).join('')}</div>`:''}${Array.isArray(ev.frameworkAnalysis)&&ev.frameworkAnalysis.length?`<h3>I-H-C-K</h3><div class="idea-feedback-list">${ev.frameworkAnalysis.map(x=>`<div class="idea-feedback-row strong"><b>${escapeHtml(x.isi||'')}</b><div class="muted small">${escapeHtml(x.assessment||'')}</div></div>`).join('')}</div>`:''}</section>`:'';
+  const sentenceAnalysis=Array.isArray(ev.sentenceAnalysis)?ev.sentenceAnalysis:[];
+  const stage2Details=stage2?`<section class="card"><h2>Sentence Replay</h2><p class="muted">Compare your rewrite with a stronger version that keeps the same meaning.</p><div class="idea-feedback-list">${sentenceAnalysis.map((x,i)=>`<div class="idea-feedback-row relevant"><div class="essay-topic-meta"><span class="essay-chip">Ayat ${i+1}</span></div><p><b>Ayat asas:</b> ${escapeHtml(x.source||'')}</p><p><b>Ayat anda:</b> ${escapeHtml(x.student||'')}</p><div class="muted small" style="margin:7px 0">${escapeHtml(x.assessment||'')}</div><p style="margin-bottom:0"><b>Versi lebih kuat:</b> ${escapeHtml(x.improved||'')}</p></div>`).join('')||'<div class="admin-essay-empty">Sentence analysis is unavailable.</div>'}</div></section>`:'';
+  const replay=baseline?`<section class="card"><h2>Essay Replay</h2><p class="muted">Original → correction-only → strong version using the same core ideas.</p><div class="essay-replay-tabs"><button class="btn ghost essay-replay-tab active" data-replay="original">Original</button><button class="btn ghost essay-replay-tab" data-replay="corrected">Corrected</button><button class="btn ghost essay-replay-tab" data-replay="excellent">Excellent Version</button></div><div id="essay-replay-text" class="essay-text-preview">${escapeHtml(a.essayText||'')}</div></section>`:'';
+  const label=baseline?'Writing Baseline':stage2?'Ayat Power':'Idea Builder';
+  const nextText=baseline?'Continue to Stage 1':stage2?'Choose Next Ayat Power':'Choose Next Idea Builder';
+  shell(`<div class="page-head"><div><span class="eyebrow">${escapeHtml(essayStageLabel(a.stage))} · Result</span><h1>${escapeHtml(a.topic.title)}</h1><p class="muted">PKSK Pro Training Score — not an official PKSK mark.</p></div><a class="btn ghost" href="/student/essay" data-link>Essay Training</a></div>
+  <section class="essay-score-hero"><div class="essay-score-ring"><div><b>${(total/10).toFixed(1)}</b><span>/ 10</span></div></div><div><span class="eyebrow">${label}</span><h2 style="margin:.3rem 0">${total.toFixed(0)} / 100</h2><p class="muted" style="margin:0">${escapeHtml(ev.summary||ev.taskUnderstanding||'Your work has been analysed against the PKSK Pro training rubric.')}</p></div></section>
   <section class="card"><h2>Score Breakdown</h2><div class="essay-breakdown">${breakdown}</div></section>
-  <section class="essay-feedback-grid"><div class="essay-feedback-box"><h3>\u2705 What you did well</h3><ul>${strengths.length?strengths.map(x=>`<li>${escapeHtml(x)}</li>`).join(''):'<li>Keep practising consistently.</li>'}</ul></div><div class="essay-feedback-box"><h3>\ud83c\udfaf Focus next</h3><ul>${improvements.length?improvements.map(x=>`<li>${escapeHtml(x)}</li>`).join(''):'<li>Maintain this standard in the next exercise.</li>'}</ul></div></section>
-  ${stage1Details}${replay}<div class="essay-actions" style="margin-top:18px"><a class="btn primary" href="/student/essay" data-link>${baseline?'Continue to Stage 1':'Choose Next Idea Builder'}</a></div>`);
+  <section class="essay-feedback-grid"><div class="essay-feedback-box"><h3>✅ What you did well</h3><ul>${strengths.length?strengths.map(x=>`<li>${escapeHtml(x)}</li>`).join(''):'<li>Keep practising consistently.</li>'}</ul></div><div class="essay-feedback-box"><h3>🎯 Focus next</h3><ul>${improvements.length?improvements.map(x=>`<li>${escapeHtml(x)}</li>`).join(''):'<li>Maintain this standard in the next exercise.</li>'}</ul></div></section>
+  ${stage1Details}${stage2Details}${replay}<div class="essay-actions" style="margin-top:18px"><a class="btn primary" href="/student/essay" data-link>${nextText}</a></div>`);
   if(baseline){
     const map={original:a.essayText||'',corrected:f.correctedText||'',excellent:f.excellentText||''};
     document.querySelectorAll('.essay-replay-tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.essay-replay-tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.querySelector('#essay-replay-text').textContent=map[btn.dataset.replay]||'';}));
@@ -1776,14 +1875,16 @@ function essayAttemptResultPage(a){
 async function essayAttemptPage(attemptId){
   if(!await requireProfile('student'))return;
   if(!profile?.essay_training_enabled){go('/student');return;}
-  essayClearTimers();loading('Loading writing attempt\u2026');
+  essayClearTimers();loading('Loading writing attempt…');
   const a=await studentApi.essayAttempt(attemptId);
   if(a.status==='completed')return essayAttemptResultPage(a);
   if(['failed','submitted','evaluating'].includes(a.status))return essayPendingPage(a);
   if(Number(a.stage)===0)return essayBaselineEditor(a);
   if(Number(a.stage)===1)return essayStage1Editor(a);
+  if(Number(a.stage)===2)return essayStage2Editor(a);
   throw new Error('This Essay Training stage is not available yet.');
 }
+
 function historyTable(rows) { if(!rows.length) return `<p class="muted">No completed attempts yet.</p>`; return `<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle||r.set_title)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'—')}</td><td>${formatDuration(r.elapsedSeconds??r.elapsed_seconds)}</td><td>${date(r.submittedAt??r.submitted_at)}</td><td><a href="/student/review/${r.attemptId??r.attempt_id}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`; }
 
 async function studentHistory() {
@@ -2251,7 +2352,12 @@ function adminEssayStatusMarkup(status){
 }
 function adminEssayAttemptRows(rows=[]){
   if(!rows.length)return '<div class="admin-essay-empty">No Essay Training attempts yet.</div>';
-  return `<div class="table-wrap"><table class="admin-essay-table"><thead><tr><th>Stage / Topic</th><th>Status</th><th>Score</th><th>Words / Time</th><th>Model</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(a=>`<tr><td><b>${escapeHtml(essayStageLabel(a.stage))}</b><div class="admin-essay-sub">${escapeHtml(a.title||'')}</div></td><td>${adminEssayStatusMarkup(a.status)}</td><td class="admin-essay-score">${a.score==null?'—':(Number(a.score)/10).toFixed(1)+'/10'}</td><td>${Number(a.wordCount||0)} words<div class="admin-essay-sub">${a.durationSeconds==null?'—':formatDuration(a.durationSeconds)+(Number(a.stage)===1?' active':'')}</div></td><td>${escapeHtml(a.modelVersion||'—')}<div class="admin-essay-sub">${escapeHtml(a.rubricVersion||'')}</div></td><td>${date(a.submittedAt||a.createdAt)}</td><td><a href="/admin/essay/attempt/${escapeHtml(a.attemptId)}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="table-wrap"><table class="admin-essay-table"><thead><tr><th>Stage / Topic</th><th>Status</th><th>Score</th><th>Work / Time</th><th>Model</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(a=>{
+    const stage=Number(a.stage);
+    const work=stage===2?'4 sentence rewrites':`${Number(a.wordCount||0)} words`;
+    const time=a.durationSeconds==null?'—':formatDuration(a.durationSeconds)+((stage===1||stage===2)?' active':'');
+    return `<tr><td><b>${escapeHtml(essayStageLabel(a.stage))}</b><div class="admin-essay-sub">${escapeHtml(a.title||'')}</div></td><td>${adminEssayStatusMarkup(a.status)}</td><td class="admin-essay-score">${a.score==null?'—':(Number(a.score)/10).toFixed(1)+'/10'}</td><td>${work}<div class="admin-essay-sub">${time}</div></td><td>${escapeHtml(a.modelVersion||'—')}<div class="admin-essay-sub">${escapeHtml(a.rubricVersion||'')}</div></td><td>${date(a.submittedAt||a.createdAt)}</td><td><a href="/admin/essay/attempt/${escapeHtml(a.attemptId)}" data-link>Review</a></td></tr>`;
+  }).join('')}</tbody></table></div>`;
 }
 
 async function adminEssayDashboard(){
@@ -2264,7 +2370,7 @@ async function adminEssayDashboard(){
     return `<tr><td><a class="admin-essay-student" href="/admin/essay/student/${escapeHtml(x.userId)}" data-link>${escapeHtml(x.displayNickname||x.displayName||'Student')}</a><div class="admin-essay-sub">${escapeHtml(x.displayName||'')} · ${escapeHtml(x.schoolYear||'')}</div></td><td>${x.completedBaseline?'<span class="essay-chip green">Completed</span>':'<span class="essay-chip">Not started</span>'}<div class="admin-essay-sub">${x.baselineScore==null?'—':(Number(x.baselineScore)/10).toFixed(1)+'/10'}</div></td><td class="admin-essay-score">${x.writingAbility==null?'—':Number(x.writingAbility).toFixed(0)+'/100'}</td><td>${escapeHtml(essayStageLabel(x.currentStage||0))}</td><td>${Number(x.stage1Attempts||0)} sessions<div class="admin-essay-sub">${x.stage1Average==null?'—':'Avg '+Number(x.stage1Average).toFixed(0)+'/100'}</div></td><td>${latest?`${adminEssayStatusMarkup(latest.status)}<div class="admin-essay-sub">${escapeHtml(latest.title||'')} · ${date(latest.submittedAt||latest.createdAt)}</div>`:'—'}</td><td><a class="btn ghost" href="/admin/essay/student/${escapeHtml(x.userId)}" data-link>Open</a></td></tr>`;
   }).join('');
   const recentRows=recent.length?`<div class="table-wrap"><table><thead><tr><th>Student</th><th>Stage</th><th>Topic</th><th>Status</th><th>Score</th><th>Date</th><th></th></tr></thead><tbody>${recent.map(a=>`<tr><td>${escapeHtml(a.studentNickname||a.studentName||'')}</td><td>${escapeHtml(essayStageLabel(a.stage))}</td><td>${escapeHtml(a.title||'')}</td><td>${adminEssayStatusMarkup(a.status)}</td><td>${a.score==null?'—':(Number(a.score)/10).toFixed(1)+'/10'}</td><td>${date(a.submittedAt||a.createdAt)}</td><td><a href="/admin/essay/attempt/${escapeHtml(a.attemptId)}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`:'<div class="admin-essay-empty">No essay submissions yet.</div>';
-  shell(`<div class="page-head"><div><span class="eyebrow">Administration · Artikulasi Penulisan</span><h1>Essay Training Dashboard</h1><p class="muted">Baseline, writing ability, Stage 1 progress, AI marking and admin review in one place.</p></div></div>
+  shell(`<div class="page-head"><div><span class="eyebrow">Administration · Artikulasi Penulisan</span><h1>Essay Training Dashboard</h1><p class="muted">Baseline, stage progress, writing skills, AI marking and admin review in one place.</p></div></div>
   <section class="stats"><div class="stat"><b>${Number(s.enabledStudents||0)}</b><span>Essay Access</span></div><div class="stat"><b>${Number(s.baselineCompleted||0)}</b><span>Baselines Completed</span></div><div class="stat"><b>${Number(s.stage1Started||0)}</b><span>Stage 1 Started</span></div><div class="stat"><b>${Number(s.completedEssayAttempts||0)}</b><span>Completed Essay Tasks</span></div><div class="stat"><b>${s.averageBaseline==null?'—':(Number(s.averageBaseline)/10).toFixed(1)}</b><span>Average Baseline /10</span></div></section>
   <section class="card"><div class="hub-section-head"><div><h2>Student Writing Progress</h2><p class="muted">Open a student to manage stages or review every attempt.</p></div></div><div class="table-wrap"><table class="admin-essay-table"><thead><tr><th>Student</th><th>Baseline</th><th>Writing Ability</th><th>Current Stage</th><th>Idea Builder</th><th>Latest</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>
   <section class="card"><div class="hub-section-head"><div><h2>Recent Essay Activity</h2><p class="muted">Latest 30 Essay Training attempts across the cohort.</p></div></div>${recentRows}</section>`,'admin');
@@ -2285,7 +2391,7 @@ async function adminEssayStudentPage(userId){
   const audit=actions.length?actions.map(a=>`<div class="admin-essay-audit-row"><b>${escapeHtml(adminEssayActionLabel(a.actionType))}</b><span>${date(a.createdAt)}${a.note?' · '+escapeHtml(a.note):''}</span></div>`).join(''):'<div class="admin-essay-empty">No admin actions recorded.</div>';
   shell(`<div class="page-head"><div><span class="eyebrow">Essay Training · Student</span><h1>${escapeHtml(p.displayNickname||p.displayName||'Student')}</h1><p class="muted">${escapeHtml(p.displayName||'')} · ${escapeHtml(p.schoolYear||'')} · Last portal activity ${date(p.lastActivityAt)}</p></div><div class="admin-essay-controls"><a class="btn ghost" href="/admin/essay" data-link>Back to Essay Dashboard</a><button class="btn danger" id="essay-reset-training">Reset Essay Training</button></div></div>
   <section class="stats"><div class="stat"><b>${w.writingAbility==null?'—':Number(w.writingAbility).toFixed(0)}</b><span>Writing Ability /100</span></div><div class="stat"><b>${w.baselineScore==null?'—':(Number(w.baselineScore)/10).toFixed(1)}</b><span>Baseline /10</span></div><div class="stat"><b>${w.ideaScore==null?'—':Number(w.ideaScore).toFixed(0)}</b><span>Idea Builder /100</span></div><div class="stat"><b>${escapeHtml(essayStageLabel(w.currentStage||0))}</b><span>Current Stage</span></div></section>
-  <section class="card"><div class="hub-section-head"><div><h2>Writing Skill Profile</h2><p class="muted">Baseline language dimensions update from full writing assessments.</p></div></div><div class="essay-stats"><div class="essay-stat"><b>${w.grammarScore==null?'—':Number(w.grammarScore).toFixed(0)}</b><span>Grammar</span></div><div class="essay-stat"><b>${w.structureScore==null?'—':Number(w.structureScore).toFixed(0)}</b><span>Structure</span></div><div class="essay-stat"><b>${w.vocabularyScore==null?'—':Number(w.vocabularyScore).toFixed(0)}</b><span>Vocabulary</span></div><div class="essay-stat"><b>${w.sentenceScore==null?'—':Number(w.sentenceScore).toFixed(0)}</b><span>Sentence Maturity</span></div><div class="essay-stat"><b>${w.expressionScore==null?'—':Number(w.expressionScore).toFixed(0)}</b><span>Peribahasa / Style</span></div></div></section>
+  <section class="card"><div class="hub-section-head"><div><h2>Writing Skill Profile</h2><p class="muted">Language dimensions update from the relevant Essay Training stages.</p></div></div><div class="essay-stats"><div class="essay-stat"><b>${w.grammarScore==null?'—':Number(w.grammarScore).toFixed(0)}</b><span>Grammar</span></div><div class="essay-stat"><b>${w.structureScore==null?'—':Number(w.structureScore).toFixed(0)}</b><span>Structure</span></div><div class="essay-stat"><b>${w.vocabularyScore==null?'—':Number(w.vocabularyScore).toFixed(0)}</b><span>Vocabulary</span></div><div class="essay-stat"><b>${w.sentenceScore==null?'—':Number(w.sentenceScore).toFixed(0)}</b><span>Sentence Maturity</span></div><div class="essay-stat"><b>${w.expressionScore==null?'—':Number(w.expressionScore).toFixed(0)}</b><span>Peribahasa / Style</span></div></div></section>
   <section class="card"><div class="hub-section-head"><div><h2>Stage Controls</h2><p class="muted">Completed stages are protected. Other stages may be unlocked or relocked by Admin.</p></div></div><div class="admin-stage-list">${stageRows||'<div class="admin-essay-empty">Writing profile has not been initialised yet.</div>'}</div></section>
   <section class="card"><div class="hub-section-head"><div><h2>Attempt History</h2></div></div>${adminEssayAttemptRows(attempts)}</section>
   <section class="card"><div class="hub-section-head"><div><h2>Admin Audit Trail</h2><p class="muted">Manual changes are recorded with date and reason.</p></div></div><div class="admin-essay-audit">${audit}</div></section>`,'admin');
@@ -2313,20 +2419,33 @@ async function adminEssayAttemptPage(attemptId){
   if(!await requireProfile('admin'))return;
   loading('Loading essay review…');
   const a=await adminApi.essayAttempt(attemptId);
-  const s=a.scores||{},f=a.feedback||{},data=a.responseData||{},baseline=Number(a.stage)===0;
+  const s=a.scores||{},f=a.feedback||{},data=a.responseData||{};
+  const stage=Number(a.stage),baseline=stage===0,stage1=stage===1,stage2=stage===2;
   const breakdown=baseline
     ? [essayScoreRow('Kehendak & Relevance',s.relevance),essayScoreRow('Isi & Huraian',s.development),essayScoreRow('Structure',s.structure),essayScoreRow('Grammar',s.grammar),essayScoreRow('Vocabulary',s.vocabulary),essayScoreRow('Sentence Maturity',s.sentenceMaturity),essayScoreRow('Peribahasa / Style',s.languageEnrichment),essayScoreRow('Exam Control',s.examControl)].join('')
-    : [essayScoreRow('Understand Question',s.questionUnderstanding),essayScoreRow('Idea Relevance',s.relevance),essayScoreRow('Idea Variety',s.ideaVariety),essayScoreRow('Potential / Huraian',s.development),essayScoreRow('Examples',s.exampleQuality)].join('');
+    : stage2
+      ? [essayScoreRow('Meaning Preservation',s.relevance),essayScoreRow('Grammar',s.grammar),essayScoreRow('Sentence Maturity',s.sentenceMaturity),essayScoreRow('Word Precision',s.vocabulary)].join('')
+      : [essayScoreRow('Understand Question',s.questionUnderstanding),essayScoreRow('Idea Relevance',s.relevance),essayScoreRow('Idea Variety',s.ideaVariety),essayScoreRow('Potential / Huraian',s.development),essayScoreRow('Examples',s.exampleQuality)].join('');
   const selected=Array.isArray(data.selectedIdeas)?data.selectedIdeas:[];
   const framework=Array.isArray(data.framework)?data.framework:[];
-  const stage1Plan=!baseline?`<section class="card"><h2>Student Planning</h2><p><b>Question type chosen:</b> ${escapeHtml(essayTaskTypeLabel(data.taskTypeChoice||''))}</p><h3>Selected Ideas</h3><ul>${selected.map(x=>`<li>${escapeHtml(x)}</li>`).join('')||'<li>None saved.</li>'}</ul><h3>I-H-C-K</h3><div class="admin-essay-ihck">${framework.map(x=>`<div class="admin-essay-ihck-row"><b>${escapeHtml(x.isi||'')}</b><p><strong>H:</strong> ${escapeHtml(x.huraian||'')}</p><p><strong>C:</strong> ${escapeHtml(x.contoh||'')}</p><p><strong>K:</strong> ${escapeHtml(x.kesan||'')}</p></div>`).join('')||'<div class="admin-essay-empty">No framework saved.</div>'}</div></section>`:'';
+  const sentences=Array.isArray(data.sentences)?data.sentences:[];
+  const analysis=Array.isArray(f.evaluation?.sentenceAnalysis)?f.evaluation.sentenceAnalysis:[];
+  const stage1Plan=stage1?`<section class="card"><h2>Student Planning</h2><p><b>Question type chosen:</b> ${escapeHtml(essayTaskTypeLabel(data.taskTypeChoice||''))}</p><h3>Selected Ideas</h3><ul>${selected.map(x=>`<li>${escapeHtml(x)}</li>`).join('')||'<li>None saved.</li>'}</ul><h3>I-H-C-K</h3><div class="admin-essay-ihck">${framework.map(x=>`<div class="admin-essay-ihck-row"><b>${escapeHtml(x.isi||'')}</b><p><strong>H:</strong> ${escapeHtml(x.huraian||'')}</p><p><strong>C:</strong> ${escapeHtml(x.contoh||'')}</p><p><strong>K:</strong> ${escapeHtml(x.kesan||'')}</p></div>`).join('')||'<div class="admin-essay-empty">No framework saved.</div>'}</div></section>`:'';
+  const stage2Plan=stage2?`<section class="card"><h2>Ayat Power Rewrites</h2><div class="idea-feedback-list">${sentences.map((x,i)=>{
+    const ev=analysis.find(y=>Number(y.index)===Number(x.index))||analysis[i]||{};
+    return `<div class="idea-feedback-row relevant"><div class="essay-topic-meta"><span class="essay-chip">Ayat ${i+1}</span></div><p><b>Source:</b> ${escapeHtml(x.source||ev.source||'')}</p><p><b>Student:</b> ${escapeHtml(x.rewrite||ev.student||'')}</p>${ev.assessment?`<div class="muted small" style="margin:7px 0">${escapeHtml(ev.assessment)}</div>`:''}${ev.improved?`<p style="margin-bottom:0"><b>Stronger:</b> ${escapeHtml(ev.improved)}</p>`:''}</div>`;
+  }).join('')||'<div class="admin-essay-empty">No sentence rewrites saved.</div>'}</div></section>`:'';
   const replay=baseline&&a.status==='completed'?`<section class="card"><h2>Essay Replay</h2><h3>Corrected</h3><div class="admin-essay-raw">${escapeHtml(f.correctedText||'—')}</div><h3>Excellent Version</h3><div class="admin-essay-raw">${escapeHtml(f.excellentText||'—')}</div></section>`:'';
   const actions=Array.isArray(a.adminActions)?a.adminActions:[];
   const audit=actions.length?actions.map(x=>`<div class="admin-essay-audit-row"><b>${escapeHtml(adminEssayActionLabel(x.actionType))}</b><span>${date(x.createdAt)}${x.note?' · '+escapeHtml(x.note):''}</span></div>`).join(''):'<div class="admin-essay-empty">No admin changes to this attempt.</div>';
+  const workValue=stage2?`${sentences.length}/4`:Number(a.wordCount||0);
+  const workLabel=stage2?'Sentence Rewrites':'Word Count';
+  const timeLabel=(stage1||stage2)?'Active Time':'Time Used';
+  const rerunAction=baseline?'evaluate_baseline':stage2?'finalize_stage2':'finalize_stage1';
   shell(`<div class="page-head"><div><span class="eyebrow">Admin Essay Review</span><h1>${escapeHtml(a.studentNickname||a.studentName||'Student')} · ${escapeHtml(a.topic?.title||'')}</h1><p class="muted">${escapeHtml(essayStageLabel(a.stage))} · ${adminEssayStatusMarkup(a.status)} · ${date(a.submittedAt||a.createdAt)}</p></div><div class="admin-essay-controls"><a class="btn ghost" href="/admin/essay/student/${escapeHtml(a.studentId)}" data-link>Student Writing Profile</a>${a.status==='completed'?'<button class="btn ghost" id="essay-rerun-ai">Re-run AI Marking</button><button class="btn primary" id="essay-override-score">Override Score</button>':''}</div></div>
-  <section class="stats"><div class="stat"><b>${a.scoreTotal==null?'—':(Number(a.scoreTotal)/10).toFixed(1)}</b><span>Training Score /10</span></div><div class="stat"><b>${Number(a.wordCount||0)}</b><span>Word Count</span></div><div class="stat"><b>${a.durationSeconds==null?'—':formatDuration(a.durationSeconds)}</b><span>${Number(a.stage)===1?'Active Time':'Time Used'}</span></div><div class="stat"><b>${escapeHtml(a.modelVersion||'—')}</b><span>AI Model</span></div><div class="stat"><b>${escapeHtml(a.rubricVersion||'—')}</b><span>Rubric Version</span></div></section>
+  <section class="stats"><div class="stat"><b>${a.scoreTotal==null?'—':(Number(a.scoreTotal)/10).toFixed(1)}</b><span>Training Score /10</span></div><div class="stat"><b>${workValue}</b><span>${workLabel}</span></div><div class="stat"><b>${a.durationSeconds==null?'—':formatDuration(a.durationSeconds)}</b><span>${timeLabel}</span></div><div class="stat"><b>${escapeHtml(a.modelVersion||'—')}</b><span>AI Model</span></div><div class="stat"><b>${escapeHtml(a.rubricVersion||'—')}</b><span>Rubric Version</span></div></section>
   <section class="card"><h2>Question</h2><div class="essay-prompt">${escapeHtml(a.topic?.prompt||'')}</div></section>
-  ${baseline?`<section class="card"><h2>Original Student Essay</h2><div class="admin-essay-raw">${escapeHtml(a.essayText||'—')}</div></section>`:stage1Plan}
+  ${baseline?`<section class="card"><h2>Original Student Essay</h2><div class="admin-essay-raw">${escapeHtml(a.essayText||'—')}</div></section>`:stage1Plan+stage2Plan}
   ${a.status==='completed'?`<section class="card"><h2>Score Breakdown</h2><div class="essay-breakdown">${breakdown}</div></section><section class="essay-feedback-grid"><div class="essay-feedback-box"><h3>Strengths</h3><ul>${(f.strengths||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')||'<li>—</li>'}</ul></div><div class="essay-feedback-box"><h3>Improvements</h3><ul>${(f.improvements||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')||'<li>—</li>'}</ul></div></section>`:''}
   ${replay}
   <section class="card"><div class="hub-section-head"><div><h2>Admin Audit Trail</h2></div></div><div class="admin-essay-audit">${audit}</div></section>`,'admin');
@@ -2334,7 +2453,7 @@ async function adminEssayAttemptPage(attemptId){
   document.querySelector('#essay-rerun-ai')?.addEventListener('click',async e=>{
     if(!confirm('Re-run AI marking? This will replace the current AI score and feedback, while recording the action in the audit trail.'))return;
     e.currentTarget.disabled=true;e.currentTarget.textContent='Re-marking…';
-    try{await adminApi.rerunEssay(attemptId,baseline?'evaluate_baseline':'finalize_stage1');await adminEssayAttemptPage(attemptId);}
+    try{await adminApi.rerunEssay(attemptId,rerunAction);await adminEssayAttemptPage(attemptId);}
     catch(error){alert(error.message||'Unable to re-run AI marking.');e.currentTarget.disabled=false;e.currentTarget.textContent='Re-run AI Marking';}
   });
   document.querySelector('#essay-override-score')?.addEventListener('click',async e=>{
