@@ -1642,7 +1642,7 @@ async function essayTrainingHome(){
   }));
   document.querySelectorAll('.start-stage2').forEach(btn=>btn.addEventListener('click',async()=>{
     btn.disabled=true;
-    try{const r=await studentApi.startEssay(btn.dataset.topic,2,'sentence_power');go(`/student/essay/attempt/${r.attemptId}`);}
+    try{const r=await studentApi.startEssay(btn.dataset.topic,2,'guided');go(`/student/essay/attempt/${r.attemptId}`);}
     catch(error){alert(error.message||'Unable to start Ayat Power.');btn.disabled=false;}
   }));
 }
