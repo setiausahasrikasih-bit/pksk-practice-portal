@@ -1036,7 +1036,7 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceM
     profile: async () => {
       const user = await currentUser();
       if (!user?.id) return null;
-      const select = 'user_id,display_name,display_nickname,avatar_id,role,school_year,pksk_exam_date,is_active,created_at,last_activity_at';
+      const select = 'user_id,display_name,display_nickname,avatar_id,role,school_year,pksk_exam_date,is_active,essay_training_enabled,created_at,last_activity_at';
       const rows = await authedJson(`/rest/v1/profiles?select=${encodeURIComponent(select)}&user_id=eq.${encodeURIComponent(user.id)}`, { method: 'GET' });
       return Array.isArray(rows) ? rows[0] || null : rows;
     },
@@ -1368,7 +1368,8 @@ function shell(content, role = profile?.role) {
     const nav = `<a href="/admin" data-link>Dashboard</a><a href="/admin/students" data-link>Students</a><a href="/admin/questions" data-link>Question Bank</a><a href="/admin/references" data-link>Reference Library</a><a href="/admin/generator" data-link>AI Generator</a><a href="/admin/sets" data-link>Simulation Sets</a><a href="/admin/personalised" data-link>Personalised</a><a href="/admin/essay" data-link>Essay Training</a><a href="/admin/results" data-link>Results</a>`;
     root.innerHTML = `<header class="topbar">${brandMarkup('/admin')}<nav>${nav}</nav><button id="logout" class="btn ghost">Logout</button></header><div class="admin-mobile-nav">${nav}</div><main class="page">${content}</main>`;
   } else {
-    const nav = `<a href="/student" data-link>Quiz Hub</a><a href="/student/history" data-link>My Results</a><a href="/student/performance" data-link>My Performance</a><a href="/student/essay" data-link>Essay</a><a href="/student/leaderboard" data-link>Leaderboard</a><a href="/student/lounge" data-link>Lounge</a><a href="/student/profile" data-link>Profile</a>`;
+    const essayNav = profile?.essay_training_enabled ? '<a href="/student/essay" data-link>Essay</a>' : '';
+    const nav = `<a href="/student" data-link>Quiz Hub</a><a href="/student/history" data-link>My Results</a><a href="/student/performance" data-link>My Performance</a>${essayNav}<a href="/student/leaderboard" data-link>Leaderboard</a><a href="/student/lounge" data-link>Lounge</a><a href="/student/profile" data-link>Profile</a>`;
     const displayName = studentIdentity?.displayNickname || profile?.display_nickname || profile?.display_name || 'Student';
     const avatar = studentIdentity?.avatarSymbol || '🎓';
     root.innerHTML = `<header class="topbar student-topbar">${brandMarkup('/student')}<nav>${nav}</nav><div class="student-top-actions"><a href="/student/profile" class="student-identity" data-link aria-label="Open profile"><span class="student-avatar">${escapeHtml(avatar)}</span><span class="student-identity-name">${escapeHtml(displayName)}</span></a><button id="logout" class="btn ghost">Logout</button></div></header><div class="student-mobile-nav">${nav}</div><main class="page student-page">${content}</main>`;
@@ -1500,7 +1501,7 @@ async function studentDashboard() {
     <div class="hub-dashboard-main">
       <section class="hub-section"><div class="hub-section-head"><div><h2>Full Simulation</h2><p class="muted">Insaniah • Mathematics • Science • English • Bahasa Melayu • IQ / Logical Reasoning • General Knowledge</p></div></div><div class="student-sim-grid">${simCards}</div></section>
       ${personalizedCards ? `<section class="hub-section personalized-training-section"><div class="hub-section-head"><div><h2>🎯 Personalised Training</h2><p class="muted">Private targeted simulations prepared specifically for you based on your performance.</p></div></div><div class="student-sim-grid">${personalizedCards}</div></section>` : ''}
-      <section class="hub-section essay-training-section"><div class="hub-section-head"><div><h2>✍️ Essay Training</h2><p class="muted">Artikulasi Penulisan · learn how to think, plan and write before the full 45-minute simulation.</p></div></div><div class="essay-hub-cta"><div><h3>Build your writing skill step by step</h3><p class="muted">Start with a Writing Baseline, then train Idea Builder, Ayat Power, vocabulary, paragraph structure and eventually full PKSK-style essays.</p></div><a class="btn primary" href="/student/essay" data-link>Open Essay Training</a></div></section>
+      ${profile?.essay_training_enabled ? `<section class="hub-section essay-training-section"><div class="hub-section-head"><div><h2>✍️ Essay Training</h2><p class="muted">Artikulasi Penulisan · learn how to think, plan and write before the full 45-minute simulation.</p></div></div><div class="essay-hub-cta"><div><h3>Build your writing skill step by step</h3><p class="muted">Start with a Writing Baseline, then train Idea Builder, Ayat Power, vocabulary, paragraph structure and eventually full PKSK-style essays.</p></div><a class="btn primary" href="/student/essay" data-link>Open Essay Training</a></div></section>` : ''}
       <section class="hub-section"><div class="hub-section-head"><div><h2>Quick Quiz</h2><p class="muted">10 questions · 10 minutes · change answers before submit.</p></div></div><div class="practice-grid">${quickCards||'<div class="empty-playful">No subjects available yet.</div>'}</div></section>
       <section class="hub-section"><div class="hub-section-head"><div><h2>Speed Quiz</h2><p class="muted">20 questions · 5 minutes · one-way, answers lock.</p></div></div><div class="practice-grid">${speedCards||'<div class="empty-playful">No subjects available yet.</div>'}</div></section>
     </div>
@@ -1562,6 +1563,7 @@ function essayScoreRow(label,value){
 
 async function essayTrainingHome(){
   if(!await requireProfile('student'))return;
+  if(!profile?.essay_training_enabled){go('/student');return;}
   essayClearTimers();
   loading('Loading Essay Training…');
   const d=await studentApi.essayHome();
@@ -1721,6 +1723,7 @@ function essayAttemptResultPage(a){
 
 async function essayAttemptPage(attemptId){
   if(!await requireProfile('student'))return;
+  if(!profile?.essay_training_enabled){go('/student');return;}
   essayClearTimers();loading('Loading writing attempt\u2026');
   const a=await studentApi.essayAttempt(attemptId);
   if(a.status==='completed')return essayAttemptResultPage(a);
