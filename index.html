@@ -1300,6 +1300,7 @@ let quizTimer = null;
 let essayTimer = null;
 let essayAutosaveTimer = null;
 let ideaBurstTimer = null;
+let essayActiveTimer = null;
 let editorDirty = false;
 let activityHeartbeatTimer = null;
 let lastStudentInteractionAt = Date.now();
@@ -1571,6 +1572,7 @@ function essayClearTimers(){
   if(essayTimer){clearInterval(essayTimer);essayTimer=null;}
   if(essayAutosaveTimer){clearInterval(essayAutosaveTimer);essayAutosaveTimer=null;}
   if(ideaBurstTimer){clearInterval(ideaBurstTimer);ideaBurstTimer=null;}
+  if(essayActiveTimer){clearInterval(essayActiveTimer);essayActiveTimer=null;}
 }
 function essayRoadmapMarkup(progress=[]){
   const labels=['Writing Baseline','Idea Builder','Ayat Power','Peribahasa & Vocabulary','Paragraph Builder','Guided Essay','Independent Essay','PKSK Simulation','Personalised Essay Training'];
@@ -1680,6 +1682,20 @@ function essayBaselineEditor(a){
 
 function essayStage1Editor(a){
   const data=a.responseData||{}, ideaCheck=data.ideaCheck||null;
+  const activeKey=`pksk-essay-active-${a.attemptId}`;
+  let activeSeconds=Math.max(Number(data.activeSeconds||0),Number(sessionStorage.getItem(activeKey)||0)||0);
+  let activeLastTick=Date.now();
+  markStudentInteraction();
+  const captureActive=()=>{
+    const now=Date.now();
+    const delta=Math.max(0,Math.min(5,(now-activeLastTick)/1000));
+    if(!document.hidden && (now-lastStudentInteractionAt)<=60000) activeSeconds+=delta;
+    activeLastTick=now;
+    const rounded=Math.round(activeSeconds);
+    sessionStorage.setItem(activeKey,String(rounded));
+    return rounded;
+  };
+  essayActiveTimer=setInterval(captureActive,1000);
   if(!ideaCheck){
     const taskTypes=['CARA','FAEDAH','KESAN','TINDAKAN','CIRI','NARATIF','PENDIRIAN','KBAT'];
     const ideas=Array.isArray(data.ideas)?data.ideas:[];
@@ -1694,16 +1710,24 @@ function essayStage1Editor(a){
       if(!taskTypeChoice){msg.textContent='Choose the type of question first.';return;}
       if(entered.length<3){msg.textContent='Enter at least 3 ideas.';return;}
       btn.disabled=true;msg.textContent='Checking your ideas\u2026';
-      try{await studentApi.saveEssay(a.attemptId,null,{...data,taskTypeChoice,ideas:entered});await studentApi.evaluateEssay(a.attemptId,'check_ideas');essayClearTimers();await essayAttemptPage(a.attemptId);}
+      try{
+        const response={...data,taskTypeChoice,ideas:entered,activeSeconds:captureActive(),activeTimeBasis:'active_v1'};
+        await studentApi.saveEssay(a.attemptId,null,response);
+        await studentApi.evaluateEssay(a.attemptId,'check_ideas');
+        essayClearTimers();
+        await essayAttemptPage(a.attemptId);
+      }
       catch(error){btn.disabled=false;msg.textContent=error.message||'Unable to check ideas.';}
     });
     return;
   }
 
   const ideas=Array.isArray(data.ideas)?data.ideas:[], feedback=Array.isArray(ideaCheck.ideaFeedback)?ideaCheck.ideaFeedback:[];
+  const feedbackIndexes=feedback.map(x=>Number(x?.index)).filter(Number.isInteger);
+  const feedbackOneBased=feedbackIndexes.length===ideas.length&&!feedbackIndexes.includes(0)&&feedbackIndexes.every(n=>n>=1&&n<=ideas.length);
   const selectedExisting=Array.isArray(data.selectedIdeas)?data.selectedIdeas:[], frameworkExisting=Array.isArray(data.framework)?data.framework:[];
   shell(`<div class="page-head"><div><span class="eyebrow">Stage 1 \u00b7 Idea Builder</span><h1>${escapeHtml(a.topic.title)}</h1><p class="muted">Step 3: Pick your best 3 \u00b7 Step 4: Build I \u2192 H \u2192 C \u2192 K</p></div><a class="btn ghost" href="/student/essay" data-link>Back</a></div>
-  <section class="card"><div class="essay-prompt">${escapeHtml(a.topic.prompt)}</div><div class="essay-feedback-box" style="margin-top:16px"><h3>Question Type</h3><p><b>Your choice:</b> ${escapeHtml(essayTaskTypeLabel(data.taskTypeChoice))} \u00b7 <span class="essay-chip ${ideaCheck.taskTypeCorrect?'green':'gold'}">${ideaCheck.taskTypeCorrect?'Correct':'Review'}</span></p><p class="muted">${escapeHtml(ideaCheck.taskTypeFeedback||'')}</p></div><h3>Your Idea Check</h3><div class="idea-feedback-list">${ideas.map((idea,i)=>{const f=feedback.find(x=>Number(x.index)===i)||{},q=f.quality||'relevant';return `<div class="idea-feedback-row ${escapeHtml(q)}"><div class="idea-quality">${escapeHtml(q.replace('_',' '))}</div><b>${escapeHtml(idea)}</b><div class="muted small" style="margin-top:4px">${escapeHtml(f.feedback||'')}</div></div>`;}).join('')}</div><div class="tracking-note">${escapeHtml(ideaCheck.overallAdvice||'Choose three ideas that are relevant and different from one another.')}</div><h3 style="margin-top:22px">3. Choose exactly 3 ideas</h3><div id="idea-select-list">${ideas.map(idea=>`<label class="idea-select-row"><input type="checkbox" class="idea-select" value="${escapeHtml(idea)}" ${selectedExisting.includes(idea)?'checked':''}><span>${escapeHtml(idea)}</span></label>`).join('')}</div><div id="selected-count" class="essay-save-state"></div><div id="ihck-zone"></div><div class="essay-actions"><button class="btn primary" id="complete-idea-builder">Complete Idea Builder</button></div><div id="stage1-msg" class="essay-save-state"></div></section>`);
+  <section class="card"><div class="essay-prompt">${escapeHtml(a.topic.prompt)}</div><div class="essay-feedback-box" style="margin-top:16px"><h3>Question Type</h3><p><b>Your choice:</b> ${escapeHtml(essayTaskTypeLabel(data.taskTypeChoice))} \u00b7 <span class="essay-chip ${ideaCheck.taskTypeCorrect?'green':'gold'}">${ideaCheck.taskTypeCorrect?'Correct':'Review'}</span></p><p class="muted">${escapeHtml(ideaCheck.taskTypeFeedback||'')}</p></div><h3>Your Idea Check</h3><div class="idea-feedback-list">${ideas.map((idea,i)=>{const targetIndex=feedbackOneBased?i+1:i;const f=feedback.find(x=>Number(x.index)===targetIndex)||{},q=f.quality||'relevant';return `<div class="idea-feedback-row ${escapeHtml(q)}"><div class="idea-quality">${escapeHtml(q.replace('_',' '))}</div><b>${escapeHtml(idea)}</b><div class="muted small" style="margin-top:4px">${escapeHtml(f.feedback||'')}</div></div>`;}).join('')}</div><div class="tracking-note">${escapeHtml(ideaCheck.overallAdvice||'Choose three ideas that are relevant and different from one another.')}</div><h3 style="margin-top:22px">3. Choose exactly 3 ideas</h3><div id="idea-select-list">${ideas.map(idea=>`<label class="idea-select-row"><input type="checkbox" class="idea-select" value="${escapeHtml(idea)}" ${selectedExisting.includes(idea)?'checked':''}><span>${escapeHtml(idea)}</span></label>`).join('')}</div><div id="selected-count" class="essay-save-state"></div><div id="ihck-zone"></div><div class="essay-actions"><button class="btn primary" id="complete-idea-builder">Complete Idea Builder</button></div><div id="stage1-msg" class="essay-save-state"></div></section>`);
   const state=new Map(frameworkExisting.map(x=>[x.isi,x]));
   const preserve=()=>document.querySelectorAll('.ihck-card').forEach(card=>{const isi=card.dataset.isi;state.set(isi,{isi,huraian:card.querySelector('[data-kind="huraian"]')?.value||'',contoh:card.querySelector('[data-kind="contoh"]')?.value||'',kesan:card.querySelector('[data-kind="kesan"]')?.value||''});});
   const renderFramework=()=>{
@@ -1722,7 +1746,7 @@ function essayStage1Editor(a){
     if(selected.length!==3){msg.textContent='Choose exactly 3 ideas.';return;}
     const framework=selected.map(isi=>state.get(isi)||{isi,huraian:'',contoh:'',kesan:''});
     if(framework.some(x=>!String(x.huraian||'').trim()||!String(x.contoh||'').trim()||!String(x.kesan||'').trim())){msg.textContent='Complete Huraian, Contoh and Kesan for all 3 ideas.';return;}
-    const response={...data,selectedIdeas:selected,framework};
+    const response={...data,selectedIdeas:selected,framework,activeSeconds:captureActive(),activeTimeBasis:'active_v1'};
     btn.disabled=true;msg.textContent='Saving your plan\u2026';
     try{await studentApi.saveEssay(a.attemptId,null,response);await studentApi.submitEssay(a.attemptId,null,response);await essayRunEvaluation(a.attemptId,'finalize_stage1');}
     catch(error){btn.disabled=false;msg.textContent=error.message||'Unable to complete Idea Builder.';}
@@ -1730,6 +1754,7 @@ function essayStage1Editor(a){
 }
 
 function essayAttemptResultPage(a){
+  if(Number(a.stage)===1)sessionStorage.removeItem(`pksk-essay-active-${a.attemptId}`);
   const s=a.scores||{},f=a.feedback||{},total=Number(a.scoreTotal??s.totalScore??0), baseline=Number(a.stage)===0;
   const strengths=Array.isArray(f.strengths)?f.strengths:[], improvements=Array.isArray(f.improvements)?f.improvements:[], ev=f.evaluation||{};
   const breakdown=baseline
@@ -2226,7 +2251,7 @@ function adminEssayStatusMarkup(status){
 }
 function adminEssayAttemptRows(rows=[]){
   if(!rows.length)return '<div class="admin-essay-empty">No Essay Training attempts yet.</div>';
-  return `<div class="table-wrap"><table class="admin-essay-table"><thead><tr><th>Stage / Topic</th><th>Status</th><th>Score</th><th>Words / Time</th><th>Model</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(a=>`<tr><td><b>${escapeHtml(essayStageLabel(a.stage))}</b><div class="admin-essay-sub">${escapeHtml(a.title||'')}</div></td><td>${adminEssayStatusMarkup(a.status)}</td><td class="admin-essay-score">${a.score==null?'—':(Number(a.score)/10).toFixed(1)+'/10'}</td><td>${Number(a.wordCount||0)} words<div class="admin-essay-sub">${a.durationSeconds==null?'—':formatDuration(a.durationSeconds)}</div></td><td>${escapeHtml(a.modelVersion||'—')}<div class="admin-essay-sub">${escapeHtml(a.rubricVersion||'')}</div></td><td>${date(a.submittedAt||a.createdAt)}</td><td><a href="/admin/essay/attempt/${escapeHtml(a.attemptId)}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="table-wrap"><table class="admin-essay-table"><thead><tr><th>Stage / Topic</th><th>Status</th><th>Score</th><th>Words / Time</th><th>Model</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(a=>`<tr><td><b>${escapeHtml(essayStageLabel(a.stage))}</b><div class="admin-essay-sub">${escapeHtml(a.title||'')}</div></td><td>${adminEssayStatusMarkup(a.status)}</td><td class="admin-essay-score">${a.score==null?'—':(Number(a.score)/10).toFixed(1)+'/10'}</td><td>${Number(a.wordCount||0)} words<div class="admin-essay-sub">${a.durationSeconds==null?'—':formatDuration(a.durationSeconds)+(Number(a.stage)===1?' active':'')}</div></td><td>${escapeHtml(a.modelVersion||'—')}<div class="admin-essay-sub">${escapeHtml(a.rubricVersion||'')}</div></td><td>${date(a.submittedAt||a.createdAt)}</td><td><a href="/admin/essay/attempt/${escapeHtml(a.attemptId)}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`;
 }
 
 async function adminEssayDashboard(){
@@ -2299,7 +2324,7 @@ async function adminEssayAttemptPage(attemptId){
   const actions=Array.isArray(a.adminActions)?a.adminActions:[];
   const audit=actions.length?actions.map(x=>`<div class="admin-essay-audit-row"><b>${escapeHtml(adminEssayActionLabel(x.actionType))}</b><span>${date(x.createdAt)}${x.note?' · '+escapeHtml(x.note):''}</span></div>`).join(''):'<div class="admin-essay-empty">No admin changes to this attempt.</div>';
   shell(`<div class="page-head"><div><span class="eyebrow">Admin Essay Review</span><h1>${escapeHtml(a.studentNickname||a.studentName||'Student')} · ${escapeHtml(a.topic?.title||'')}</h1><p class="muted">${escapeHtml(essayStageLabel(a.stage))} · ${adminEssayStatusMarkup(a.status)} · ${date(a.submittedAt||a.createdAt)}</p></div><div class="admin-essay-controls"><a class="btn ghost" href="/admin/essay/student/${escapeHtml(a.studentId)}" data-link>Student Writing Profile</a>${a.status==='completed'?'<button class="btn ghost" id="essay-rerun-ai">Re-run AI Marking</button><button class="btn primary" id="essay-override-score">Override Score</button>':''}</div></div>
-  <section class="stats"><div class="stat"><b>${a.scoreTotal==null?'—':(Number(a.scoreTotal)/10).toFixed(1)}</b><span>Training Score /10</span></div><div class="stat"><b>${Number(a.wordCount||0)}</b><span>Word Count</span></div><div class="stat"><b>${a.durationSeconds==null?'—':formatDuration(a.durationSeconds)}</b><span>Time Used</span></div><div class="stat"><b>${escapeHtml(a.modelVersion||'—')}</b><span>AI Model</span></div><div class="stat"><b>${escapeHtml(a.rubricVersion||'—')}</b><span>Rubric Version</span></div></section>
+  <section class="stats"><div class="stat"><b>${a.scoreTotal==null?'—':(Number(a.scoreTotal)/10).toFixed(1)}</b><span>Training Score /10</span></div><div class="stat"><b>${Number(a.wordCount||0)}</b><span>Word Count</span></div><div class="stat"><b>${a.durationSeconds==null?'—':formatDuration(a.durationSeconds)}</b><span>${Number(a.stage)===1?'Active Time':'Time Used'}</span></div><div class="stat"><b>${escapeHtml(a.modelVersion||'—')}</b><span>AI Model</span></div><div class="stat"><b>${escapeHtml(a.rubricVersion||'—')}</b><span>Rubric Version</span></div></section>
   <section class="card"><h2>Question</h2><div class="essay-prompt">${escapeHtml(a.topic?.prompt||'')}</div></section>
   ${baseline?`<section class="card"><h2>Original Student Essay</h2><div class="admin-essay-raw">${escapeHtml(a.essayText||'—')}</div></section>`:stage1Plan}
   ${a.status==='completed'?`<section class="card"><h2>Score Breakdown</h2><div class="essay-breakdown">${breakdown}</div></section><section class="essay-feedback-grid"><div class="essay-feedback-box"><h3>Strengths</h3><ul>${(f.strengths||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')||'<li>—</li>'}</ul></div><div class="essay-feedback-box"><h3>Improvements</h3><ul>${(f.improvements||[]).map(x=>`<li>${escapeHtml(x)}</li>`).join('')||'<li>—</li>'}</ul></div></section>`:''}
