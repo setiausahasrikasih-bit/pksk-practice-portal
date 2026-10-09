@@ -1484,6 +1484,19 @@ function subjectIcon(code) {
   return ({ INSANIAH:'🌟', MATH:'➗', SCI:'🔬', EN:'🔤', BM:'📚', IQ:'🧩', GK:'🌍' })[code] || '🎯';
 }
 
+function personalizedSetNumber(item){
+  const text=String(item?.title||item?.name||'');
+  const match=text.match(/#\s*(\d+)/);
+  return match?Number(match[1]):Number.MAX_SAFE_INTEGER;
+}
+function sortPersonalizedSets(items){
+  return [...(items||[])].sort((a,b)=>{
+    const numberDiff=personalizedSetNumber(a)-personalizedSetNumber(b);
+    if(numberDiff)return numberDiff;
+    return String(a?.title||a?.name||'').localeCompare(String(b?.title||b?.name||''),undefined,{numeric:true,sensitivity:'base'});
+  });
+}
+
 async function studentDashboard() {
   if (!await requireProfile('student')) return;
   loading('Loading Quiz Hub…');
@@ -1491,7 +1504,7 @@ async function studentDashboard() {
   studentIdentity = d.profile || null;
 
   const fullSimulationSets = d.fullSimulations || (d.simulations||[]).filter(sim => (sim.setKind||'standard') !== 'personalized');
-  const personalizedSets = d.personalizedTraining || (d.simulations||[]).filter(sim => sim.setKind === 'personalized');
+  const personalizedSets = sortPersonalizedSets(d.personalizedTraining || (d.simulations||[]).filter(sim => sim.setKind === 'personalized'));
 
   const simCards = fullSimulationSets.map(sim => `<article class="student-sim-card"><div><span class="eyebrow">Full Simulation</span><h3>${escapeHtml(sim.title)}</h3><div class="sim-metrics"><span class="mini-chip">📝 ${Number(sim.questionCount||0)} questions</span><span class="mini-chip">⏱ ${Math.round(Number(sim.timeLimitSeconds||0)/60)} min</span></div><p class="muted small">Best: ${pct(sim.bestPercentage)} · Last: ${pct(sim.lastPercentage)}</p></div><button class="btn primary sim-action" data-set="${escapeHtml(sim.setVersionId)}" data-attempt="${escapeHtml(sim.activeAttemptId||'')}">${escapeHtml(simulationAction(sim.status))}</button></article>`).join('') || `<div class="empty-playful">No published simulations yet. Your teacher/admin can publish one when it is ready.</div>`;
 
@@ -2400,7 +2413,7 @@ function personalizedSubjectChips(items){
 async function adminPersonalizedTrainingPage(){
   if(!await requireProfile('admin'))return;
   loading('Loading personalised training…');
-  const d=await adminApi.personalizedTrainingOverview(), s=d.summary||{}, rows=d.sets||[];
+  const d=await adminApi.personalizedTrainingOverview(), s=d.summary||{}, rows=sortPersonalizedSets(d.sets||[]);
   const table=rows.length
     ? '<div class="table-wrap"><table class="pt-table"><thead><tr><th>Student</th><th>Set</th><th>Status</th><th>Baseline</th><th>Result</th><th>Overall Δ</th><th>Main targets</th><th></th></tr></thead><tbody>'+
       rows.map(function(r){
