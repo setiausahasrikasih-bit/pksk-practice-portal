@@ -1153,6 +1153,7 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceM
 
   const adminApi = {
     summary: () => rpc('admin_dashboard_summary'),
+    statisticsReview: () => rpc('admin_statistics_review'),
     studentHistory: (userId) => rpc('admin_get_student_history', { p_user_id: userId }),
     attemptReview: (attemptId) => rpc('admin_get_attempt_review', { p_attempt_id: attemptId }),
     resultsOverview: (filters = {}) => rpc('admin_results_overview', { p_filters: filters }),
@@ -1393,7 +1394,7 @@ function brandMarkup(homePath = '') {
 function shell(content, role = profile?.role) {
   document.body.dataset.role = role || '';
   if (role === 'admin') {
-    const nav = `<a href="/admin" data-link>Dashboard</a><a href="/admin/students" data-link>Students</a><a href="/admin/questions" data-link>Question Bank</a><a href="/admin/references" data-link>Reference Library</a><a href="/admin/generator" data-link>AI Generator</a><a href="/admin/sets" data-link>Simulation Sets</a><a href="/admin/personalised" data-link>Personalised</a><a href="/admin/essay" data-link>Essay Training</a><a href="/admin/results" data-link>Results</a>`;
+    const nav = `<a href="/admin" data-link>Dashboard</a><a href="/admin/students" data-link>Students</a><a href="/admin/questions" data-link>Question Bank</a><a href="/admin/references" data-link>Reference Library</a><a href="/admin/generator" data-link>AI Generator</a><a href="/admin/sets" data-link>Simulation Sets</a><a href="/admin/personalised" data-link>Personalised</a><a href="/admin/essay" data-link>Essay Training</a><a href="/admin/statistics" data-link>Statistics</a><a href="/admin/results" data-link>Results</a>`;
     root.innerHTML = `<header class="topbar">${brandMarkup('/admin')}<nav>${nav}</nav><button id="logout" class="btn ghost">Logout</button></header><div class="admin-mobile-nav">${nav}</div><main class="page">${content}</main>`;
   } else {
     const essayNav = profile?.essay_training_enabled ? '<a href="/student/essay" data-link>Essay</a>' : '';
@@ -2614,6 +2615,87 @@ async function adminDashboard(){
     catch(error){document.querySelector('#admin-chat-error').textContent=error.message||'Unable to update Lounge status.';btn.disabled=false;}
   });
 }
+
+async function adminStatisticsPage(){
+  if(!await requireProfile('admin'))return;
+  loading('Loading statistics…');
+  const d=await adminApi.statisticsReview();
+  const s=d.summary||{};
+  const rows=(d.students||[]).filter(r=>Number(r.totalQuestionsAnswered||0)>0);
+  let mode='questions';
+
+  const medal=rank=>{
+    const n=Number(rank||0);
+    return n===1?'🥇':n===2?'🥈':n===3?'🥉':'#'+n;
+  };
+  const rankFor=r=>mode==='full'?Number(r.fullSetRank||0):mode==='weekly'?Number(r.weeklyRank||0):Number(r.questionRank||0);
+  const sortedRows=()=>{
+    const copy=[...rows];
+    if(mode==='full')return copy.sort((a,b)=>Number(b.distinctFullSets||0)-Number(a.distinctFullSets||0)||Number(b.fullSetAttempts||0)-Number(a.fullSetAttempts||0)||Number(b.totalQuestionsAnswered||0)-Number(a.totalQuestionsAnswered||0));
+    if(mode==='weekly')return copy.sort((a,b)=>Number(b.questionsLast7Days||0)-Number(a.questionsLast7Days||0)||Number(b.totalQuestionsAnswered||0)-Number(a.totalQuestionsAnswered||0));
+    return copy.sort((a,b)=>Number(b.totalQuestionsAnswered||0)-Number(a.totalQuestionsAnswered||0)||Number(b.distinctFullSets||0)-Number(a.distinctFullSets||0));
+  };
+  const heading=()=>mode==='full'?'Distinct Full Sets':mode==='weekly'?'Questions · Last 7 Days':'Total Questions Answered';
+
+  shell(`<div class="page-head"><div><span class="eyebrow">Administration · Statistics</span><h1>Student Activity & Completion</h1><p class="muted">Live practice-volume review across completed and expired attempts. Test accounts are excluded.</p></div><a class="btn ghost" href="/admin/results" data-link>Results Analysis</a></div>
+  <section class="stats">
+    <div class="stat"><b>${Number(s.totalQuestionsAnswered||0).toLocaleString('en-MY')}</b><span>Questions Answered</span></div>
+    <div class="stat"><b>${Number(s.totalFullSetAttempts||0)}</b><span>Full-Set Attempts</span></div>
+    <div class="stat"><b>${Number(s.studentsWithActivity||0)} / ${Number(s.activeStudents||0)}</b><span>Students with Activity</span></div>
+    <div class="stat"><b>${Number(s.publishedFullSets||0)}</b><span>Published Full Sets</span></div>
+    <div class="stat"><b>${Number(s.totalPersonalizedCompleted||0)}</b><span>Personalised Attempts</span></div>
+  </section>
+  <section class="card">
+    <div class="hub-section-head"><div><h2>Ranking</h2><p class="muted">Distinct full sets count each 100-question standard simulation once. Full-set attempts include retakes.</p></div></div>
+    <div class="admin-toolbar" style="margin-bottom:16px">
+      <button class="btn primary statistics-rank-mode" data-mode="questions">Questions Answered</button>
+      <button class="btn ghost statistics-rank-mode" data-mode="full">Distinct Full Sets</button>
+      <button class="btn ghost statistics-rank-mode" data-mode="weekly">Last 7 Days</button>
+    </div>
+    <div class="muted small" style="margin-bottom:10px"><b id="statistics-ranking-title">Total Questions Answered</b> · ${rows.length} students with recorded quiz activity</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Rank</th><th>Student</th><th>Questions</th><th>Last 7 Days</th><th>Distinct Full Sets</th><th>Full-Set Attempts</th><th>Personalised</th><th>Last Activity</th><th></th></tr></thead>
+        <tbody id="statistics-ranking-body"></tbody>
+      </table>
+    </div>
+  </section>
+  <section class="card"><p class="muted small" style="margin:0"><b>Counting rules:</b> questions are counted only when an answer was actually recorded in a submitted/expired simulation attempt. “Full Set” means a completed 100-question standard simulation. Personalised sets contribute to question volume but not to the distinct Full Set count.</p></section>`,'admin');
+
+  const renderRanking=()=>{
+    const body=document.querySelector('#statistics-ranking-body');
+    const title=document.querySelector('#statistics-ranking-title');
+    if(title)title.textContent=heading();
+    document.querySelectorAll('.statistics-rank-mode').forEach(btn=>{
+      const active=btn.dataset.mode===mode;
+      btn.classList.toggle('primary',active);
+      btn.classList.toggle('ghost',!active);
+    });
+    if(!body)return;
+    body.innerHTML=sortedRows().map(r=>{
+      const rank=rankFor(r);
+      const nickname=r.displayNickname||r.displayName||'Student';
+      return `<tr>
+        <td><b>${medal(rank)}</b></td>
+        <td><b>${escapeHtml(nickname)}</b><div class="muted small">${escapeHtml(r.displayName||'')}</div></td>
+        <td><b>${Number(r.totalQuestionsAnswered||0).toLocaleString('en-MY')}</b></td>
+        <td>${Number(r.questionsLast7Days||0).toLocaleString('en-MY')}</td>
+        <td><b>${Number(r.distinctFullSets||0)}</b></td>
+        <td>${Number(r.fullSetAttempts||0)}</td>
+        <td>${Number(r.personalizedCompleted||0)}</td>
+        <td>${date(r.lastActivityAt)}</td>
+        <td><a class="btn ghost" href="/admin/results/student/${escapeHtml(r.userId)}" data-link>Performance</a></td>
+      </tr>`;
+    }).join('');
+    bindLinks();
+  };
+  document.querySelectorAll('.statistics-rank-mode').forEach(btn=>btn.addEventListener('click',()=>{
+    mode=btn.dataset.mode||'questions';
+    renderRanking();
+  }));
+  renderRanking();
+}
+
 async function adminPlaceholder(title){if(!await requireProfile('admin'))return;shell(`<div class="page-head"><div><span class="eyebrow">Administration</span><h1>${escapeHtml(title)}</h1></div></div><section class="card"><h2>Coming in the next Milestone 2 stage</h2><p>This area is not active yet.</p></section>`,'admin');}
 
 function referenceStatusPill(status){
@@ -4137,7 +4219,7 @@ function editStudentModal(student,{onSaved}={}){const wrap=document.createElemen
 async function studentDetail(userId){if(!await requireProfile('admin'))return;loading();const d=await adminApi.studentHistory(userId);shell(`<div class="page-head"><div><span class="eyebrow">Student</span><h1>${escapeHtml(d.profile.displayName)}</h1><p>${escapeHtml(d.profile.email)} · ${d.profile.active?'Active':'Inactive'} · ${escapeHtml(d.profile.schoolYear||'')}</p></div><div>${button('Edit Student','primary','id="edit-student-detail"')}</div></div><section class="stats"><div class="stat"><b>${d.summary.totalAttempts}</b><span>Attempts</span></div><div class="stat"><b>${pct(d.summary.bestPercentage)}</b><span>Best</span></div><div class="stat"><b>${pct(d.summary.averagePercentage)}</b><span>Average</span></div><div class="stat"><b>${pct(d.summary.latestPercentage)}</b><span>Latest</span></div></section><section class="card"><h2>Subject Performance</h2><div class="subject-grid">${(d.subjectPerformance||[]).map(s=>`<div class="stat"><b>${pct(s.percentage)}</b><span>${escapeHtml(s.name)}</span></div>`).join('')}</div></section><section class="card"><h2>Attempt History</h2>${adminHistoryTable(d.attempts||[])}</section>`,'admin');document.querySelector('#edit-student-detail').onclick=()=>editStudentModal({userId,name:d.profile.displayName,email:d.profile.email,schoolYear:d.profile.schoolYear,active:d.profile.active},{onSaved:()=>studentDetail(userId)});}
 function adminHistoryTable(rows){if(!rows.length)return'<p class="muted">No completed attempts yet.</p>';return`<div class="table-wrap"><table><thead><tr><th>Set</th><th>Score</th><th>Grade</th><th>Time</th><th>Date</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.setTitle)}</td><td>${pct(r.percentage)}</td><td>${escapeHtml(r.grade||'')}</td><td>${formatDuration(r.elapsedSeconds)}</td><td>${date(r.submittedAt)}</td><td><a href="/admin/review/${r.attemptId}" data-link>Review</a></td></tr>`).join('')}</tbody></table></div>`;}
 
-async function render(){clearInterval(quizTimer);essayClearTimers();stopChatRealtime();try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/essay')return essayTrainingHome();if(/^\/student\/essay\/attempt\/[^/]+$/.test(p))return essayAttemptPage(p.split('/').pop());if(p==='/student/history')return studentHistory();if(p==='/student/performance')return studentPerformancePage();if(p==='/student/leaderboard')return studentLeaderboard();if(p==='/student/lounge')return studentChatLounge();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/practice/attempt/'))return practiceAttemptPage(p.split('/').pop());if(p.startsWith('/student/practice/results/'))return practiceResultsPage(p.split('/').pop());if(p.startsWith('/student/practice/review/'))return practiceReviewPage(p.split('/').pop());if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/essay')return adminEssayDashboard();if(/^\/admin\/essay\/student\/[^/]+$/.test(p))return adminEssayStudentPage(p.split('/').pop());if(/^\/admin\/essay\/attempt\/[^/]+$/.test(p))return adminEssayAttemptPage(p.split('/').pop());if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/references')return referenceLibraryPage();if(/^\/admin\/references\/[^/]+$/.test(p))return referenceDocumentPage(p.split('/')[3]);if(p==='/admin/ai')return go('/admin/generator');if(p==='/admin/generator')return generationJobsPage();if(p==='/admin/generator/coverage')return generationCoveragePage();if(p==='/admin/generator/new')return generationJobNewPage();if(/^\/admin\/generator\/[^/]+\/review$/.test(p))return generationReviewPage(p.split('/')[3]);if(/^\/admin\/generator\/[^/]+$/.test(p))return generationJobPage(p.split('/')[3]);if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return simulationSetsPage();if(p==='/admin/sets/new')return simulationSetNewPage();if(/^\/admin\/sets\/[^/]+\/edit$/.test(p))return simulationSetBuilderPage(p.split('/')[3]);if(/^\/admin\/sets\/[^/]+\/preview$/.test(p))return simulationSetPreviewPage(p.split('/')[3]);if(p==='/admin/personalised')return adminPersonalizedTrainingPage();if(/^\/admin\/personalised\/[^/]+$/.test(p))return adminPersonalizedTrainingDetailPage(p.split('/').pop());if(p==='/admin/results')return adminResultsPage();if(/^\/admin\/results\/student\/[^/]+$/.test(p))return adminStudentPerformancePage(p.split('/').pop());if(p.startsWith('/admin/practice/review/'))return adminPracticeReviewPage(p.split('/').pop());if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
+async function render(){clearInterval(quizTimer);essayClearTimers();stopChatRealtime();try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();if(p==='/student')return studentDashboard();if(p==='/student/essay')return essayTrainingHome();if(/^\/student\/essay\/attempt\/[^/]+$/.test(p))return essayAttemptPage(p.split('/').pop());if(p==='/student/history')return studentHistory();if(p==='/student/performance')return studentPerformancePage();if(p==='/student/leaderboard')return studentLeaderboard();if(p==='/student/lounge')return studentChatLounge();if(p==='/student/profile')return studentProfile();if(p.startsWith('/student/practice/attempt/'))return practiceAttemptPage(p.split('/').pop());if(p.startsWith('/student/practice/results/'))return practiceResultsPage(p.split('/').pop());if(p.startsWith('/student/practice/review/'))return practiceReviewPage(p.split('/').pop());if(p.startsWith('/student/quiz/'))return quizPage(p.split('/').pop());if(p.startsWith('/student/review/'))return reviewPage(p.split('/').pop());if(p.startsWith('/student/results/'))return resultsPage(p.split('/').pop());if(p==='/admin')return adminDashboard();if(p==='/admin/essay')return adminEssayDashboard();if(/^\/admin\/essay\/student\/[^/]+$/.test(p))return adminEssayStudentPage(p.split('/').pop());if(/^\/admin\/essay\/attempt\/[^/]+$/.test(p))return adminEssayAttemptPage(p.split('/').pop());if(p==='/admin/students')return studentsPage();if(p==='/admin/questions')return questionBankPage();if(p==='/admin/references')return referenceLibraryPage();if(/^\/admin\/references\/[^/]+$/.test(p))return referenceDocumentPage(p.split('/')[3]);if(p==='/admin/ai')return go('/admin/generator');if(p==='/admin/generator')return generationJobsPage();if(p==='/admin/generator/coverage')return generationCoveragePage();if(p==='/admin/generator/new')return generationJobNewPage();if(/^\/admin\/generator\/[^/]+\/review$/.test(p))return generationReviewPage(p.split('/')[3]);if(/^\/admin\/generator\/[^/]+$/.test(p))return generationJobPage(p.split('/')[3]);if(p==='/admin/questions/new')return questionEditorPage(null);if(/^\/admin\/questions\/[^/]+\/edit$/.test(p))return questionEditorPage(p.split('/')[3]);if(/^\/admin\/questions\/[^/]+\/preview$/.test(p))return questionPreviewPage(p.split('/')[3]);if(p==='/admin/sets')return simulationSetsPage();if(p==='/admin/sets/new')return simulationSetNewPage();if(/^\/admin\/sets\/[^/]+\/edit$/.test(p))return simulationSetBuilderPage(p.split('/')[3]);if(/^\/admin\/sets\/[^/]+\/preview$/.test(p))return simulationSetPreviewPage(p.split('/')[3]);if(p==='/admin/personalised')return adminPersonalizedTrainingPage();if(/^\/admin\/personalised\/[^/]+$/.test(p))return adminPersonalizedTrainingDetailPage(p.split('/').pop());if(p==='/admin/statistics')return adminStatisticsPage();if(p==='/admin/results')return adminResultsPage();if(/^\/admin\/results\/student\/[^/]+$/.test(p))return adminStudentPerformancePage(p.split('/').pop());if(p.startsWith('/admin/practice/review/'))return adminPracticeReviewPage(p.split('/').pop());if(p.startsWith('/admin/review/'))return reviewPage(p.split('/').pop(),true);if(p.startsWith('/admin/students/'))return studentDetail(p.split('/').pop());go('/');}catch(err){console.error(err);errorView(err);}}
 window.addEventListener('beforeunload',e=>{if(editorDirty){e.preventDefault();e.returnValue='';}});window.addEventListener('hashchange', render);window.__PKSK_APP_STARTED__=true;render();})();
 </script>
 </body>
