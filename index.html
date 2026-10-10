@@ -1490,11 +1490,11 @@ window.PKSK_CORE = { formatDuration, navigatorState, simulationAction, practiceM
     },
   };
 
-  window.PKSK_API = { auth, studentApi, adminApi, chatApi };
+  window.PKSK_API = { auth, studentApi, adminApi, chatApi, learningApi: { authedJson, rpc } };
 })();
 </script>
 <script>(() => {
-const { auth, studentApi, adminApi, chatApi } = window.PKSK_API;
+const { auth, studentApi, adminApi, chatApi, learningApi } = window.PKSK_API;
 const { formatDuration, navigatorState, simulationAction, practiceModeConfig, languageBlocks, optionLanguageBlocks, filterReviewQuestions, countUnanswered, remainingSeconds, escapeHtml, isAnswered, subjectLanguageMode, blankQuestionDraft, validateQuestionDraft, isExactAbcd, STANDARD_SET_QUOTAS, STANDARD_DIFFICULTY_TARGET, summarizeSetComposition, validateSetComposition, referenceStatusMeta, formatBytes, validateReferencePdf, sourceReviewStatus, STANDARD_SOURCE_POLICIES, defaultGenerationJobDraft, validateGenerationJobDraft, summarizeGenerationPlan, validateGenerationPlanClient, filterGeneratedCandidates, GENERATION_REVIEW_STATUSES, allocateGapDifficulty, buildGapGenerationDraft, applySetSuggestions, masteryLabel, trendMeta, performanceReviewRoute, isStudentQuizRoute, shouldTrackPortalStudy, recommendedAction, diversityBadge, diversityConflict, examCountdownMeta } = window.PKSK_CORE;
 
 const root = document.querySelector('#app');
@@ -4436,7 +4436,7 @@ async function learningPage(){
     return;
   }
   try{
-    await window.PKSK_LEARNING.mount({container,authedJson,rpc,profile});
+    await window.PKSK_LEARNING.mount({container,authedJson:learningApi.authedJson,rpc:learningApi.rpc,profile});
   }catch(error){
     console.error('Learning Adventure failed:',error);
     container.innerHTML='<div class="card error"><h2>Learning Adventure tidak dapat dibuka</h2><p>'+escapeHtml(error?.message||'Sila cuba lagi.')+'</p><button class="btn primary" onclick="location.reload()">Cuba Lagi</button></div>';
