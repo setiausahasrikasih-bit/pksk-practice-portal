@@ -45,6 +45,7 @@ function puzzle(){
  return {g,placed};
 }
 async function mount(ctx){
+ const learnerName=h(ctx.profile.display_nickname||ctx.profile.display_name||'Pelajar');
  const el=ctx.container,admin=ctx.profile.role==='admin',rest=(p,o)=>ctx.authedJson('/rest/v1/'+p,o||{method:'GET'}),rpc=(n,args)=>ctx.rpc(n,args);
  let target=ctx.profile.user_id,missions=[],games=[],questions=[],answers=[],progress=[],page='home',mission=1,card=0,open=false;
  let game={},notice='',busy=false,quiz=[],question=0,reply=null,right=0,qTitle='',qBusy=false,quizError='';
@@ -58,14 +59,14 @@ async function mount(ctx){
  const nav=()=>'<div class="f2actions" style="margin:0 0 13px">'+B('🏠 Semua Misi','home','soft')+(!admin?B('🔁 Ulang Salah','revision','soft')+B('🏆 Boss Keluarga','boss','orange'):'')+'</div>';
  const bar=(v,n)=>'<div class="f2bar"><div style="width:'+Math.round(n?v/n*100:0)+'%"></div></div><span class="f2chip">🎯 '+v+'/'+n+'</span>';
  function home(){
-  return '<div class="f2panel"><h2>Selamat datang, '+(admin?'Ibu / Ayah':'Arif')+'! 👋</h2><p>Enam misi, enam permainan interaktif, nota pendek dan 36 soalan mengikut buku teks.</p><p class="f2fine">Contoh dalam permainan adalah berdasarkan buku teks, bukan biodata peribadi ArifQ. Jangan masukkan nombor MyKid atau maklumat pengenalan sebenar.</p></div>'+
+  return '<div class="f2panel"><h2>Selamat datang, '+(admin?'Ibu / Ayah':learnerName)+'! 👋</h2><p>Enam misi, enam permainan interaktif, nota pendek dan 36 soalan mengikut buku teks.</p><p class="f2fine">Contoh dalam permainan adalah berdasarkan buku teks, bukan biodata peribadi kamu. Jangan masukkan nombor MyKid atau maklumat pengenalan sebenar.</p></div>'+
   '<div class="f2grid">'+missions.map(x=>{
    const p=progress.find(z=>z.mission===x.n);
    return '<article class="f2card"><div style="font-size:2.4rem">'+h(x.icon)+'</div><h3>Misi '+x.n+': '+h(x.title)+'</h3><p>'+h(x.subtitle)+'</p><span class="f2chip">'+(p?.completed?'✅ Selesai · ⭐ '+p.stars:'🎯 Sedia dimainkan')+'</span><div class="f2actions">'+
    '<button class="f2btn soft" data-act="notes" data-m="'+x.n+'">📖 Nota</button><button class="f2btn orange" data-act="game" data-m="'+x.n+'">🎮 Main!</button>'+
    (!admin?'<button class="f2btn green" data-act="quiz" data-m="'+x.n+'">📝 Latihan</button>':'')+'</div></article>';
   }).join('')+'</div><div class="f2panel" style="margin-top:18px"><h3>🔤 BONUS: Harta Karun Perkataan</h3><p>Permainan cari perkataan berdasarkan halaman 30 buku teks.</p>'+B('🔎 Cari Perkataan','words','green')+'</div>'+
-  (admin?'<div class="f2panel"><h3>📊 Jawapan Arif</h3>'+missions.map(x=>{const ids=new Set(questions.filter(q=>q.mission===x.n).map(q=>q.id));const a=answers.filter(z=>ids.has(z.question_id));return '<p>Misi '+x.n+': '+a.length+' percubaan · '+(a.length?Math.round(a.filter(z=>z.is_correct).length/a.length*100)+'% betul':'Belum cuba')+'</p>';}).join('')+'</div>':'');
+  (admin?'<div class="f2panel"><h3>📊 Jawapan Pelajar</h3>'+missions.map(x=>{const ids=new Set(questions.filter(q=>q.mission===x.n).map(q=>q.id));const a=answers.filter(z=>ids.has(z.question_id));return '<p>Misi '+x.n+': '+a.length+' percubaan · '+(a.length?Math.round(a.filter(z=>z.is_correct).length/a.length*100)+'% betul':'Belum cuba')+'</p>';}).join('')+'</div>':'');
  }
  function notes(){
   const x=m().cards[card];
@@ -83,7 +84,7 @@ async function mount(ctx){
  }
  function victory(label,bonus=false){
   const rating=game.wrong===0?3:game.wrong<=2?2:1;
-  return nav()+'<div class="f2finish f2stage"><div class="trophy">🏆</div><h2>Tahniah, Arif!</h2><p>'+h(label)+' berjaya diselesaikan!</p><h2>⭐ '+rating+' bintang!</h2>'+
+  return nav()+'<div class="f2finish f2stage"><div class="trophy">🏆</div><h2>Tahniah, '+learnerName+'!</h2><p>'+h(label)+' berjaya diselesaikan!</p><h2>⭐ '+rating+' bintang!</h2>'+
    '<p>Teruskan pengembaraan dan cuba lagi jika mahu!</p><div class="f2actions" style="justify-content:center">'+B('🔄 Main Lagi',bonus?'words':'game','orange')+(!admin?B('📝 Latihan','quiz','green'):'')+B('🏠 Semua Misi','home','soft')+'</div></div>';
  }
  async function finish(bonus=false){
@@ -113,7 +114,7 @@ async function mount(ctx){
    arr.map((opt,i)=>{
      const correct=fb&&i===fb.correct,wrong=fb&&i===fb.chosen&&!fb.isCorrect;
      const cls=correct?'good':wrong?'bad':game.tentative===i?'pending':'';
-     const mark=correct?'✅ Betul':wrong?'❌ Pilihan Arif':'';
+     const mark=correct?'✅ Betul':wrong?'❌ Pilihan kamu':'';
      return '<button class="f2pick '+cls+'" data-pick="'+i+'" aria-pressed="'+Boolean(fb?fb.chosen===i:game.tentative===i)+'" '+(fb?'disabled':'')+'>'+h(opt)+(mark?'<span class="f2mark">'+mark+'</span>':'')+'</button>';
    }).join('')+
    (fb?'<div class="f2msg" role="status" aria-live="polite"><strong>'+(fb.isCorrect?'🌟 Tepat sekali!':'💡 Belum tepat. Jom semak!')+'</strong><p style="margin:7px 0">'+h(fb.explanation)+'</p>'+
