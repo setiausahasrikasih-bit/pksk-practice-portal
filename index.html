@@ -845,7 +845,7 @@ const CSS=[
 '.f2options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.f2opt{border:2px solid #d7c6ed;border-radius:15px;background:white;color:#554088;padding:13px 8px;min-height:68px;font-weight:800}.f2opt.ok{border-color:#4aaa83;background:#d5f9e8;color:#11694b}',
 '.f2slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.f2slot{border:2px dashed #b9a4dd;border-radius:16px;padding:10px;background:#fff9;min-height:105px;text-align:center;color:#4e4070}.f2slot.ok{border:2px solid #44b28a;background:#daf9e7}.f2slot .face{font-size:2rem}.f2slot small{display:block;font-size:.77rem;line-height:1.4;color:#636f7f}',
 '.f2tokens{display:flex;flex-wrap:wrap;gap:8px;margin-top:15px}.f2token{border:2px solid #c0a7e8;border-radius:12px;background:#fff;padding:9px;color:#5d398e;font-weight:800}.f2token.selected{background:#704ab8;color:#fff}.f2token.used{display:none}',
-'.f2pick{display:block;width:100%;border:2px solid #e0d5ef;background:#fff;border-radius:13px;padding:13px;text-align:left;margin:8px 0;color:#46326f;font-weight:800}.f2pick.good{border-color:#4dab7f;background:#d6f8e7}.f2pick.bad{border-color:#e18883;background:#ffe5e7}',
+'.f2pick{display:block;width:100%;border:2px solid #e0d5ef;background:#fff;border-radius:13px;padding:13px;text-align:left;margin:8px 0;color:#46326f;font-weight:800;transition:background .15s,border-color .15s;min-height:54px}.f2pick:disabled{opacity:1;cursor:default}.f2pick:focus-visible{outline:3px solid #9675d9;outline-offset:2px}.f2pick.good{border-color:#158154;background:#c6f5d8;color:#125d3d;box-shadow:inset 5px 0 #159963}.f2pick.bad{border-color:#bd4545;background:#ffd9d9;color:#8b2020;box-shadow:inset 5px 0 #c44747}.f2pick.pending{border-color:#bb8b26;background:#fff1b4;color:#644510}.f2pick .f2mark{float:right;font-weight:900;margin-left:8px}',
 '.f2event{border:2px solid #c9b3ec;background:white;color:#5e4291;border-radius:14px;padding:12px;font-weight:800;min-height:76px}.f2event strong{display:block;color:#e07f35}.f2event.used{opacity:.28;pointer-events:none}.f2line{display:flex;gap:7px;overflow-x:auto;margin:13px 0}.f2point{flex:1;min-width:105px;background:#d9f9e8;border:1px solid #a9e8c7;border-radius:12px;padding:9px;font-size:.83rem;text-align:center}.f2point b{display:block;color:#16845d}',
 '.f2msg{background:#fff9e8;border:1px solid #f1dbad;color:#664c56;padding:13px;border-radius:13px;margin-top:13px;line-height:1.5;font-weight:700}.f2finish{background:linear-gradient(135deg,#ffeac0,#ffcfe9,#e8e3ff);padding:27px;border-radius:22px;text-align:center;position:relative}.f2finish .trophy{font-size:4rem;animation:f2float 2s infinite}',
 '.f2letters{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:2px;max-width:490px;margin:10px auto}.f2letter{aspect-ratio:1;background:#fff;border:1px solid #d3bfeb;border-radius:4px;color:#493472;font-size:clamp(.64rem,2.4vw,.99rem);font-weight:900;padding:0}.f2letter.selected{background:#ffd375}.f2letter.found{background:#6dd5b3;color:#125d46}.f2words{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}.f2words span{padding:7px 10px;border-radius:9px;background:white;font-size:.84rem;font-weight:850}.f2words .done{background:#b7f0da;text-decoration:line-through}',
@@ -903,7 +903,7 @@ async function mount(ctx){
   '<div class="f2actions">'+(card?B('← Kembali','prev','soft'):'')+B(open?'🙈 Tutup':'👀 Buka Jawapan','flip')+
   (card<m().cards.length-1?B('Kad Seterusnya →','next','green'):B('🎮 Jom Main!','game','orange'))+'</div></div>';
  }
- function setup(n){mission=n;page='game';notice='';game={correct:new Set(),selected:null,index:0,wrong:0,won:false,trail:[]};
+ function setup(n){mission=n;page='game';notice='';game={correct:new Set(),selected:null,index:0,wrong:0,won:false,trail:[],feedback:null,tentative:null};
   if(g().type==='catch')game.items=shuffle(g().items.map((it,i)=>({it,id:i})));
   if(g().type==='tree')game.tokens=shuffle(g().slots.map((it,i)=>({it,id:i})));
   if(g().type==='timeline')game.items=shuffle(g().items.map((it,i)=>({it,id:i})));
@@ -936,9 +936,17 @@ async function mount(ctx){
   if(type==='catch')content='<div class="f2options">'+game.items.map(z=>'<button class="f2opt '+(game.correct.has(z.id)?'ok':'')+'" data-catch="'+z.id+'" '+(game.correct.has(z.id)?'disabled':'')+'>'+(game.correct.has(z.id)?'🌟 ':'')+h(z.it[0])+'</button>').join('')+'</div>';
   if(type==='tree')content='<p>Pilih kepingan ahli keluarga, kemudian tekan tempat yang sepadan.</p><div class="f2slots">'+x.slots.map((z,i)=>'<button class="f2slot '+(game.correct.has(i)?'ok':'')+'" data-slot="'+i+'" '+(game.correct.has(i)?'disabled':'')+'><div class="face">'+(game.correct.has(i)?h(z[0]):'❔')+'</div><b>'+(game.correct.has(i)?h(z[1]):'Siapakah saya?')+'</b><small>'+h(z[2])+'</small></button>').join('')+'</div><h3>🧩 Kepingan keluarga</h3><div class="f2tokens">'+game.tokens.map(z=>'<button class="f2token '+(game.selected===z.id?'selected':'')+' '+(game.correct.has(z.id)?'used':'')+'" data-token="'+z.id+'">'+h(z.it[1])+'</button>').join('')+'</div>';
   if(type==='sortcards'||type==='choices'){
-   const z=x.items[game.index],arr=type==='sortcards'?x.categories:z?.[1];
+   const z=x.items[game.index],arr=type==='sortcards'?x.categories:z?.[1],fb=game.feedback;
    content=z?'<div class="f2flash" style="min-height:140px"><div style="font-size:2.6rem">💬</div><h3>'+h(z[0])+'</h3></div>'+
-   arr.map((opt,i)=>'<button class="f2pick" data-pick="'+i+'">'+h(opt)+'</button>').join(''):'';
+   arr.map((opt,i)=>{
+     const correct=fb&&i===fb.correct,wrong=fb&&i===fb.chosen&&!fb.isCorrect;
+     const cls=correct?'good':wrong?'bad':game.tentative===i?'pending':'';
+     const mark=correct?'✅ Betul':wrong?'❌ Pilihan Arif':'';
+     return '<button class="f2pick '+cls+'" data-pick="'+i+'" aria-pressed="'+Boolean(fb?fb.chosen===i:game.tentative===i)+'" '+(fb?'disabled':'')+'>'+h(opt)+(mark?'<span class="f2mark">'+mark+'</span>':'')+'</button>';
+   }).join('')+
+   (fb?'<div class="f2msg" role="status" aria-live="polite"><strong>'+(fb.isCorrect?'🌟 Tepat sekali!':'💡 Belum tepat. Jom semak!')+'</strong><p style="margin:7px 0">'+h(fb.explanation)+'</p>'+
+     (fb.isCorrect?'':'<small>Jawapan tepat ditandakan hijau. Cuba pilih semula.</small>')+'</div>'+
+     '<div class="f2actions">'+B(fb.isCorrect?(game.index===x.items.length-1?'🏆 Selesaikan Misi':'➡️ Soalan Seterusnya'):'🔄 Cuba Lagi',fb.isCorrect?'advanceGame':'retryGame',fb.isCorrect?'green':'soft')+'</div>':''):'';
   }
   if(type==='timeline')content='<h3>🛤️ Garis masa buku teks</h3><div class="f2line">'+game.trail.map(i=>'<div class="f2point"><b>'+h(x.items[i][0])+'</b>'+h(x.items[i][1])+'</div>').join('')+(game.trail.length?'':'<span class="f2chip">Pilih tahun terawal dahulu</span>')+'</div><h3>🚀 Susun peristiwa</h3><div class="f2options">'+game.items.map(z=>'<button class="f2event '+(game.correct.has(z.id)?'used':'')+'" data-timeline="'+z.id+'" '+(game.correct.has(z.id)?'disabled':'')+'><strong>'+h(z.it[0])+'</strong>'+h(z.it[1])+'</button>').join('')+'</div>';
   return nav()+'<div class="f2panel f2stage"><span class="f2chip">🎮 Misi '+mission+'</span><h2>'+h(x.title)+'</h2><p>'+h(x.intro)+'</p>'+bar(completed,n)+
@@ -982,9 +990,16 @@ async function mount(ctx){
    else{game.wrong++;game.selected=null;notice='Cuba semula! Baca petunjuk pada petak.';}
   }
   if(type==='pick'){
-   const z=x.items[game.index],idx=x.type==='sortcards'?z[1]:z[2];
-   if(idx===i){game.index++;notice=x.type==='choices'?z[3]:'🌟 Tepat!';if(game.index===x.items.length)return finish();}
-   else{game.wrong++;notice='Fikir semula: apakah sikap atau tanggungjawab yang paling tepat?';}
+   if(game.feedback)return;
+   const z=x.items[game.index],idx=x.type==='sortcards'?z[1]:z[2],correct=idx===i;
+   if(!correct)game.wrong++;
+   game.tentative=i;
+   notice='';
+   const why=x.type==='sortcards'?
+     '“'+z[0]+'” ialah tanggungjawab '+x.categories[idx].toLowerCase()+' berdasarkan buku teks.':
+     z[3];
+   game.feedback={chosen:i,correct:idx,isCorrect:correct,explanation:why};
+   // Keep the question and chosen answer visible; advance only on an explicit click.
   }
   if(type==='timeline'){if(i===game.index){game.correct.add(i);game.trail.push(i);game.index++;notice='⭐ Betul! Garis masa semakin lengkap.';if(game.index===x.items.length)return finish();}else{game.wrong++;notice='Tahun yang mana paling awal antara baki pilihan?';}}
   draw();
@@ -1011,6 +1026,17 @@ async function mount(ctx){
    if(type==='boss'){startQuiz(missions.flatMap(x=>shuffle(questions.filter(q=>q.mission===x.n)).slice(0,2)),'🏆 Boss Keluarga');return;}
    if(type==='revision'){const latest=new Map();for(const a of answers)if(!latest.has(a.question_id))latest.set(a.question_id,a.is_correct);startQuiz(questions.filter(q=>latest.has(q.id)&&!latest.get(q.id)),'🔁 Ulang Salah');return;}
    if(type==='nextQuestion'){question++;reply=null;draw();return;}
+   if(type==='advanceGame'){
+     if(page!=='game'||!game.feedback?.isCorrect)return;
+     game.index++;game.feedback=null;game.tentative=null;notice='';
+     if(game.index===g().items.length){await finish();return;}
+     draw();return;
+   }
+   if(type==='retryGame'){
+     if(page!=='game'||!game.feedback||game.feedback.isCorrect)return;
+     game.feedback=null;game.tentative=null;notice='';
+     draw();return;
+   }
   }
   if(b.dataset.answer!==undefined)return answer(Number(b.dataset.answer));
   for(const t of ['catch','token','slot','pick','timeline'])if(b.dataset[t]!==undefined)return playTap(t,Number(b.dataset[t]));
