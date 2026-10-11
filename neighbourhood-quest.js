@@ -117,7 +117,7 @@ async function mount(ctx){
  root.addEventListener('click',async e=>{let b=e.target.closest('button');if(!b||!root.contains(b)||busy)return;busy=true;try{await onClick(b);}catch(err){console.error('School Quest',err);message=err.message||String(err);draw();}finally{busy=false;}});
  try{
   root.innerHTML='<div class="u4-panel">⏳ Menyediakan Pengembaraan Sejarah Sekolah…</div>';
-  if(admin){const as=await rest('learning_assignments?select=student_id&unit_code=eq.'+U);if(!as?.length)throw Error('Tiada pelajar ditugaskan');student=as[0].student_id;}
+  if(admin){/* Admin can preview Unit 4 without any legacy student assignments. */student=ctx.profile.user_id;}
   const [unit,q,a,p]=await Promise.all([
    rest('learning_units?select=missions,games,published&unit_code=eq.'+U),
    rpc('learning_get_questions',{p_unit_code:U}),
