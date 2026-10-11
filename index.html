@@ -1914,6 +1914,21 @@ async function requireProfile(role) {
   document.body.dataset.role = profile?.role || '';
   if (!profile?.is_active) { await auth.signOut(); throw new Error('This account is inactive. Please contact the administrator.'); }
   await studentApi.touch().catch(() => {});
+  if(isYoungerStudent(profile)){
+    // Junior accounts do not call PKSK Quiz Hub. Load the avatar directly
+    // so their chosen icon and nickname survive a fresh login or refresh.
+    try{
+      const catalog=await studentApi.avatarCatalog()||[];
+      const chosen=catalog.find(a=>a.id===profile.avatar_id);
+      studentIdentity={
+        ...(studentIdentity||{}),
+        displayNickname:profile.display_nickname||profile.display_name,
+        avatarId:profile.avatar_id,
+        avatarSymbol:chosen?.symbol||'🎓',
+        avatarLabel:chosen?.label||'Student'
+      };
+    }catch(err){console.warn('Could not load junior avatar:',err?.message||err);}
+  }
   if(profile?.role==='student')startStudentActivityTracking(); else stopStudentActivityTracking();
   if (role && profile.role !== role) { go(profile.role === 'admin' ? '/admin' : '/student'); return false; }
   return true;
