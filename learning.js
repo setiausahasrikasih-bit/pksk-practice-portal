@@ -31,6 +31,7 @@
   function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
   async function mount(ctx){
     const root=ctx.container;
+    const learnerName=esc(ctx.profile.display_nickname||ctx.profile.display_name||'Pelajar');
     let unit, missions=[],games=[],questions=[],answers=[],progress=[],targetId=ctx.profile.user_id;
     let mode='home', mission=1, card=0, revealed=false, quiz=[],qIndex=0, qResult=null,qBusy=false,gameOrder=[],gameMessage='',gameDone=false;
     let quizCorrect=0, quizLabel='',pending=false;
@@ -45,7 +46,7 @@
     const gameStart=()=>{mode='game';gameMessage='';gameDone=false;const g=games.find(x=>x.mission===mission);gameOrder=g&&g.type==='sort'?shuffle(g.items.map((_,i)=>i)):[];if(g?.type==='sort'&&gameOrder.every((n,i)=>n===i))gameOrder.reverse();draw();};
     function header(){
       const badge=admin?'Parent / Admin View':'Tahun 4 · Sejarah';
-      return '<div class="learn-hero"><div><span class="learn-badge">✨ '+badge+'</span><h1>📚 Arif’s Learning Adventure</h1><p>Unit 1 · Mengenali Sejarah · Belajar • Main • Cuba Lagi</p></div><div style="font-size:3.3rem" aria-hidden="true">🕵️</div></div>';
+      return '<div class="learn-hero"><div><span class="learn-badge">✨ '+badge+'</span><h1>📚 Pengembaraan Sejarah</h1><p>Unit 1 · Mengenali Sejarah · Belajar • Main • Cuba Lagi</p></div><div style="font-size:3.3rem" aria-hidden="true">🕵️</div></div>';
     }
     function stats(){
       return '<div class="learn-stats"><div class="learn-stat"><b>'+completed()+'/6</b><span>Misi siap</span></div><div class="learn-stat"><b>'+mastered()+'/30</b><span>Soalan dikuasai</span></div><div class="learn-stat"><b>'+answers.length+'</b><span>Jawapan direkod</span></div></div>';
@@ -60,7 +61,7 @@
         const a=questions.filter(q=>q.mission===m.n).length;
         return '<article class="learn-card"><div class="learn-emoji">'+esc(m.icon)+'</div><h3>Misi '+m.n+': '+esc(m.title)+'</h3><p>'+esc(m.subtitle)+'</p><div class="learn-chip">'+(p?.completed?'✅ Misi selesai · ':'📖 Sedia belajar · ')+a+' soalan</div><div class="learn-actions"><button class="learn-btn" data-learn="cards" data-mission="'+m.n+'">📖 Nota</button><button class="learn-btn alt" data-learn="game" data-mission="'+m.n+'">🎮 Main</button>'+(!admin?'<button class="learn-btn mint" data-learn="quiz" data-mission="'+m.n+'">📝 Latihan</button>':'')+'</div></article>';
       }).join('');
-      return '<div class="learn-paper"><h2>Selamat datang, '+(admin?'Ibu / Ayah':'Arif')+'! 👋</h2><p class="learn-soft">Belajar satu misi demi satu misi. Buka kad ilmu, main permainan dan jawab latihan. Semua fakta berpandukan muka surat 2–15 buku teks Sejarah Tahun 4.</p>'+(!admin?'<p class="learn-soft">💡 Setiap misi ada 5 soalan. Jangan risau kalau tersalah — kamu boleh cuba lagi!</p>':'<p class="learn-soft">Paparan pentadbir: keputusan Arif boleh dipantau di bawah.</p>')+'</div><div class="learn-grid">'+tiles+'</div>'+ (admin?adminPanel():'');
+      return '<div class="learn-paper"><h2>Selamat datang, '+(admin?'Ibu / Ayah':learnerName)+'! 👋</h2><p class="learn-soft">Belajar satu misi demi satu misi. Buka kad ilmu, main permainan dan jawab latihan. Semua fakta berpandukan muka surat 2–15 buku teks Sejarah Tahun 4.</p>'+(!admin?'<p class="learn-soft">💡 Setiap misi ada 5 soalan. Jangan risau kalau tersalah — kamu boleh cuba lagi!</p>':'<p class="learn-soft">Paparan pentadbir: keputusan pelajar boleh dipantau di bawah.</p>')+'</div><div class="learn-grid">'+tiles+'</div>'+ (admin?adminPanel():'');
     }
     function cardsView(){
       const m=missions.find(x=>x.n===mission),c=m.cards[card];
@@ -92,7 +93,7 @@
       if(!quiz.length)return menu()+'<div class="learn-paper">Tiada soalan ulang kaji lagi. Cuba jawab satu misi dahulu.</div>';
       if(qIndex>=quiz.length){
         const pct=Math.round(quizCorrect/quiz.length*100);
-        return menu()+'<div class="learn-paper" style="text-align:center"><div style="font-size:4rem">🏆</div><h2>Tahniah, Arif!</h2><p class="learn-soft">'+esc(quizLabel)+'</p><h1 style="font-size:2.8rem;color:#754cc3">'+quizCorrect+'/'+quiz.length+'</h1><p>Markah '+pct+'% · '+(pct===100?'Hebat! Semua betul! 🌟':'Bagus mencuba! Baca penerangan dan cuba lagi. 💪')+'</p><div class="learn-actions" style="justify-content:center"><button class="learn-btn alt" data-learn="home">Semua Misi</button><button class="learn-btn" data-learn="revision">🔁 Ulang Kaji Salah</button></div></div>';
+        return menu()+'<div class="learn-paper" style="text-align:center"><div style="font-size:4rem">🏆</div><h2>Tahniah, '+learnerName+'!</h2><p class="learn-soft">'+esc(quizLabel)+'</p><h1 style="font-size:2.8rem;color:#754cc3">'+quizCorrect+'/'+quiz.length+'</h1><p>Markah '+pct+'% · '+(pct===100?'Hebat! Semua betul! 🌟':'Bagus mencuba! Baca penerangan dan cuba lagi. 💪')+'</p><div class="learn-actions" style="justify-content:center"><button class="learn-btn alt" data-learn="home">Semua Misi</button><button class="learn-btn" data-learn="revision">🔁 Ulang Kaji Salah</button></div></div>';
       }
       const q=quiz[qIndex];const options=q.options.map((a,i)=>'<button class="learn-option'+(qResult&&qResult.answer_index===i?' correct':'')+(qResult&&qResult.chosen===i&&!qResult.correct?' wrong':'')+'" data-answer="'+i+'" '+(qResult||qBusy?'disabled':'')+'>'+'ABCD'[i]+'. '+esc(a)+'</button>').join('');
       return menu()+'<div class="learn-paper"><div class="learn-chip">'+esc(quizLabel)+' · '+(qIndex+1)+'/'+quiz.length+' · '+esc(q.difficulty)+'</div><div class="learn-progress"><div style="width:'+Math.round((qIndex)/quiz.length*100)+'%"></div></div><h2>'+esc(q.question)+'</h2><div class="learn-options">'+options+'</div>'+
@@ -106,7 +107,7 @@
         const c=a.filter(x=>x.is_correct).length;
         return '<div class="learn-game-row"><strong>Misi '+m.n+': '+esc(m.title)+'</strong><span>'+a.length+' percubaan · '+(a.length?Math.round(c/a.length*100)+'%':'Belum cuba')+'</span></div>';
       }).join('');
-      return '<div class="learn-paper" style="margin-top:20px"><h2>📊 Prestasi Arif</h2><p>'+answers.length+' jawapan direkod · '+correct+' betul ('+(answers.length?Math.round(correct/answers.length*100):0)+'%)</p>'+per+'<p class="learn-unit-note">Ketepatan mengira semua percubaan; soalan dikuasai mengikut jawapan terkini setiap soalan.</p></div>';
+      return '<div class="learn-paper" style="margin-top:20px"><h2>📊 Prestasi Pelajar</h2><p>'+answers.length+' jawapan direkod · '+correct+' betul ('+(answers.length?Math.round(correct/answers.length*100):0)+'%)</p>'+per+'<p class="learn-unit-note">Ketepatan mengira semua percubaan; soalan dikuasai mengikut jawapan terkini setiap soalan.</p></div>';
     }
     function draw(){
       root.innerHTML='<div class="learn">'+header()+stats()+(mode==='home'?home():mode==='cards'?cardsView():mode==='game'?gameView():mode==='quiz'?quizView():home())+'</div>';
