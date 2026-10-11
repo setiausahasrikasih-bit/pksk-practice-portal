@@ -21,7 +21,7 @@ const CSS=[
 '.f2event{border:2px solid #c9b3ec;background:white;color:#5e4291;border-radius:14px;padding:12px;font-weight:800;min-height:76px}.f2event strong{display:block;color:#e07f35}.f2event.used{opacity:.28;pointer-events:none}.f2line{display:flex;gap:7px;overflow-x:auto;margin:13px 0}.f2point{flex:1;min-width:105px;background:#d9f9e8;border:1px solid #a9e8c7;border-radius:12px;padding:9px;font-size:.83rem;text-align:center}.f2point b{display:block;color:#16845d}',
 '.f2msg{background:#fff9e8;border:1px solid #f1dbad;color:#664c56;padding:13px;border-radius:13px;margin-top:13px;line-height:1.5;font-weight:700}.f2finish{background:linear-gradient(135deg,#ffeac0,#ffcfe9,#e8e3ff);padding:27px;border-radius:22px;text-align:center;position:relative}.f2finish .trophy{font-size:4rem;animation:f2float 2s infinite}',
 '.f2letters{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:2px;max-width:490px;margin:10px auto}.f2letter{aspect-ratio:1;background:#fff;border:1px solid #d3bfeb;border-radius:4px;color:#493472;font-size:clamp(.64rem,2.4vw,.99rem);font-weight:900;padding:0}.f2letter.selected{background:#ffd375}.f2letter.found{background:#6dd5b3;color:#125d46}.f2words{display:flex;flex-wrap:wrap;gap:7px;justify-content:center}.f2words span{padding:7px 10px;border-radius:9px;background:white;font-size:.84rem;font-weight:850}.f2words .done{background:#b7f0da;text-decoration:line-through}',
-'.f2spark{position:absolute;animation:f2rise 1s ease-out forwards;pointer-events:none;font-size:1.7rem;z-index:10}.f2fine{font-size:.8rem;color:#72748d;line-height:1.55;margin-top:12px}',
+'.f2opt.bad,.f2slot.bad,.f2token.bad,.f2event.bad{background:#ffd9d9;border-color:#c44747;color:#8b2020;box-shadow:inset 4px 0 #c44747}.f2event.used{opacity:1;pointer-events:none;background:#d7f9e7;border-color:#4eb78e;color:#146343}.f2event.used strong{color:#146343}.f2spark{position:absolute;animation:f2rise 1s ease-out forwards;pointer-events:none;font-size:1.7rem;z-index:10}.f2fine{font-size:.8rem;color:#72748d;line-height:1.55;margin-top:12px}',
 '@keyframes f2float{50%{transform:translateY(-9px) rotate(4deg)}}@keyframes f2rise{to{transform:translate(50px,-170px) rotate(90deg);opacity:0}}',
 '@media(max-width:650px){.f2grid{grid-template-columns:1fr}.f2hero{padding:17px}.f2hero .mascot{font-size:3rem}.f2panel{padding:15px}.f2scene{padding:10px}.f2stats{gap:5px}.f2stat{padding:8px}.f2stat b{font-size:1.15rem}.f2stat small{font-size:.65rem}.f2btn{padding:10px 12px;font-size:.87rem}.f2opt{font-size:.83rem}}'
 ].join('');
@@ -75,7 +75,7 @@ async function mount(ctx){
   '<div class="f2actions">'+(card?B('← Kembali','prev','soft'):'')+B(open?'🙈 Tutup':'👀 Buka Jawapan','flip')+
   (card<m().cards.length-1?B('Kad Seterusnya →','next','green'):B('🎮 Jom Main!','game','orange'))+'</div></div>';
  }
- function setup(n){mission=n;page='game';notice='';game={correct:new Set(),selected:null,index:0,wrong:0,won:false,trail:[],feedback:null,tentative:null};
+ function setup(n){mission=n;page='game';notice='';game={correct:new Set(),selected:null,index:0,wrong:0,won:false,trail:[],feedback:null,tentative:null,lastFeedback:null};
   if(g().type==='catch')game.items=shuffle(g().items.map((it,i)=>({it,id:i})));
   if(g().type==='tree')game.tokens=shuffle(g().slots.map((it,i)=>({it,id:i})));
   if(g().type==='timeline')game.items=shuffle(g().items.map((it,i)=>({it,id:i})));
@@ -105,8 +105,8 @@ async function mount(ctx){
   const completed=(type==='tree'||type==='catch')?game.correct.size:game.index;
   if(game.won)return victory(x.title);
   let content='';
-  if(type==='catch')content='<div class="f2options">'+game.items.map(z=>'<button class="f2opt '+(game.correct.has(z.id)?'ok':'')+'" data-catch="'+z.id+'" '+(game.correct.has(z.id)?'disabled':'')+'>'+(game.correct.has(z.id)?'🌟 ':'')+h(z.it[0])+'</button>').join('')+'</div>';
-  if(type==='tree')content='<p>Pilih kepingan ahli keluarga, kemudian tekan tempat yang sepadan.</p><div class="f2slots">'+x.slots.map((z,i)=>'<button class="f2slot '+(game.correct.has(i)?'ok':'')+'" data-slot="'+i+'" '+(game.correct.has(i)?'disabled':'')+'><div class="face">'+(game.correct.has(i)?h(z[0]):'❔')+'</div><b>'+(game.correct.has(i)?h(z[1]):'Siapakah saya?')+'</b><small>'+h(z[2])+'</small></button>').join('')+'</div><h3>🧩 Kepingan keluarga</h3><div class="f2tokens">'+game.tokens.map(z=>'<button class="f2token '+(game.selected===z.id?'selected':'')+' '+(game.correct.has(z.id)?'used':'')+'" data-token="'+z.id+'">'+h(z.it[1])+'</button>').join('')+'</div>';
+  if(type==='catch')content='<div class="f2options">'+game.items.map(z=>'<button class="f2opt '+(game.correct.has(z.id)?'ok':game.lastFeedback?.type==='catch'&&game.lastFeedback.id===z.id?'bad':'')+'" data-catch="'+z.id+'" '+(game.correct.has(z.id)?'disabled':'')+'>'+(game.correct.has(z.id)?'🌟 ':game.lastFeedback?.type==='catch'&&game.lastFeedback.id===z.id?'❌ ':'')+h(z.it[0])+'</button>').join('')+'</div>';
+  if(type==='tree')content='<p>Pilih kepingan ahli keluarga, kemudian tekan tempat yang sepadan.</p><div class="f2slots">'+x.slots.map((z,i)=>'<button class="f2slot '+(game.correct.has(i)?'ok':game.lastFeedback?.type==='slot'&&game.lastFeedback.id===i?'bad':'')+'" data-slot="'+i+'" '+(game.correct.has(i)?'disabled':'')+'><div class="face">'+(game.correct.has(i)?h(z[0]):game.lastFeedback?.type==='slot'&&game.lastFeedback.id===i?'❌':'❔')+'</div><b>'+(game.correct.has(i)?h(z[1]):'Siapakah saya?')+'</b><small>'+h(z[2])+'</small></button>').join('')+'</div><h3>🧩 Kepingan keluarga</h3><div class="f2tokens">'+game.tokens.map(z=>'<button class="f2token '+(game.lastFeedback?.type==='slot'&&game.lastFeedback.token===z.id?'bad':game.selected===z.id?'selected':'')+' '+(game.correct.has(z.id)?'used':'')+'" data-token="'+z.id+'">'+h(z.it[1])+'</button>').join('')+'</div>';
   if(type==='sortcards'||type==='choices'){
    const z=x.items[game.index],arr=type==='sortcards'?x.categories:z?.[1],fb=game.feedback;
    content=z?'<div class="f2flash" style="min-height:140px"><div style="font-size:2.6rem">💬</div><h3>'+h(z[0])+'</h3></div>'+
@@ -120,7 +120,7 @@ async function mount(ctx){
      (fb.isCorrect?'':'<small>Jawapan tepat ditandakan hijau. Cuba pilih semula.</small>')+'</div>'+
      '<div class="f2actions">'+B(fb.isCorrect?(game.index===x.items.length-1?'🏆 Selesaikan Misi':'➡️ Soalan Seterusnya'):'🔄 Cuba Lagi',fb.isCorrect?'advanceGame':'retryGame',fb.isCorrect?'green':'soft')+'</div>':''):'';
   }
-  if(type==='timeline')content='<h3>🛤️ Garis masa buku teks</h3><div class="f2line">'+game.trail.map(i=>'<div class="f2point"><b>'+h(x.items[i][0])+'</b>'+h(x.items[i][1])+'</div>').join('')+(game.trail.length?'':'<span class="f2chip">Pilih tahun terawal dahulu</span>')+'</div><h3>🚀 Susun peristiwa</h3><div class="f2options">'+game.items.map(z=>'<button class="f2event '+(game.correct.has(z.id)?'used':'')+'" data-timeline="'+z.id+'" '+(game.correct.has(z.id)?'disabled':'')+'><strong>'+h(z.it[0])+'</strong>'+h(z.it[1])+'</button>').join('')+'</div>';
+  if(type==='timeline')content='<h3>🛤️ Garis masa buku teks</h3><div class="f2line">'+game.trail.map(i=>'<div class="f2point"><b>'+h(x.items[i][0])+'</b>'+h(x.items[i][1])+'</div>').join('')+(game.trail.length?'':'<span class="f2chip">Pilih tahun terawal dahulu</span>')+'</div><h3>🚀 Susun peristiwa</h3><div class="f2options">'+game.items.map(z=>'<button class="f2event '+(game.correct.has(z.id)?'used':game.lastFeedback?.type==='timeline'&&game.lastFeedback.id===z.id?'bad':'')+'" data-timeline="'+z.id+'" '+(game.correct.has(z.id)?'disabled':'')+'><strong>'+h(z.it[0])+'</strong>'+h(z.it[1])+'</button>').join('')+'</div>';
   return nav()+'<div class="f2panel f2stage"><span class="f2chip">🎮 Misi '+mission+'</span><h2>'+h(x.title)+'</h2><p>'+h(x.intro)+'</p>'+bar(completed,n)+
   '<div class="f2scene">'+content+'</div>'+(notice?'<div class="f2msg" role="status">'+h(notice)+'</div>':'')+
   '<p class="f2fine">📚 Rujukan buku teks m/s '+h(x.page)+' · Cuba lagi jika tersilap. Tiada pemasa!</p></div>';
@@ -154,12 +154,12 @@ async function mount(ctx){
  async function playTap(type,i){
   const x=g();
   if(game.won)return;
-  if(type==='catch'){const z=x.items[i];if(game.correct.has(i))return;if(z?.[1]===1){game.correct.add(i);notice='🌟 Betul! Ini maklumat biodata.';if(game.correct.size===x.items.filter(a=>a[1]===1).length)return finish();}else{game.wrong++;notice='Belum tepat — cuba kad lain.';}}
-  if(type==='token'){game.selected=i;notice='Sekarang tekan petak dengan petunjuk yang sesuai.';}
+  if(type==='catch'){const z=x.items[i];if(game.correct.has(i))return;game.lastFeedback={type:'catch',id:i};if(z?.[1]===1){game.correct.add(i);notice='🌟 Betul! Kad hijau menunjukkan maklumat biodata.';if(game.correct.size===x.items.filter(a=>a[1]===1).length)return finish();}else{game.wrong++;notice='❌ Kad merah belum tepat — cuba kad lain.';}}
+  if(type==='token'){game.selected=i;game.lastFeedback=null;notice='Sekarang tekan petak dengan petunjuk yang sesuai.';}
   if(type==='slot'){
    if(game.selected===null){notice='Pilih kepingan nama terlebih dahulu.';}
-   else if(game.selected===i){game.correct.add(i);game.selected=null;notice='✨ Hebat! Hubungan keluarga betul.';if(game.correct.size===x.slots.length)return finish();}
-   else{game.wrong++;game.selected=null;notice='Cuba semula! Baca petunjuk pada petak.';}
+   else if(game.selected===i){game.correct.add(i);game.selected=null;game.lastFeedback=null;notice='✨ Hebat! Petak hijau menunjukkan hubungan yang betul.';if(game.correct.size===x.slots.length)return finish();}
+   else{game.wrong++;game.lastFeedback={type:'slot',id:i,token:game.selected};game.selected=null;notice='❌ Petak merah belum tepat. Baca petunjuk dan pilih kepingan lain.';}
   }
   if(type==='pick'){
    if(game.feedback)return;
@@ -173,7 +173,7 @@ async function mount(ctx){
    game.feedback={chosen:i,correct:idx,isCorrect:correct,explanation:why};
    // Keep the question and chosen answer visible; advance only on an explicit click.
   }
-  if(type==='timeline'){if(i===game.index){game.correct.add(i);game.trail.push(i);game.index++;notice='⭐ Betul! Garis masa semakin lengkap.';if(game.index===x.items.length)return finish();}else{game.wrong++;notice='Tahun yang mana paling awal antara baki pilihan?';}}
+  if(type==='timeline'){game.lastFeedback={type:'timeline',id:i};if(i===game.index){game.correct.add(i);game.trail.push(i);game.index++;notice='⭐ Betul! Peristiwa hijau sudah dimasukkan ke garis masa.';if(game.index===x.items.length)return finish();}else{game.wrong++;notice='❌ Peristiwa merah belum tepat. Tahun yang mana paling awal antara baki pilihan?';}}
   draw();
  }
  async function wordTap(x,y){
