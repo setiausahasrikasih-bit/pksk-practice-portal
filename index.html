@@ -1854,14 +1854,12 @@ function shell(content, role = profile?.role) {
     const essayNav = profile?.essay_training_enabled ? '<a href="/student/essay" data-link>Essay</a>' : '';
     const learningNav = profile?.user_id === '75056151-e6eb-4ad4-aed7-8c0f86f7aa21' ? '<a href="/student/learning" data-link>📚 Learning</a>' : '';
     const nav = younger
-      ? '<a href="/student/learning" data-link>📚 Learning Hub</a>'
+      ? '<a href="/student/learning" data-link>📚 Learning Hub</a><a href="/student/profile" data-link>Profile</a>'
       : `<a href="/student" data-link>Quiz Hub</a><a href="/student/history" data-link>My Results</a><a href="/student/performance" data-link>My Performance</a>${essayNav}${learningNav}<a href="/student/leaderboard" data-link>Leaderboard</a><a href="/student/lounge" data-link>Lounge</a><a href="/student/profile" data-link>Profile</a>`;
     const displayName = studentIdentity?.displayNickname || profile?.display_nickname || profile?.display_name || 'Student';
     const avatar = studentIdentity?.avatarSymbol || '🎓';
     const landing=younger?'/student/learning':'/student';
-    const identity=younger
-      ? `<span class="student-identity" aria-label="Student: ${escapeHtml(displayName)}"><span class="student-avatar">${escapeHtml(avatar)}</span><span class="student-identity-name">${escapeHtml(displayName)}</span></span>`
-      : `<a href="/student/profile" class="student-identity" data-link aria-label="Open profile"><span class="student-avatar">${escapeHtml(avatar)}</span><span class="student-identity-name">${escapeHtml(displayName)}</span></a>`;
+    const identity=`<a href="/student/profile" class="student-identity" data-link aria-label="Open profile"><span class="student-avatar">${escapeHtml(avatar)}</span><span class="student-identity-name">${escapeHtml(displayName)}</span></a>`;
     root.innerHTML = `<header class="topbar student-topbar">${brandMarkup(landing)}<nav>${nav}</nav><div class="student-top-actions">${identity}<button id="logout" class="btn ghost">Logout</button></div></header><div class="student-mobile-nav">${nav}</div><main class="page student-page">${content}</main>`;
   }
   document.querySelector('#logout')?.addEventListener('click', async () => { stopStudentActivityTracking(); await auth.signOut(); profile = null; studentIdentity = null; go('/'); });
@@ -1916,6 +1914,21 @@ async function requireProfile(role) {
   document.body.dataset.role = profile?.role || '';
   if (!profile?.is_active) { await auth.signOut(); throw new Error('This account is inactive. Please contact the administrator.'); }
   await studentApi.touch().catch(() => {});
+  if(isYoungerStudent(profile)){
+    // Junior accounts do not call PKSK Quiz Hub. Load the avatar directly
+    // so their chosen icon and nickname survive a fresh login or refresh.
+    try{
+      const catalog=await studentApi.avatarCatalog()||[];
+      const chosen=catalog.find(a=>a.id===profile.avatar_id);
+      studentIdentity={
+        ...(studentIdentity||{}),
+        displayNickname:profile.display_nickname||profile.display_name,
+        avatarId:profile.avatar_id,
+        avatarSymbol:chosen?.symbol||'🎓',
+        avatarLabel:chosen?.label||'Student'
+      };
+    }catch(err){console.warn('Could not load junior avatar:',err?.message||err);}
+  }
   if(profile?.role==='student')startStudentActivityTracking(); else stopStudentActivityTracking();
   if (role && profile.role !== role) { go(profile.role === 'admin' ? '/admin' : '/student'); return false; }
   return true;
@@ -2486,18 +2499,22 @@ async function studentHistory() {
 async function studentProfile() {
   if(!await requireProfile('student'))return;
   loading('Loading profile…');
+  const younger=isYoungerStudent(profile);
   let hub=null;
-  try{hub=await studentApi.quizHub();studentIdentity=hub?.profile||studentIdentity;}catch{}
+  if(!younger){
+    try{hub=await studentApi.quizHub();studentIdentity=hub?.profile||studentIdentity;}catch{}
+  }
   const p=hub?.profile||{};
   let avatars=[];
-  try{avatars=await studentApi.avatarCatalog()||[];}catch{}
+  try{avatars=await studentApi.avatarCatalog()||[];}catch(err){console.warn('Avatar catalog unavailable:',err?.message||err);}
   let selectedAvatarId=p.avatarId||profile.avatar_id||'hero_01';
   const nickname=p.displayNickname||profile.display_nickname||'Player';
-  const avatar=p.avatarSymbol||'🎓';
-  const avatarLabel=p.avatarLabel||'Student';
+  const activeAvatar=avatars.find(a=>a.id===selectedAvatarId);
+  const avatar=p.avatarSymbol||activeAvatar?.symbol||'🎓';
+  const avatarLabel=p.avatarLabel||activeAvatar?.label||'Student';
   const examDateValue=p.pkskExamDate||profile.pksk_exam_date||'';
   const avatarGrid=avatars.length?avatars.map(a=>`<button type="button" class="avatar-choice ${a.id===selectedAvatarId?'selected':''}" data-avatar-id="${escapeHtml(a.id)}" aria-label="Choose ${escapeHtml(a.label)} avatar"><span class="avatar-choice-check">✓</span><span class="avatar-choice-symbol">${escapeHtml(a.symbol||'🎓')}</span><span class="avatar-choice-label">${escapeHtml(a.label)}</span></button>`).join(''):`<div class="empty-playful">Avatar choices are temporarily unavailable.</div>`;
-  shell(`<div class="page-head"><div><span class="eyebrow">Account</span><h1>My Profile</h1><p class="muted">Choose a fun nickname and avatar for the leaderboard.</p></div><a class="btn ghost" href="/student" data-link>Back to Quiz Hub</a></div><section class="profile-hero-card"><div class="profile-avatar-large" id="profile-avatar-preview">${escapeHtml(avatar)}</div><div><span class="eyebrow" id="profile-avatar-label">${escapeHtml(avatarLabel)}</span><h2 id="profile-nickname-preview" style="margin:.25rem 0">${escapeHtml(nickname)}</h2><p class="muted" style="margin:0">${escapeHtml(profile.display_name)} · ${escapeHtml(profile.school_year||'School Year not set')}</p></div></section><section class="card profile-card"><div class="profile-identity-editor"><div class="nickname-editor"><label for="profile-nickname"><b>Leaderboard Nickname</b></label><input id="profile-nickname" type="text" value="${escapeHtml(nickname)}" minlength="2" maxlength="6" pattern="[A-Za-z]{2,6}" autocomplete="off" spellcheck="false" required><div class="nickname-hint">2–6 alphabet letters only. No spaces, numbers, symbols or emoji.</div></div><div class="avatar-picker-wrap"><h3>Choose Your Avatar</h3><p class="muted">This avatar appears beside your nickname around the student portal.</p><div class="avatar-picker-grid">${avatarGrid}</div></div><div class="profile-save-row"><button id="save-profile-identity" class="btn primary" type="button">Save Profile</button><span id="profile-save-msg" class="profile-save-msg" aria-live="polite"></span></div><div class="exam-date-editor"><div><h3>PKSK Exam Date</h3><p class="muted small" style="margin:.3rem 0 0">Set your own exam date. Your Quiz Hub will show a personal countdown.</p></div><label for="pksk-exam-date"><b>Exam date</b><input id="pksk-exam-date" type="date" value="${escapeHtml(examDateValue)}"></label><div class="profile-save-row"><button id="save-pksk-exam-date" class="btn primary" type="button">Save Exam Date</button><span id="pksk-exam-date-msg" class="profile-save-msg" aria-live="polite"></span></div></div><div class="profile-readonly"><dl><dt>Name</dt><dd>${escapeHtml(profile.display_name)}</dd><dt>School Year</dt><dd>${escapeHtml(profile.school_year||'—')}</dd><dt>Member Since</dt><dd>${date(profile.created_at)}</dd></dl></div></div><h3>Change Password <span class="muted small">(optional)</span></h3><form id="password-form"><label>New password<input id="new-password" type="password" minlength="6" required></label><div id="password-msg" aria-live="polite"></div>${button('Update Password','primary','type="submit"')}</form></section>`);
+  shell(`<div class="page-head"><div><span class="eyebrow">Account</span><h1>My Profile</h1><p class="muted">${younger?'Choose your fun nickname and avatar for Learning Hub.':'Choose a fun nickname and avatar for the leaderboard.'}</p></div><a class="btn ghost" href="${younger?'/student/learning':'/student'}" data-link>Back to ${younger?'Learning Hub':'Quiz Hub'}</a></div><section class="profile-hero-card"><div class="profile-avatar-large" id="profile-avatar-preview">${escapeHtml(avatar)}</div><div><span class="eyebrow" id="profile-avatar-label">${escapeHtml(avatarLabel)}</span><h2 id="profile-nickname-preview" style="margin:.25rem 0">${escapeHtml(nickname)}</h2><p class="muted" style="margin:0">${escapeHtml(profile.display_name)} · ${escapeHtml(profile.school_year||'School Year not set')}</p></div></section><section class="card profile-card"><div class="profile-identity-editor"><div class="nickname-editor"><label for="profile-nickname"><b>${younger?'My Nickname':'Leaderboard Nickname'}</b></label><input id="profile-nickname" type="text" value="${escapeHtml(nickname)}" minlength="2" maxlength="6" pattern="[A-Za-z]{2,6}" autocomplete="off" spellcheck="false" required><div class="nickname-hint">2–6 alphabet letters only. No spaces, numbers, symbols or emoji.</div></div><div class="avatar-picker-wrap"><h3>Choose Your Avatar</h3><p class="muted">This avatar appears beside your nickname in the student portal.</p><div class="avatar-picker-grid">${avatarGrid}</div></div><div class="profile-save-row"><button id="save-profile-identity" class="btn primary" type="button">Save Profile</button><span id="profile-save-msg" class="profile-save-msg" aria-live="polite"></span></div>${younger?'':`<div class="exam-date-editor"><div><h3>PKSK Exam Date</h3><p class="muted small" style="margin:.3rem 0 0">Set your own exam date. Your Quiz Hub will show a personal countdown.</p></div><label for="pksk-exam-date"><b>Exam date</b><input id="pksk-exam-date" type="date" value="${escapeHtml(examDateValue)}"></label><div class="profile-save-row"><button id="save-pksk-exam-date" class="btn primary" type="button">Save Exam Date</button><span id="pksk-exam-date-msg" class="profile-save-msg" aria-live="polite"></span></div></div>`}<div class="profile-readonly"><dl><dt>Name</dt><dd>${escapeHtml(profile.display_name)}</dd><dt>School Year</dt><dd>${escapeHtml(profile.school_year||'—')}</dd><dt>Member Since</dt><dd>${date(profile.created_at)}</dd></dl></div></div><h3>Change Password <span class="muted small">(optional)</span></h3><form id="password-form"><label>New password<input id="new-password" type="password" minlength="6" required></label><div id="password-msg" aria-live="polite"></div>${button('Update Password','primary','type="submit"')}</form></section>`);
   const nicknameInput=document.querySelector('#profile-nickname');
   const previewNickname=document.querySelector('#profile-nickname-preview');
   const previewAvatar=document.querySelector('#profile-avatar-preview');
@@ -2505,7 +2522,7 @@ async function studentProfile() {
   nicknameInput.addEventListener('input',()=>{nicknameInput.value=nicknameInput.value.replace(/[^A-Za-z]/g,'').slice(0,6);previewNickname.textContent=nicknameInput.value||'Nickname';});
   document.querySelectorAll('.avatar-choice').forEach(choice=>choice.addEventListener('click',()=>{selectedAvatarId=choice.dataset.avatarId;document.querySelectorAll('.avatar-choice').forEach(x=>x.classList.toggle('selected',x===choice));const selected=avatars.find(a=>a.id===selectedAvatarId);if(selected){previewAvatar.textContent=selected.symbol||'🎓';previewLabel.textContent=selected.label||'Avatar';}}));
   document.querySelector('#save-profile-identity').addEventListener('click',async()=>{const msg=document.querySelector('#profile-save-msg');const nicknameValue=nicknameInput.value.trim();msg.className='profile-save-msg';if(!/^[A-Za-z]{2,6}$/.test(nicknameValue)){msg.textContent='Use 2–6 letters only.';msg.classList.add('error');return;}try{const result=await studentApi.updateIdentity(nicknameValue,selectedAvatarId);studentIdentity={...(studentIdentity||{}),...result};profile={...profile,display_nickname:result.displayNickname,avatar_id:result.avatarId};msg.textContent='Profile saved!';msg.classList.add('ok');setTimeout(()=>studentProfile(),450);}catch(err){msg.textContent=err.message||'Unable to save profile.';msg.classList.add('error');}});
-  document.querySelector('#save-pksk-exam-date').addEventListener('click',async()=>{const input=document.querySelector('#pksk-exam-date');const msg=document.querySelector('#pksk-exam-date-msg');const value=input.value||null;msg.className='profile-save-msg';try{const result=await studentApi.updateExamDate(value);profile={...profile,pksk_exam_date:result.pkskExamDate||null};studentIdentity={...(studentIdentity||{}),pkskExamDate:result.pkskExamDate||null};msg.textContent=result.pkskExamDate?'Exam date saved!':'Exam date cleared.';msg.classList.add('ok');}catch(err){msg.textContent=err.message||'Unable to save exam date.';msg.classList.add('error');}});
+  document.querySelector('#save-pksk-exam-date')?.addEventListener('click',async()=>{const input=document.querySelector('#pksk-exam-date');const msg=document.querySelector('#pksk-exam-date-msg');const value=input.value||null;msg.className='profile-save-msg';try{const result=await studentApi.updateExamDate(value);profile={...profile,pksk_exam_date:result.pkskExamDate||null};studentIdentity={...(studentIdentity||{}),pkskExamDate:result.pkskExamDate||null};msg.textContent=result.pkskExamDate?'Exam date saved!':'Exam date cleared.';msg.classList.add('ok');}catch(err){msg.textContent=err.message||'Unable to save exam date.';msg.classList.add('error');}});
   document.querySelector('#password-form').addEventListener('submit',async e=>{e.preventDefault();const msg=document.querySelector('#password-msg');try{await auth.changePassword(document.querySelector('#new-password').value);msg.textContent='Password updated.';}catch(err){msg.textContent=err.message;}});
 }
 
@@ -4716,7 +4733,7 @@ async function learningPage(){
   }
 }
 async function render(){clearInterval(quizTimer);essayClearTimers();stopChatRealtime();try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();
-  if(p.startsWith('/student') && !p.startsWith('/student/learning')){
+  if(p.startsWith('/student') && !p.startsWith('/student/learning') && p!=='/student/profile'){
     const session=await auth.session();
     if(!session){go('/');return;}
     profile=await auth.profile();
