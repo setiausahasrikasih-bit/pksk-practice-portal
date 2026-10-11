@@ -5461,7 +5461,7 @@ async function learningPage(){
     container.innerHTML='<div class="card error"><h2>Learning Adventure tidak dapat dibuka</h2><p>'+escapeHtml(error?.message||'Sila cuba lagi.')+'</p><button class="btn primary" onclick="location.reload()">Cuba Lagi</button></div>';
   }
 }
-async function render(){clearInterval(quizTimer);essayClearTimers();stopChatRealtime();try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();
+async function render(){if(typeof window.__year4ExamStop==='function'){window.__year4ExamStop();window.__year4ExamStop=null;}clearInterval(quizTimer);essayClearTimers();stopChatRealtime();try{const p=(location.hash.slice(1) || '/');if(p==='/')return loginPage();
   if(p.startsWith('/student') && !p.startsWith('/student/learning') && p!=='/student/profile'){
     const session=await auth.session();
     if(!session){go('/');return;}
