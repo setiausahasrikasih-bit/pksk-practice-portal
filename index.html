@@ -1275,6 +1275,19 @@ window.PKSK_FAMILY_ARCADE={mount,puzzle};
     const message = payload?.message || payload?.error_description || payload?.msg || payload?.error || payload?.hint || `Request failed (${status})`;
     const err = new Error(String(message));
     err.status = status;
+    err.code = payload?.error_code || payload?.code || null;
+    return err;
+  }
+
+  function isSessionNotFoundError(err) {
+    const message = String(err?.message || '').toLowerCase();
+    return err?.code === 'session_not_found'
+      || (err?.status === 403 && message.includes('session') && (message.includes('not found') || message.includes('does not exist')));
+  }
+
+  function sessionEndedError() {
+    const err = new Error('Your login session has ended on this device. Please log in again.');
+    err.sessionEnded = true;
     return err;
   }
 
@@ -1370,10 +1383,22 @@ window.PKSK_FAMILY_ARCADE={mount,puzzle};
     try {
       return await rawJson(`${SUPABASE_URL}${path}`, { ...options, headers });
     } catch (err) {
+      if (isSessionNotFoundError(err)) {
+        clearSession();
+        throw sessionEndedError();
+      }
       if (err?.status === 401 && loadSession()?.refresh_token) {
-        const refreshed = await refreshSession(loadSession());
-        const retryHeaders = { ...headers, Authorization: `Bearer ${refreshed.access_token}` };
-        return rawJson(`${SUPABASE_URL}${path}`, { ...options, headers: retryHeaders });
+        try {
+          const refreshed = await refreshSession(loadSession());
+          const retryHeaders = { ...headers, Authorization: `Bearer ${refreshed.access_token}` };
+          return await rawJson(`${SUPABASE_URL}${path}`, { ...options, headers: retryHeaders });
+        } catch (refreshErr) {
+          if (isSessionNotFoundError(refreshErr) || refreshErr?.status === 400 || refreshErr?.status === 401 || refreshErr?.status === 403) {
+            clearSession();
+            throw sessionEndedError();
+          }
+          throw refreshErr;
+        }
       }
       throw err;
     }
@@ -1485,11 +1510,13 @@ window.PKSK_FAMILY_ARCADE={mount,puzzle};
       });
       return saveSession(data);
     },
-    signOut: async () => {
+    signOut: async (scope = 'local') => {
+      const allowedScopes = new Set(['local','global','others']);
+      const safeScope = allowedScopes.has(scope) ? scope : 'local';
       const session = loadSession();
       try {
         if (session?.access_token) {
-          await rawJson(`${SUPABASE_URL}/auth/v1/logout`, {
+          await rawJson(`${SUPABASE_URL}/auth/v1/logout?scope=${encodeURIComponent(safeScope)}`, {
             method: 'POST',
             headers: {
               apikey: SUPABASE_PUBLISHABLE_KEY,
@@ -1497,7 +1524,9 @@ window.PKSK_FAMILY_ARCADE={mount,puzzle};
             },
           });
         }
-      } finally { clearSession(); }
+      } finally {
+        if (safeScope !== 'others') clearSession();
+      }
     },
     session: validSession,
     profile: async () => {
@@ -1867,7 +1896,15 @@ function shell(content, role = profile?.role) {
 }
 function bindLinks() { document.querySelectorAll('[data-link]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); go(a.getAttribute('href')); })); }
 function loading(text='Loading…') { root.innerHTML = `<main class="center"><div class="loader"></div><p>${escapeHtml(text)}</p></main>`; }
-function errorView(err) { root.innerHTML = `<main class="center"><div class="card error"><h2>Something went wrong</h2><p>${escapeHtml(err?.message || String(err))}</p><button class="btn primary" onclick="location.reload()">Try Again</button></div></main>`; }
+function errorView(err) {
+  if (err?.sessionEnded) {
+    clearSession();
+    root.innerHTML = `<main class="center"><div class="card error"><h2>Session ended</h2><p>${escapeHtml(err?.message || 'Your login session has ended. Please log in again.')}</p><button id="session-login-again" class="btn primary">Log In Again</button></div></main>`;
+    document.querySelector('#session-login-again')?.addEventListener('click', () => go('/'));
+    return;
+  }
+  root.innerHTML = `<main class="center"><div class="card error"><h2>Something went wrong</h2><p>${escapeHtml(err?.message || String(err))}</p><button class="btn primary" onclick="location.reload()">Try Again</button></div></main>`;
+}
 
 const IMAGE_TYPES = new Set(['image/jpeg','image/png','image/webp']);
 const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
@@ -1912,7 +1949,7 @@ async function requireProfile(role) {
   if (!session) { if (location.pathname !== '/') go('/'); return false; }
   profile = await auth.profile();
   document.body.dataset.role = profile?.role || '';
-  if (!profile?.is_active) { await auth.signOut(); throw new Error('This account is inactive. Please contact the administrator.'); }
+  if (!profile?.is_active) { await auth.signOut('global'); throw new Error('This account is inactive. Please contact the administrator.'); }
   await studentApi.touch().catch(() => {});
   if(isYoungerStudent(profile)){
     // Junior accounts do not call PKSK Quiz Hub. Load the avatar directly
