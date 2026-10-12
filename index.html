@@ -282,6 +282,14 @@ body[data-role="admin"] .page{padding-left:10px;padding-right:10px}
 .essay-text-preview{white-space:pre-wrap;line-height:1.75;padding:18px;border:1px solid var(--border);border-radius:14px;background:#fbfcfe;min-height:140px}
 .essay-pending{max-width:650px;margin:30px auto;text-align:center}.essay-pending .loader{margin:0 auto 16px;border-color:#ddd5f3;border-top-color:#6d45d6}
 .idea-burst-timer{font-weight:900;color:#6d45d6}
+.essay5-hero{background:linear-gradient(130deg,#fdf5ff,#eef7ff)}
+.essay5-plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:13px}
+.essay5-plan-item{background:#fcfaff;border:1px solid #e5dbf6;border-radius:14px;padding:15px}
+.essay5-plan-item textarea{margin-top:12px;width:100%;min-height:102px;resize:vertical}
+.essay5-hint{margin:8px 0 0}
+.essay5-writing{min-height:490px;resize:vertical;line-height:1.8}
+.essay5-locked{opacity:.58}
+.essay5-lesson h3{margin:10px 0 8px}
 @media(max-width:780px){.essay-hub-cta{grid-template-columns:1fr}.essay-editor-shell{grid-template-columns:1fr}.essay-editor-side{position:static}.essay-feedback-grid{grid-template-columns:1fr}.essay-score-hero{grid-template-columns:1fr;text-align:center}.essay-score-ring{margin:auto}.essay-breakdown-row{grid-template-columns:135px minmax(70px,1fr) 42px}.essay-task-grid{grid-template-columns:1fr}}
 </style>
 
@@ -2760,6 +2768,54 @@ async function studentDashboard() {
   }));
 }
 
+function essayStage5HomeMarkup(stage5){
+  const count=Number(stage5.attemptsCompleted||0);
+  const availableDifficulty=count===0?2:count===1?3:4;
+  const phase=count===0?'Lesson 1 · Full guidance':count===1?'Lesson 2 · Light guidance':'Lesson 3 · Write with less help';
+  const cards=(stage5.topics||[]).map(t=>{
+    const difficulty=Number(t.difficulty||2),locked=difficulty>availableDifficulty;
+    const done=Number(t.completedAttempts||0),active=t.inProgressAttemptId;
+    const mode=difficulty===2?'Full guide':difficulty===3?'Light guide':'Minimal hints';
+    return `<article class="essay-topic-card ${locked?'essay5-locked':''}">
+      <div><div class="essay-topic-meta"><span class="essay-chip blue">${escapeHtml(t.theme||'')}</span>
+      <span class="essay-chip">${escapeHtml(essayTaskTypeLabel(t.taskType))}</span>
+      <span class="essay-chip ${done?'green':'gold'}">${done?'Done '+done:mode}</span></div>
+      <h3>${escapeHtml(t.title)}</h3><p>${escapeHtml(t.prompt)}</p>
+      <div class="muted small" style="margin-top:10px">Best: ${t.bestScore==null?'—':Number(t.bestScore).toFixed(0)+'/100'}</div></div>
+      ${locked?`<button class="btn ghost" type="button" disabled>🔒 Unlock after ${difficulty===3?'1':'2'} completed ${difficulty===3?'essay':'essays'}</button>`
+        :active?`<a class="btn primary" href="/student/essay/attempt/${escapeHtml(active)}" data-link>Resume Draft ✍️</a>`
+        :`<button class="btn primary start-stage5" data-topic="${escapeHtml(t.id)}">Write Full Essay ✍️</button>`}
+    </article>`;
+  }).join('');
+  return `<section class="performance-section">
+    <div class="hub-section-head"><div><h2>Stage 5 · 📝 Guided Essay</h2>
+    <p class="muted">Plan five paragraphs, then write one complete PKSK essay in your own words (minimum 100 words).</p></div>
+    <div class="metric-inline"><span class="metric-chip">${count}/3 full essays</span>
+    <span class="metric-chip">Avg ${stage5.averageScore==null?'—':Number(stage5.averageScore).toFixed(0)}/100</span></div></div>
+    <div class="card essay5-lesson"><span class="essay-chip gold">${phase}</span>
+      <h3>From paragraph writing to a complete essay</h3>
+      <p class="muted">Pendahuluan → Isi 1 → Isi 2 → Isi 3 → Penutup. This is a new task — not the Stage 4 Paragraph Builder.</p>
+      <div class="tracking-note"><b>To master Step 5:</b> Complete 3 essays across 3 themes, average ≥75/100, and each of the latest 3 scores ≥70 overall, relevance and structure. Use your own writing — copied AI answers do not measure learning.</div>
+    </div><div class="essay-topic-grid">${cards||'<p>No Guided Essay topics available yet.</p>'}</div>
+  </section>`;
+}
+
+function essayStage5FeedbackMarkup(a){
+  const ev=a.feedback?.evaluation||{}, f=a.feedback||{};
+  const parts=Array.isArray(ev.paragraphAnalysis)?ev.paragraphAnalysis:[];
+  const titles={pendahuluan:'Pendahuluan',isi1:'Isi Pertama',isi2:'Isi Kedua',isi3:'Isi Ketiga',penutup:'Penutup'};
+  return `<section class="card"><h2>📝 Guided Essay Replay</h2>
+    <p class="muted">Feedback for each part of your full essay. Read this <b>after</b> submission, then use the guidance for your next topic.</p>
+    <div class="idea-feedback-list">${parts.map(x=>`<div class="idea-feedback-row relevant">
+      <b>${escapeHtml(titles[x.part]||x.part||'Section')}</b><p>${escapeHtml(x.assessment||'')}</p>
+      <p class="muted"><b>Improve:</b> ${escapeHtml(x.improved||'')}</p></div>`).join('')}</div>
+    <h3>Your submitted essay · ${Number(a.wordCount||0)} words</h3>
+    <div class="essay-text-preview">${escapeHtml(a.essayText||'')}</div>
+    <h3>Example improved essay</h3><p class="muted small">Model for learning only. Do not copy into a new submission.</p>
+    <div class="essay-text-preview">${escapeHtml(f.excellentText||'No model available.')}</div>
+  </section>`;
+}
+
 function essayTaskTypeLabel(code){
   return ({CARA:'Cara / Langkah / Usaha',FAEDAH:'Faedah / Kepentingan',KESAN:'Kesan / Keburukan',PUNCA:'Punca / Sebab / Faktor',TINDAKAN:'Tindakan Saya',CIRI:'Ciri / Nilai',NARATIF:'Pengalaman / Cerita',PENDIRIAN:'Pendapat / Pendirian',KBAT:'Cadangan / Inovasi'})[code]||code||'—';
 }
@@ -2798,7 +2854,7 @@ async function essayTrainingHome(){
   essayClearTimers();
   loading('Loading Essay Training…');
   const d=await studentApi.essayHome();
-  const p=d.profile||{}, baseline=d.baseline||{}, stage1=d.stage1||{}, stage2=d.stage2||{}, stage3=d.stage3||{}, stage4=d.stage4||{};
+  const p=d.profile||{}, baseline=d.baseline||{}, stage1=d.stage1||{}, stage2=d.stage2||{}, stage3=d.stage3||{}, stage4=d.stage4||{}, stage5=d.stage5||{};
   const ability=p.writingAbility==null?'—':Number(p.writingAbility).toFixed(0);
   const baselineScore=p.baselineScore==null?'—':(Number(p.baselineScore)/10).toFixed(1);
   const ideaScore=p.ideaScore==null?'—':Number(p.ideaScore).toFixed(0);
@@ -2814,6 +2870,8 @@ async function essayTrainingHome(){
       trainingBody=`<section class="performance-section"><div class="hub-section-head"><div><h2>Stage 0 · Writing Baseline</h2><p class="muted">Choose ONE unseen topic. No hints. 45 minutes. This establishes your real starting point.</p></div></div><div class="card"><div class="tracking-note">Write naturally. Do not use AI or model answers. You may submit below 100 words, but PKSK Pro will flag it.</div></div><div class="essay-topic-grid">${cards}</div></section>`;
     }
 
+  }else if(stage5.unlocked && Number(p.currentStage||0)>=5){
+    trainingBody=essayStage5HomeMarkup(stage5);
   }else if(stage4.unlocked && Number(p.currentStage||0)>=4){
     const cards=(stage4.topics||[]).map(t=>`<article class="essay-topic-card"><div><div class="essay-topic-meta"><span class="essay-chip blue">${escapeHtml(t.theme||'')}</span>${Number(t.completedAttempts||0)>0?`<span class="essay-chip green">Done ${Number(t.completedAttempts)}</span>`:''}</div><h3>${escapeHtml(t.title)}</h3><p>${escapeHtml(t.prompt)}</p><div class="muted small">Best: ${t.bestScore==null?'—':Number(t.bestScore).toFixed(0)+'/100'}</div></div><button class="btn primary start-stage4" data-topic="${escapeHtml(t.id)}">Build Paragraph ✍️</button></article>`).join('');
     trainingBody=`<section class="performance-section"><div class="hub-section-head"><div><h2>Stage 4 · ✍️ Paragraph Builder</h2><p class="muted">Isi → Huraian → Contoh → Penegasan. Bina satu perenggan lengkap.</p></div><div class="metric-inline"><span class="metric-chip">${Number(stage4.attemptsCompleted||0)}/5 paragraphs</span><span class="metric-chip">Avg ${stage4.averageScore==null?'—':Number(stage4.averageScore).toFixed(0)}/100</span></div></div><div class="card"><div class="tracking-note"><b>Mastery:</b> 5 paragraphs, average ≥75, latest 3 ≥70 overall, structure and relevance, across at least 3 themes.</div></div><div class="essay-topic-grid">${cards||'<p>Tiada latihan tersedia.</p>'}</div></section>`;
@@ -2836,8 +2894,8 @@ async function essayTrainingHome(){
 
   const recent=(d.recent||[]).length?(d.recent||[]).map(r=>`<a class="activity-row" href="/student/essay/attempt/${escapeHtml(r.attemptId)}" data-link><span class="activity-badge essay">ESSAY</span><div class="activity-main"><b>${escapeHtml(r.title)}</b><span>${escapeHtml(essayStageLabel(r.stage))} · ${date(r.createdAt)}</span></div><div class="activity-score">${r.score==null?escapeHtml(r.status||''):(Number(r.score)/10).toFixed(1)+'/10'}</div></a>`).join(''):'<div class="empty-playful">Your writing attempts will appear here.</div>';
 
-  const activeMetric=stage4.unlocked?Number(stage4.attemptsCompleted||0):stage3.unlocked?Number(stage3.attemptsCompleted||0):stage2.unlocked?Number(stage2.attemptsCompleted||0):Number(stage1.attemptsCompleted||0);
-  const activeLabel=stage4.unlocked?'Paragraphs Written':stage3.unlocked?'Language Drills':stage2.unlocked?'Ayat Power Drills':'Idea Builder Sessions';
+  const activeMetric=stage5.unlocked?Number(stage5.attemptsCompleted||0):stage4.unlocked?Number(stage4.attemptsCompleted||0):stage3.unlocked?Number(stage3.attemptsCompleted||0):stage2.unlocked?Number(stage2.attemptsCompleted||0):Number(stage1.attemptsCompleted||0);
+  const activeLabel=stage5.unlocked?'Full Essays Written':stage4.unlocked?'Paragraphs Written':stage3.unlocked?'Language Drills':stage2.unlocked?'Ayat Power Drills':'Idea Builder Sessions';
 
   shell(`<div class="page-head"><div><span class="eyebrow">Artikulasi Penulisan</span><h1>✍️ Essay Training</h1><p class="muted">Teach → Practise → Remove assistance → Test → Analyse → Personalise.</p></div><a class="btn ghost" href="/student" data-link>Back to Quiz Hub</a></div>
   <section class="essay-stats"><div class="essay-stat"><b>${ability}</b><span>Writing Ability /100</span></div><div class="essay-stat"><b>${baselineScore}</b><span>Baseline /10</span></div><div class="essay-stat"><b>${ideaScore}</b><span>Idea Builder /100</span></div><div class="essay-stat"><b>${ayatScore}</b><span>Ayat Power /100</span></div><div class="essay-stat"><b>${languageScore}</b><span>Language Use /100</span></div><div class="essay-stat"><b>${activeMetric}</b><span>${activeLabel}</span></div></section>
@@ -2861,6 +2919,11 @@ async function essayTrainingHome(){
     try{const r=await studentApi.startEssay(btn.dataset.topic,2,'guided');go(`/student/essay/attempt/${r.attemptId}`);}
     catch(error){alert(error.message||'Unable to start Ayat Power.');btn.disabled=false;}
   }));
+  document.querySelectorAll('.start-stage5').forEach(btn=>btn.addEventListener('click',async()=>{
+    btn.disabled=true;
+    try{const r=await studentApi.startEssay(btn.dataset.topic,5,'guided_essay');go(`/student/essay/attempt/${r.attemptId}`);}
+    catch(error){alert(error.message||'Unable to start Guided Essay.');btn.disabled=false;}
+  }));
   document.querySelectorAll('.start-stage4').forEach(btn=>btn.addEventListener('click',async()=>{
     btn.disabled=true;
     try{const r=await studentApi.startEssay(btn.dataset.topic,4,'guided');go(`/student/essay/attempt/${r.attemptId}`);}
@@ -2882,7 +2945,7 @@ async function essayRunEvaluation(attemptId,action){
 
 function essayPendingPage(a){
   const stage=Number(a.stage);
-  const action=stage===0?'evaluate_baseline':stage===1?'finalize_stage1':stage===2?'finalize_stage2':stage===3?'finalize_stage3':stage===4?'finalize_stage4':'';
+  const action=stage===0?'evaluate_baseline':stage===1?'finalize_stage1':stage===2?'finalize_stage2':stage===3?'finalize_stage3':stage===4?'finalize_stage4':stage===5?'finalize_stage5':'';
   const failed=a.status==='failed';
   shell(`<div class="page-head"><div><span class="eyebrow">${escapeHtml(essayStageLabel(a.stage))}</span><h1>${failed?'Evaluation needs another try':'Evaluation pending'}</h1><p class="muted">Your response is safely saved.</p></div><a class="btn ghost" href="/student/essay" data-link>Essay Training</a></div><section class="card essay-pending">${failed?'<div style="font-size:2.2rem">⚠️</div>':'<div class="loader"></div>'}<h2>${failed?'The AI marker did not finish.':'Continue the marking process'}</h2><p class="muted">${failed?'No work was lost. Retry below.':'If the page was refreshed during marking, continue below.'}</p><button class="btn primary" id="essay-retry-eval" ${action?'':'disabled'}>${failed?'Retry Evaluation':'Continue Evaluation'}</button></section>`);
   document.querySelector('#essay-retry-eval')?.addEventListener('click',()=>{if(action)essayRunEvaluation(a.attemptId,action);});
@@ -3200,13 +3263,117 @@ function essayStage4Editor(a){
   };
 }
 
+function essayStage5Editor(a){
+  const saved=a.responseData||{},initial=saved.essayPlan||{},task=a.topic?.exercise||{},hints=task.scaffold||{};
+  const difficulty=Number(a.topic?.difficulty||2);
+  const fields=[
+    ['pendahuluan','1 · Pendahuluan','Kenalkan tajuk dengan jelas.'],
+    ['isi1','2 · Isi pertama','Idea pertama: bagaimana / mengapa + contoh.'],
+    ['isi2','3 · Isi kedua','Idea kedua: berbeza daripada isi pertama.'],
+    ['isi3','4 · Isi ketiga','Idea ketiga: alasan dan contoh yang nyata.'],
+    ['penutup','5 · Penutup','Rumuskan mesej tanpa mengulang ayat sama.']
+  ];
+  const key=`pksk-essay-active-${a.attemptId}`;
+  let seconds=Math.max(Number(saved.activeSeconds||0),Number(sessionStorage.getItem(key)||0)||0);
+  let last=Date.now(),dirty=false,busy=false,saving=null;
+  markStudentInteraction();
+  const captureActive=()=>{
+    const now=Date.now(),delta=Math.max(0,Math.min(5,(now-last)/1000));
+    if(!document.hidden&&(now-lastStudentInteractionAt)<=60000)seconds+=delta;
+    last=now;
+    sessionStorage.setItem(key,String(Math.round(seconds)));
+    return Math.round(seconds);
+  };
+  const viewMode=difficulty===2?'Full guidance':difficulty===3?'Light guidance':'Minimal hints';
+  const cards=fields.map(([k,label,tip])=>{
+    const advice=difficulty===2?(hints[k]||tip):difficulty===3?tip:'';
+    return `<div class="essay5-plan-item">
+      <label for="essay5-${k}"><b>${escapeHtml(label)}</b><span class="muted small">${escapeHtml(tip)}</span></label>
+      ${advice?`<p class="muted small essay5-hint"><b>Petunjuk:</b> ${escapeHtml(advice)}</p>`:''}
+      <textarea id="essay5-${k}" maxlength="320" spellcheck="true" placeholder="Catat idea ringkas anda (bukan ayat untuk disalin)..." rows="3">${escapeHtml(initial[k]||'')}</textarea></div>`;
+  }).join('');
+  shell(`<div class="page-head"><div><span class="eyebrow">Stage 5 · Guided Essay</span>
+    <h1>📝 ${escapeHtml(a.topic?.title||'Karangan Lengkap')}</h1>
+    <p class="muted">Bina karangan lengkap, bukan satu perenggan. ${escapeHtml(viewMode)}.</p></div>
+    <button type="button" class="btn ghost" id="essay5-exit">Save & Exit</button></div>
+    <section class="card essay5-hero"><span class="essay-chip gold">${escapeHtml(viewMode)}</span>
+      <h2>${escapeHtml(a.topic?.prompt||'')}</h2><p class="muted"><b>Jenis soalan:</b> ${escapeHtml(essayTaskTypeLabel(a.topic?.taskType))}</p>
+      <p>${escapeHtml(task.focus||'Jawab tepat kehendak soalan dan bina tiga isi yang berbeza.')}</p>
+      ${a.topic?.taskType==='PUNCA'?'<div class="tracking-note">PUNCA bermaksud sebab sesuatu berlaku. Jangan menjawab dengan langkah penyelesaian.</div>':''}
+      <p class="muted small">45 minit ialah masa peperiksaan sebenar. Di peringkat latihan berpandu ini, gunakan masa untuk berfikir; Stage 6 nanti akan menguji penulisan tanpa bantuan.</p></section>
+    <section class="card"><h2>Step 1 · Rangka 5 perenggan</h2><p class="muted">Tulis nota ringkas menggunakan idea sendiri. Jangan salin petunjuk bulat-bulat.</p>
+      <div class="essay5-plan-grid">${cards}</div></section>
+    <section class="card"><div class="section-spread"><div><h2 style="margin:0">Step 2 · Karangan lengkap</h2>
+      <p class="muted small">Tulis pendahuluan, 3 perenggan isi dan penutup. Setiap isi perlu mempunyai huraian dan contoh.</p></div>
+      <div><b id="essay5-count" class="essay-word-count low">0 words</b></div></div>
+      <label for="essay5-final"><b>Karangan saya (100–450 patah perkataan)</b></label>
+      <textarea id="essay5-final" class="essay-writing-box essay5-writing" maxlength="4000" spellcheck="true"
+        placeholder="Mulakan pendahuluan...&#10;&#10;Isi pertama...&#10;&#10;Isi kedua...&#10;&#10;Isi ketiga...&#10;&#10;Kesimpulannya,...">${escapeHtml(a.essayText||'')}</textarea>
+      <p class="muted small">Beri jarak baris antara perenggan. Jawapan hendaklah hasil penulisan sendiri, tanpa salin jawapan AI.</p>
+      <div class="essay-actions"><button type="button" class="btn ghost" id="essay5-save">Save Draft</button>
+      <button type="button" class="btn primary" id="essay5-submit">Submit Full Essay for AI Feedback</button></div>
+      <div class="essay-save-state" id="essay5-message" role="status" aria-live="polite"></div></section>`);
+  const final=document.querySelector('#essay5-final');
+  const msg=document.querySelector('#essay5-message'),counter=document.querySelector('#essay5-count');
+  const plans=()=>Object.fromEntries(fields.map(([k])=>[k,document.querySelector('#essay5-'+k).value.trim()]));
+  const data=()=>({...saved,essayPlan:plans(),activeSeconds:captureActive(),activeTimeBasis:'active_v1',guidanceLevel:difficulty});
+  const updateCount=()=>{
+    const n=essayWordCount(final.value);
+    counter.textContent=`${n} words`;
+    counter.className=`essay-word-count ${n>=100&&n<=450?'good':'low'}`;
+  };
+  const markDirty=()=>{dirty=true;markStudentInteraction();msg.textContent='Unsaved changes';updateCount();};
+  document.querySelectorAll('.essay5-plan-item textarea').forEach(el=>el.addEventListener('input',markDirty));
+  final.addEventListener('input',markDirty);updateCount();
+  essayActiveTimer=setInterval(captureActive,1000);
+  const save=(silent=false)=>{
+    if(busy)return Promise.resolve(false);
+    if(saving)return saving;
+    const text=final.value,body=data(),signature=JSON.stringify(body.essayPlan);
+    if(!silent)msg.textContent='Saving draft…';
+    saving=studentApi.saveEssay(a.attemptId,text,body).then(()=>{
+      if(text===final.value&&signature===JSON.stringify(plans()))dirty=false;
+      msg.textContent='Draft saved';return true;
+    }).catch(error=>{msg.textContent=error.message||'Save failed, retry.';return false;})
+    .finally(()=>{saving=null;});
+    return saving;
+  };
+  essayAutosaveTimer=setInterval(()=>{if(dirty&&!busy)save(true);},12000);
+  document.querySelector('#essay5-save').onclick=()=>save(false);
+  document.querySelector('#essay5-exit').onclick=async()=>{
+    if(busy)return;
+    if(saving)await saving;
+    const ok=await save(false);
+    if(ok){essayClearTimers();go('/student/essay');}
+    else msg.textContent='Save failed. Please try again before leaving.';
+  };
+  document.querySelector('#essay5-submit').onclick=async()=>{
+    if(busy)return;
+    if(Object.values(plans()).some(s=>!s)){msg.textContent='Lengkapkan rangka pendahuluan, tiga isi dan penutup.';return;}
+    const n=essayWordCount(final.value);
+    if(n<100){msg.textContent=`Hanya ${n} perkataan — minimum 100 patah perkataan.`;return;}
+    if(n>450){msg.textContent='Karangan perlu 450 patah perkataan atau kurang.';return;}
+    if(!confirm('Hantar karangan lengkap untuk penilaian? Anda tidak boleh mengubahnya selepas dihantar.'))return;
+    const button=document.querySelector('#essay5-submit');button.disabled=true;busy=true;essayClearTimers();
+    try{
+      if(saving)await saving;
+      const body=data();
+      await studentApi.saveEssay(a.attemptId,final.value,body);
+      await studentApi.submitEssay(a.attemptId,final.value,body);
+      await essayRunEvaluation(a.attemptId,'finalize_stage5');
+    }catch(error){alert(error.message||'Unable to submit Guided Essay. Your draft was saved.');await essayAttemptPage(a.attemptId);}
+  };
+}
+
 function essayAttemptResultPage(a){
   const stage=Number(a.stage);
-  const baseline=stage===0,stage1=stage===1,stage2=stage===2,stage3=stage===3,stage4=stage===4;
-  if(stage1||stage2||stage3||stage4)sessionStorage.removeItem(`pksk-essay-active-${a.attemptId}`);
+  const baseline=stage===0,stage1=stage===1,stage2=stage===2,stage3=stage===3,stage4=stage===4,stage5=stage===5;
+  if(stage1||stage2||stage3||stage4||stage5)sessionStorage.removeItem(`pksk-essay-active-${a.attemptId}`);
   const s=a.scores||{},f=a.feedback||{},total=Number(a.scoreTotal??s.totalScore??0);
   const strengths=Array.isArray(f.strengths)?f.strengths:[],improvements=Array.isArray(f.improvements)?f.improvements:[],ev=f.evaluation||{};
-  const breakdown=stage4
+  const breakdown=stage5
+    ? [essayScoreRow('Relevance to Question',s.relevance),essayScoreRow('Idea Development',s.development),essayScoreRow('Full Essay Structure',s.structure),essayScoreRow('Grammar',s.grammar),essayScoreRow('Vocabulary',s.vocabulary),essayScoreRow('Coherence',s.sentenceMaturity),essayScoreRow('Quality of Examples',s.exampleQuality)].join('')
+    : stage4
     ? [essayScoreRow('Relevance',s.relevance),essayScoreRow('Idea Development',s.development),essayScoreRow('Paragraph Structure',s.structure),essayScoreRow('Grammar',s.grammar),essayScoreRow('Coherence',s.sentenceMaturity)].join('')
     : baseline
     ? [essayScoreRow('Kehendak & Relevance',s.relevance),essayScoreRow('Isi & Huraian',s.development),essayScoreRow('Structure',s.structure),essayScoreRow('Grammar',s.grammar),essayScoreRow('Vocabulary',s.vocabulary),essayScoreRow('Sentence Maturity',s.sentenceMaturity),essayScoreRow('Peribahasa / Style',s.languageEnrichment),essayScoreRow('Exam Control',s.examControl)].join('')
@@ -3226,14 +3393,15 @@ function essayAttemptResultPage(a){
     return `<div class="idea-feedback-row ${tone}"><div class="essay-topic-meta"><span class="essay-chip">Task ${i+1}</span><span class="essay-chip blue">${escapeHtml(item.skill||x.skill||'Language Use')}</span><span class="essay-chip">${escapeHtml(x.verdict||'review')}</span></div><p><b>Your answer:</b> ${escapeHtml(item.answer||'')}</p><div class="muted small" style="margin:7px 0">${escapeHtml(x.assessment||'')}</div><p style="margin-bottom:0"><b>Better / model response:</b> ${escapeHtml(x.improved||'')}</p></div>`;
   }).join('')||'<div class="admin-essay-empty">Language analysis is unavailable.</div>'}</div></section>`:'';
   const paragraphAnalysis=stage4?`<section class="card"><h2>Paragraph Replay</h2><p class="muted">Analisis untuk setiap bahagian.</p><div class="idea-feedback-list">${(Array.isArray(ev.partAnalysis)?ev.partAnalysis:[]).map(x=>`<div class="idea-feedback-row relevant"><b>${escapeHtml((x.part||'').toUpperCase())}</b><p>${escapeHtml(x.assessment||'')}</p><p class="muted"><b>Cadangan:</b> ${escapeHtml(x.improved||'')}</p></div>`).join('')}</div><h3>Perenggan asal</h3><div class="essay-text-preview">${escapeHtml(a.essayText||'')}</div><h3>Contoh perenggan lebih kuat</h3><div class="essay-text-preview">${escapeHtml(f.excellentText||'')}</div></section>`:'';
+  const guidedAnalysis=stage5?essayStage5FeedbackMarkup(a):'';
   const replay=baseline?`<section class="card"><h2>Essay Replay</h2><p class="muted">Original → correction-only → strong version using the same core ideas.</p><div class="essay-replay-tabs"><button class="btn ghost essay-replay-tab active" data-replay="original">Original</button><button class="btn ghost essay-replay-tab" data-replay="corrected">Corrected</button><button class="btn ghost essay-replay-tab" data-replay="excellent">Excellent Version</button></div><div id="essay-replay-text" class="essay-text-preview">${escapeHtml(a.essayText||'')}</div></section>`:'';
-  const label=baseline?'Writing Baseline':stage4?'Paragraph Builder':stage2?'Ayat Power':stage3?'Peribahasa & Vocabulary':'Idea Builder';
-  const nextText=baseline?'Continue to Stage 1':stage4?'Choose Next Paragraph':stage2?'Choose Next Ayat Power':stage3?'Choose Next Language Drill':'Choose Next Idea Builder';
+  const label=baseline?'Writing Baseline':stage5?'Guided Essay':stage4?'Paragraph Builder':stage2?'Ayat Power':stage3?'Peribahasa & Vocabulary':'Idea Builder';
+  const nextText=baseline?'Continue to Stage 1':stage5?'Choose Next Full Essay':stage4?'Choose Next Paragraph':stage2?'Choose Next Ayat Power':stage3?'Choose Next Language Drill':'Choose Next Idea Builder';
   shell(`<div class="page-head"><div><span class="eyebrow">${escapeHtml(essayStageLabel(a.stage))} · Result</span><h1>${escapeHtml(a.topic.title)}</h1><p class="muted">PKSK Pro Training Score — not an official PKSK mark.</p></div><a class="btn ghost" href="/student/essay" data-link>Essay Training</a></div>
   <section class="essay-score-hero"><div class="essay-score-ring"><div><b>${(total/10).toFixed(1)}</b><span>/ 10</span></div></div><div><span class="eyebrow">${label}</span><h2 style="margin:.3rem 0">${total.toFixed(0)} / 100</h2><p class="muted" style="margin:0">${escapeHtml(ev.summary||ev.taskUnderstanding||'Your work has been analysed against the PKSK Pro training rubric.')}</p></div></section>
   <section class="card"><h2>Score Breakdown</h2><div class="essay-breakdown">${breakdown}</div></section>
   <section class="essay-feedback-grid"><div class="essay-feedback-box"><h3>✅ What you did well</h3><ul>${strengths.length?strengths.map(x=>`<li>${escapeHtml(x)}</li>`).join(''):'<li>Keep practising consistently.</li>'}</ul></div><div class="essay-feedback-box"><h3>🎯 Focus next</h3><ul>${improvements.length?improvements.map(x=>`<li>${escapeHtml(x)}</li>`).join(''):'<li>Maintain this standard in the next exercise.</li>'}</ul></div></section>
-  ${stage1Details}${stage2Details}${stage3Details}${paragraphAnalysis}${replay}<div class="essay-actions" style="margin-top:18px"><a class="btn primary" href="/student/essay" data-link>${nextText}</a></div>`);
+  ${stage1Details}${stage2Details}${stage3Details}${paragraphAnalysis}${guidedAnalysis}${replay}<div class="essay-actions" style="margin-top:18px"><a class="btn primary" href="/student/essay" data-link>${nextText}</a></div>`);
   if(baseline){
     const map={original:a.essayText||'',corrected:f.correctedText||'',excellent:f.excellentText||''};
     document.querySelectorAll('.essay-replay-tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.essay-replay-tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.querySelector('#essay-replay-text').textContent=map[btn.dataset.replay]||'';}));
@@ -3252,6 +3420,7 @@ async function essayAttemptPage(attemptId){
   if(Number(a.stage)===2)return essayStage2Editor(a);
   if(Number(a.stage)===3)return essayStage3Editor(a);
   if(Number(a.stage)===4)return essayStage4Editor(a);
+  if(Number(a.stage)===5)return essayStage5Editor(a);
   throw new Error('This Essay Training stage is not available yet.');
 }
 
