@@ -3295,7 +3295,7 @@ function essayStage5Editor(a){
   shell(`<div class="page-head"><div><span class="eyebrow">Stage 5 · Guided Essay</span>
     <h1>📝 ${escapeHtml(a.topic?.title||'Karangan Lengkap')}</h1>
     <p class="muted">Bina karangan lengkap, bukan satu perenggan. ${escapeHtml(viewMode)}.</p></div>
-    <a class="btn ghost" href="/student/essay" data-link>Exit & Save</a></div>
+    <button type="button" class="btn ghost" id="essay5-exit">Save & Exit</button></div>
     <section class="card essay5-hero"><span class="essay-chip gold">${escapeHtml(viewMode)}</span>
       <h2>${escapeHtml(a.topic?.prompt||'')}</h2><p class="muted"><b>Jenis soalan:</b> ${escapeHtml(essayTaskTypeLabel(a.topic?.taskType))}</p>
       <p>${escapeHtml(task.focus||'Jawab tepat kehendak soalan dan bina tiga isi yang berbeza.')}</p>
@@ -3340,6 +3340,13 @@ function essayStage5Editor(a){
   };
   essayAutosaveTimer=setInterval(()=>{if(dirty&&!busy)save(true);},12000);
   document.querySelector('#essay5-save').onclick=()=>save(false);
+  document.querySelector('#essay5-exit').onclick=async()=>{
+    if(busy)return;
+    if(saving)await saving;
+    const ok=await save(false);
+    if(ok){essayClearTimers();go('/student/essay');}
+    else msg.textContent='Save failed. Please try again before leaving.';
+  };
   document.querySelector('#essay5-submit').onclick=async()=>{
     if(busy)return;
     if(Object.values(plans()).some(s=>!s)){msg.textContent='Lengkapkan rangka pendahuluan, tiga isi dan penutup.';return;}
