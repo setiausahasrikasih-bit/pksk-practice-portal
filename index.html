@@ -2761,7 +2761,7 @@ async function studentDashboard() {
 }
 
 function essayTaskTypeLabel(code){
-  return ({CARA:'Cara / Langkah / Usaha',FAEDAH:'Faedah / Kepentingan',KESAN:'Kesan / Keburukan',TINDAKAN:'Tindakan Saya',CIRI:'Ciri / Nilai',NARATIF:'Pengalaman / Cerita',PENDIRIAN:'Pendapat / Pendirian',KBAT:'Cadangan / Inovasi'})[code]||code||'—';
+  return ({CARA:'Cara / Langkah / Usaha',FAEDAH:'Faedah / Kepentingan',KESAN:'Kesan / Keburukan',PUNCA:'Punca / Sebab / Faktor',TINDAKAN:'Tindakan Saya',CIRI:'Ciri / Nilai',NARATIF:'Pengalaman / Cerita',PENDIRIAN:'Pendapat / Pendirian',KBAT:'Cadangan / Inovasi'})[code]||code||'—';
 }
 function essayStageLabel(stage){
   return ['Writing Baseline','Idea Builder','Ayat Power','Peribahasa & Vocabulary','Paragraph Builder','Guided Essay','Independent Essay','PKSK Simulation','Personalised Essay Training'][Number(stage)]||`Stage ${stage}`;
@@ -2936,7 +2936,7 @@ function essayStage1Editor(a){
   };
   essayActiveTimer=setInterval(captureActive,1000);
   if(!ideaCheck){
-    const taskTypes=['CARA','FAEDAH','KESAN','TINDAKAN','CIRI','NARATIF','PENDIRIAN','KBAT'];
+    const taskTypes=['CARA','FAEDAH','KESAN','PUNCA','TINDAKAN','CIRI','NARATIF','PENDIRIAN','KBAT'];
     const ideas=Array.isArray(data.ideas)?data.ideas:[];
     shell(`<div class="page-head"><div><span class="eyebrow">Stage 1 \u00b7 Idea Builder</span><h1>${escapeHtml(a.topic.title)}</h1><p class="muted">Step 1: Faham soalan \u00b7 Step 2: Idea Burst</p></div><a class="btn ghost" href="/student/essay" data-link>Back</a></div>
     <section class="card"><div class="essay-prompt">${escapeHtml(a.topic.prompt)}</div><h3 style="margin-top:22px">1. Soalan ini sebenarnya minta apa?</h3><div class="essay-task-grid">${taskTypes.map(code=>`<label class="essay-task-option"><input type="radio" name="essay-task-type" value="${code}" ${data.taskTypeChoice===code?'checked':''}><span>${escapeHtml(essayTaskTypeLabel(code))}</span></label>`).join('')}</div><div class="section-spread"><div><h3 style="margin-bottom:4px">2. Idea Burst</h3><p class="muted small">Berikan sekurang-kurangnya 3 idea. Jangan risau tentang ayat cantik dahulu.</p></div><div>\u23f1 <span id="idea-burst-timer" class="idea-burst-timer">01:30</span></div></div><div class="idea-inputs">${[0,1,2,3,4].map(i=>`<input class="idea-entry" maxlength="180" placeholder="Idea ${i+1}" value="${escapeHtml(ideas[i]||'')}">`).join('')}</div><div class="essay-actions"><button class="btn primary" id="check-ideas">Check My Ideas</button></div><div id="idea-check-msg" class="essay-save-state"></div></section>`);
@@ -3162,7 +3162,7 @@ function essayStage4Editor(a){
   const start=Date.now(),prior=Math.max(0,Number(saved.activeSeconds||0));let busy=false;
   const cards=fields.map(([key,title,desc])=>`<div class="card" style="margin:0;padding:16px;background:#fbfaff"><label for="essay4-${key}"><b>${escapeHtml(title)}</b><span class="muted small">${escapeHtml(desc)}</span></label><p class="muted small" style="margin:8px 0"><b>Petunjuk:</b> ${escapeHtml(hints[key]||'Fokus pada soalan.')}</p><textarea id="essay4-${key}" class="essay-writing-box" style="min-height:100px" placeholder="Tulis dengan perkataan sendiri…">${escapeHtml(initial[key]||'')}</textarea></div>`).join('');
   shell(`<div class="page-head"><div><span class="eyebrow">Stage 4 · Paragraph Builder</span><h1>✍️ ${escapeHtml(a.topic?.title||'Paragraph Builder')}</h1><p class="muted">Satu perenggan lengkap dan lancar.</p></div><a class="btn ghost" href="/student/essay" data-link>Exit & Save</a></div>
-  <section class="card" style="background:linear-gradient(125deg,#faf0ff,#f0f9ff)"><span class="eyebrow">Tugasan</span><h2>${escapeHtml(a.topic?.prompt||'')}</h2><p><b>Idea asas:</b> ${escapeHtml(task.coreIdea||'Fokus pada satu isi utama.')}</p><p class="muted small">Petunjuk bukan jawapan untuk disalin. Gunakan bahasa sendiri.</p></section>
+  <section class="card" style="background:linear-gradient(125deg,#faf0ff,#f0f9ff)"><span class="eyebrow">Tugasan</span><h2>${escapeHtml(a.topic?.prompt||'')}</h2><p><b>Idea asas:</b> ${escapeHtml(task.coreIdea||'Fokus pada satu isi utama.')}</p><p class="muted small">Petunjuk bukan jawapan untuk disalin. Gunakan bahasa sendiri.</p>${a.topic?.taskType==='PUNCA'?'<div class="tracking-note"><b>Ingat:</b> PUNCA = mengapa sesuatu berlaku. Terangkan SEBAB dan contoh. Jangan jawab dengan langkah mengatasi masalah.</div>':''}</section>
   <h2>Langkah 1 · Bina empat bahagian</h2><div class="essay-topic-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-bottom:20px">${cards}</div>
   <section class="card"><h2>Langkah 2 · Gabungkan dan lancarkan</h2><p class="muted">Gabungkan bahagian, tambah kata penghubung, dan buang pengulangan. Sasaran 60–110 patah perkataan.</p>
   <button type="button" class="btn ghost" id="essay4-combine">🔗 Gabungkan Ayat</button>
