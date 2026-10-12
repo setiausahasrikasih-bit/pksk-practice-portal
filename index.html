@@ -2798,7 +2798,7 @@ async function essayTrainingHome(){
   essayClearTimers();
   loading('Loading Essay Training…');
   const d=await studentApi.essayHome();
-  const p=d.profile||{}, baseline=d.baseline||{}, stage1=d.stage1||{}, stage2=d.stage2||{}, stage3=d.stage3||{};
+  const p=d.profile||{}, baseline=d.baseline||{}, stage1=d.stage1||{}, stage2=d.stage2||{}, stage3=d.stage3||{}, stage4=d.stage4||{};
   const ability=p.writingAbility==null?'—':Number(p.writingAbility).toFixed(0);
   const baselineScore=p.baselineScore==null?'—':(Number(p.baselineScore)/10).toFixed(1);
   const ideaScore=p.ideaScore==null?'—':Number(p.ideaScore).toFixed(0);
@@ -2813,6 +2813,10 @@ async function essayTrainingHome(){
       const cards=(baseline.topics||[]).map(t=>`<article class="essay-topic-card"><div><div class="essay-topic-meta"><span class="essay-chip">${escapeHtml(essayTaskTypeLabel(t.taskType))}</span><span class="essay-chip blue">${escapeHtml(t.theme||'')}</span></div><h3>${escapeHtml(t.title)}</h3><p>${escapeHtml(t.prompt)}</p></div><button class="btn primary start-baseline" data-topic="${escapeHtml(t.id)}">Choose This Topic</button></article>`).join('');
       trainingBody=`<section class="performance-section"><div class="hub-section-head"><div><h2>Stage 0 · Writing Baseline</h2><p class="muted">Choose ONE unseen topic. No hints. 45 minutes. This establishes your real starting point.</p></div></div><div class="card"><div class="tracking-note">Write naturally. Do not use AI or model answers. You may submit below 100 words, but PKSK Pro will flag it.</div></div><div class="essay-topic-grid">${cards}</div></section>`;
     }
+
+  }else if(stage4.unlocked && Number(p.currentStage||0)>=4){
+    const cards=(stage4.topics||[]).map(t=>`<article class="essay-topic-card"><div><div class="essay-topic-meta"><span class="essay-chip blue">${escapeHtml(t.theme||'')}</span>${Number(t.completedAttempts||0)>0?`<span class="essay-chip green">Done ${Number(t.completedAttempts)}</span>`:''}</div><h3>${escapeHtml(t.title)}</h3><p>${escapeHtml(t.prompt)}</p><div class="muted small">Best: ${t.bestScore==null?'—':Number(t.bestScore).toFixed(0)+'/100'}</div></div><button class="btn primary start-stage4" data-topic="${escapeHtml(t.id)}">Build Paragraph ✍️</button></article>`).join('');
+    trainingBody=`<section class="performance-section"><div class="hub-section-head"><div><h2>Stage 4 · ✍️ Paragraph Builder</h2><p class="muted">Isi → Huraian → Contoh → Penegasan. Bina satu perenggan lengkap.</p></div><div class="metric-inline"><span class="metric-chip">${Number(stage4.attemptsCompleted||0)}/5 paragraphs</span><span class="metric-chip">Avg ${stage4.averageScore==null?'—':Number(stage4.averageScore).toFixed(0)}/100</span></div></div><div class="card"><div class="tracking-note"><b>Mastery:</b> 5 paragraphs, average ≥75, latest 3 ≥70 overall, structure and relevance, across at least 3 themes.</div></div><div class="essay-topic-grid">${cards||'<p>Tiada latihan tersedia.</p>'}</div></section>`;
   }else if(stage3.unlocked && Number(p.currentStage||0)>=3){
     const cards=(stage3.topics||[]).map(t=>{
       const tasks=Array.isArray(t.exercise?.languageTasks)?t.exercise.languageTasks:[];
@@ -2832,8 +2836,8 @@ async function essayTrainingHome(){
 
   const recent=(d.recent||[]).length?(d.recent||[]).map(r=>`<a class="activity-row" href="/student/essay/attempt/${escapeHtml(r.attemptId)}" data-link><span class="activity-badge essay">ESSAY</span><div class="activity-main"><b>${escapeHtml(r.title)}</b><span>${escapeHtml(essayStageLabel(r.stage))} · ${date(r.createdAt)}</span></div><div class="activity-score">${r.score==null?escapeHtml(r.status||''):(Number(r.score)/10).toFixed(1)+'/10'}</div></a>`).join(''):'<div class="empty-playful">Your writing attempts will appear here.</div>';
 
-  const activeMetric=stage3.unlocked?Number(stage3.attemptsCompleted||0):stage2.unlocked?Number(stage2.attemptsCompleted||0):Number(stage1.attemptsCompleted||0);
-  const activeLabel=stage3.unlocked?'Language Drills':stage2.unlocked?'Ayat Power Drills':'Idea Builder Sessions';
+  const activeMetric=stage4.unlocked?Number(stage4.attemptsCompleted||0):stage3.unlocked?Number(stage3.attemptsCompleted||0):stage2.unlocked?Number(stage2.attemptsCompleted||0):Number(stage1.attemptsCompleted||0);
+  const activeLabel=stage4.unlocked?'Paragraphs Written':stage3.unlocked?'Language Drills':stage2.unlocked?'Ayat Power Drills':'Idea Builder Sessions';
 
   shell(`<div class="page-head"><div><span class="eyebrow">Artikulasi Penulisan</span><h1>✍️ Essay Training</h1><p class="muted">Teach → Practise → Remove assistance → Test → Analyse → Personalise.</p></div><a class="btn ghost" href="/student" data-link>Back to Quiz Hub</a></div>
   <section class="essay-stats"><div class="essay-stat"><b>${ability}</b><span>Writing Ability /100</span></div><div class="essay-stat"><b>${baselineScore}</b><span>Baseline /10</span></div><div class="essay-stat"><b>${ideaScore}</b><span>Idea Builder /100</span></div><div class="essay-stat"><b>${ayatScore}</b><span>Ayat Power /100</span></div><div class="essay-stat"><b>${languageScore}</b><span>Language Use /100</span></div><div class="essay-stat"><b>${activeMetric}</b><span>${activeLabel}</span></div></section>
@@ -2857,6 +2861,11 @@ async function essayTrainingHome(){
     try{const r=await studentApi.startEssay(btn.dataset.topic,2,'guided');go(`/student/essay/attempt/${r.attemptId}`);}
     catch(error){alert(error.message||'Unable to start Ayat Power.');btn.disabled=false;}
   }));
+  document.querySelectorAll('.start-stage4').forEach(btn=>btn.addEventListener('click',async()=>{
+    btn.disabled=true;
+    try{const r=await studentApi.startEssay(btn.dataset.topic,4,'guided');go(`/student/essay/attempt/${r.attemptId}`);}
+    catch(error){alert(error.message||'Unable to start Paragraph Builder.');btn.disabled=false;}
+  }));
   document.querySelectorAll('.start-stage3').forEach(btn=>btn.addEventListener('click',async()=>{
     btn.disabled=true;
     try{const r=await studentApi.startEssay(btn.dataset.topic,3,'guided');go(`/student/essay/attempt/${r.attemptId}`);}
@@ -2873,7 +2882,7 @@ async function essayRunEvaluation(attemptId,action){
 
 function essayPendingPage(a){
   const stage=Number(a.stage);
-  const action=stage===0?'evaluate_baseline':stage===1?'finalize_stage1':stage===2?'finalize_stage2':stage===3?'finalize_stage3':'';
+  const action=stage===0?'evaluate_baseline':stage===1?'finalize_stage1':stage===2?'finalize_stage2':stage===3?'finalize_stage3':stage===4?'finalize_stage4':'';
   const failed=a.status==='failed';
   shell(`<div class="page-head"><div><span class="eyebrow">${escapeHtml(essayStageLabel(a.stage))}</span><h1>${failed?'Evaluation needs another try':'Evaluation pending'}</h1><p class="muted">Your response is safely saved.</p></div><a class="btn ghost" href="/student/essay" data-link>Essay Training</a></div><section class="card essay-pending">${failed?'<div style="font-size:2.2rem">⚠️</div>':'<div class="loader"></div>'}<h2>${failed?'The AI marker did not finish.':'Continue the marking process'}</h2><p class="muted">${failed?'No work was lost. Retry below.':'If the page was refreshed during marking, continue below.'}</p><button class="btn primary" id="essay-retry-eval" ${action?'':'disabled'}>${failed?'Retry Evaluation':'Continue Evaluation'}</button></section>`);
   document.querySelector('#essay-retry-eval')?.addEventListener('click',()=>{if(action)essayRunEvaluation(a.attemptId,action);});
