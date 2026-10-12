@@ -3202,11 +3202,13 @@ function essayStage4Editor(a){
 
 function essayAttemptResultPage(a){
   const stage=Number(a.stage);
-  const baseline=stage===0,stage1=stage===1,stage2=stage===2,stage3=stage===3;
-  if(stage1||stage2||stage3)sessionStorage.removeItem(`pksk-essay-active-${a.attemptId}`);
+  const baseline=stage===0,stage1=stage===1,stage2=stage===2,stage3=stage===3,stage4=stage===4;
+  if(stage1||stage2||stage3||stage4)sessionStorage.removeItem(`pksk-essay-active-${a.attemptId}`);
   const s=a.scores||{},f=a.feedback||{},total=Number(a.scoreTotal??s.totalScore??0);
   const strengths=Array.isArray(f.strengths)?f.strengths:[],improvements=Array.isArray(f.improvements)?f.improvements:[],ev=f.evaluation||{};
-  const breakdown=baseline
+  const breakdown=stage4
+    ? [essayScoreRow('Relevance',s.relevance),essayScoreRow('Idea Development',s.development),essayScoreRow('Paragraph Structure',s.structure),essayScoreRow('Grammar',s.grammar),essayScoreRow('Coherence',s.sentenceMaturity)].join('')
+    : baseline
     ? [essayScoreRow('Kehendak & Relevance',s.relevance),essayScoreRow('Isi & Huraian',s.development),essayScoreRow('Structure',s.structure),essayScoreRow('Grammar',s.grammar),essayScoreRow('Vocabulary',s.vocabulary),essayScoreRow('Sentence Maturity',s.sentenceMaturity),essayScoreRow('Peribahasa / Style',s.languageEnrichment),essayScoreRow('Exam Control',s.examControl)].join('')
     : stage2
       ? [essayScoreRow('Meaning Preservation',s.relevance),essayScoreRow('Grammar',s.grammar),essayScoreRow('Sentence Maturity',s.sentenceMaturity),essayScoreRow('Word Precision',s.vocabulary)].join('')
@@ -3223,14 +3225,15 @@ function essayAttemptResultPage(a){
     const tone=x.verdict==='strong'?'strong':x.verdict==='incorrect'?'needs_work':'relevant';
     return `<div class="idea-feedback-row ${tone}"><div class="essay-topic-meta"><span class="essay-chip">Task ${i+1}</span><span class="essay-chip blue">${escapeHtml(item.skill||x.skill||'Language Use')}</span><span class="essay-chip">${escapeHtml(x.verdict||'review')}</span></div><p><b>Your answer:</b> ${escapeHtml(item.answer||'')}</p><div class="muted small" style="margin:7px 0">${escapeHtml(x.assessment||'')}</div><p style="margin-bottom:0"><b>Better / model response:</b> ${escapeHtml(x.improved||'')}</p></div>`;
   }).join('')||'<div class="admin-essay-empty">Language analysis is unavailable.</div>'}</div></section>`:'';
+  const paragraphAnalysis=stage4?`<section class="card"><h2>Paragraph Replay</h2><p class="muted">Analisis untuk setiap bahagian.</p><div class="idea-feedback-list">${(Array.isArray(ev.partAnalysis)?ev.partAnalysis:[]).map(x=>`<div class="idea-feedback-row relevant"><b>${escapeHtml((x.part||'').toUpperCase())}</b><p>${escapeHtml(x.assessment||'')}</p><p class="muted"><b>Cadangan:</b> ${escapeHtml(x.improved||'')}</p></div>`).join('')}</div><h3>Perenggan asal</h3><div class="essay-text-preview">${escapeHtml(a.essayText||'')}</div><h3>Contoh perenggan lebih kuat</h3><div class="essay-text-preview">${escapeHtml(f.excellentText||'')}</div></section>`:'';
   const replay=baseline?`<section class="card"><h2>Essay Replay</h2><p class="muted">Original → correction-only → strong version using the same core ideas.</p><div class="essay-replay-tabs"><button class="btn ghost essay-replay-tab active" data-replay="original">Original</button><button class="btn ghost essay-replay-tab" data-replay="corrected">Corrected</button><button class="btn ghost essay-replay-tab" data-replay="excellent">Excellent Version</button></div><div id="essay-replay-text" class="essay-text-preview">${escapeHtml(a.essayText||'')}</div></section>`:'';
-  const label=baseline?'Writing Baseline':stage2?'Ayat Power':stage3?'Peribahasa & Vocabulary':'Idea Builder';
-  const nextText=baseline?'Continue to Stage 1':stage2?'Choose Next Ayat Power':stage3?'Choose Next Language Drill':'Choose Next Idea Builder';
+  const label=baseline?'Writing Baseline':stage4?'Paragraph Builder':stage2?'Ayat Power':stage3?'Peribahasa & Vocabulary':'Idea Builder';
+  const nextText=baseline?'Continue to Stage 1':stage4?'Choose Next Paragraph':stage2?'Choose Next Ayat Power':stage3?'Choose Next Language Drill':'Choose Next Idea Builder';
   shell(`<div class="page-head"><div><span class="eyebrow">${escapeHtml(essayStageLabel(a.stage))} · Result</span><h1>${escapeHtml(a.topic.title)}</h1><p class="muted">PKSK Pro Training Score — not an official PKSK mark.</p></div><a class="btn ghost" href="/student/essay" data-link>Essay Training</a></div>
   <section class="essay-score-hero"><div class="essay-score-ring"><div><b>${(total/10).toFixed(1)}</b><span>/ 10</span></div></div><div><span class="eyebrow">${label}</span><h2 style="margin:.3rem 0">${total.toFixed(0)} / 100</h2><p class="muted" style="margin:0">${escapeHtml(ev.summary||ev.taskUnderstanding||'Your work has been analysed against the PKSK Pro training rubric.')}</p></div></section>
   <section class="card"><h2>Score Breakdown</h2><div class="essay-breakdown">${breakdown}</div></section>
   <section class="essay-feedback-grid"><div class="essay-feedback-box"><h3>✅ What you did well</h3><ul>${strengths.length?strengths.map(x=>`<li>${escapeHtml(x)}</li>`).join(''):'<li>Keep practising consistently.</li>'}</ul></div><div class="essay-feedback-box"><h3>🎯 Focus next</h3><ul>${improvements.length?improvements.map(x=>`<li>${escapeHtml(x)}</li>`).join(''):'<li>Maintain this standard in the next exercise.</li>'}</ul></div></section>
-  ${stage1Details}${stage2Details}${stage3Details}${replay}<div class="essay-actions" style="margin-top:18px"><a class="btn primary" href="/student/essay" data-link>${nextText}</a></div>`);
+  ${stage1Details}${stage2Details}${stage3Details}${paragraphAnalysis}${replay}<div class="essay-actions" style="margin-top:18px"><a class="btn primary" href="/student/essay" data-link>${nextText}</a></div>`);
   if(baseline){
     const map={original:a.essayText||'',corrected:f.correctedText||'',excellent:f.excellentText||''};
     document.querySelectorAll('.essay-replay-tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.essay-replay-tab').forEach(x=>x.classList.remove('active'));btn.classList.add('active');document.querySelector('#essay-replay-text').textContent=map[btn.dataset.replay]||'';}));
