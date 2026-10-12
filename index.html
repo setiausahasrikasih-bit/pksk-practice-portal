@@ -3155,6 +3155,51 @@ function essayStage3Editor(a){
   });
 }
 
+
+function essayStage4Editor(a){
+  const saved=a.responseData||{},initial=saved.paragraphParts||{},task=a.topic?.exercise||{},hints=task.scaffold||{};
+  const fields=[['isi','1 · Isi','Nyatakan idea utama.'],['huraian','2 · Huraian','Mengapa atau bagaimana?'],['contoh','3 · Contoh','Beri contoh yang konkrit.'],['penegasan','4 · Penegasan','Simpulkan kesan atau pengajaran.']];
+  const start=Date.now(),prior=Math.max(0,Number(saved.activeSeconds||0));let busy=false;
+  const cards=fields.map(([key,title,desc])=>`<div class="card" style="margin:0;padding:16px;background:#fbfaff"><label for="essay4-${key}"><b>${escapeHtml(title)}</b><span class="muted small">${escapeHtml(desc)}</span></label><p class="muted small" style="margin:8px 0"><b>Petunjuk:</b> ${escapeHtml(hints[key]||'Fokus pada soalan.')}</p><textarea id="essay4-${key}" class="essay-writing-box" style="min-height:100px" placeholder="Tulis dengan perkataan sendiri…">${escapeHtml(initial[key]||'')}</textarea></div>`).join('');
+  shell(`<div class="page-head"><div><span class="eyebrow">Stage 4 · Paragraph Builder</span><h1>✍️ ${escapeHtml(a.topic?.title||'Paragraph Builder')}</h1><p class="muted">Satu perenggan lengkap dan lancar.</p></div><a class="btn ghost" href="/student/essay" data-link>Exit & Save</a></div>
+  <section class="card" style="background:linear-gradient(125deg,#faf0ff,#f0f9ff)"><span class="eyebrow">Tugasan</span><h2>${escapeHtml(a.topic?.prompt||'')}</h2><p><b>Idea asas:</b> ${escapeHtml(task.coreIdea||'Fokus pada satu isi utama.')}</p><p class="muted small">Petunjuk bukan jawapan untuk disalin. Gunakan bahasa sendiri.</p></section>
+  <h2>Langkah 1 · Bina empat bahagian</h2><div class="essay-topic-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-bottom:20px">${cards}</div>
+  <section class="card"><h2>Langkah 2 · Gabungkan dan lancarkan</h2><p class="muted">Gabungkan bahagian, tambah kata penghubung, dan buang pengulangan. Sasaran 60–110 patah perkataan.</p>
+  <button type="button" class="btn ghost" id="essay4-combine">🔗 Gabungkan Ayat</button>
+  <label for="essay4-final" style="margin:14px 0 7px"><b>Perenggan akhir</b></label>
+  <textarea id="essay4-final" class="essay-writing-box" style="min-height:220px" placeholder="Tulis satu perenggan lengkap…">${escapeHtml(a.essayText||'')}</textarea>
+  <p class="muted small">Minimum 40 patah perkataan · <b id="essay4-count"></b></p>
+  <div class="essay-actions"><button type="button" class="btn ghost" id="essay4-save">Save Draft</button><button type="button" class="btn primary" id="essay4-submit">Submit for AI Feedback</button></div>
+  <div class="essay-save-state" id="essay4-message" aria-live="polite"></div></section>`);
+  const box=document.querySelector('#essay4-final'),msg=document.querySelector('#essay4-message'),counter=document.querySelector('#essay4-count');
+  const parts=()=>Object.fromEntries(fields.map(([k])=>[k,document.querySelector('#essay4-'+k).value.trim()]));
+  const data=()=>({...saved,paragraphParts:parts(),activeSeconds:Math.min(7200,prior+Math.floor((Date.now()-start)/1000)),activeTimeBasis:'active_v1'});
+  const refresh=()=>{const n=essayWordCount(box.value);counter.textContent=n+' perkataan';counter.style.color=n>=40?'#23784d':'#b45309';};
+  box.addEventListener('input',refresh);refresh();
+  document.querySelector('#essay4-combine').onclick=()=>{
+    const p=parts();
+    if(Object.values(p).some(x=>!x)){msg.textContent='Lengkapkan semua empat bahagian dahulu.';return;}
+    if(box.value.trim()&&!confirm('Gantikan draf perenggan akhir?'))return;
+    box.value=fields.map(([key])=>p[key]).join(' ').trim();refresh();msg.textContent='Draf digabungkan. Semak kelancaran sebelum hantar.';
+  };
+  const save=async(silent=false)=>{
+    if(busy)return false;
+    try{if(!silent)msg.textContent='Saving…';await studentApi.saveEssay(a.attemptId,box.value,data());msg.textContent='Saved';return true;}
+    catch(e){msg.textContent=e.message||'Save failed. Please retry.';return false;}
+  };
+  essayAutosaveTimer=setInterval(()=>save(true),12000);
+  document.querySelector('#essay4-save').onclick=()=>save(false);
+  document.querySelector('#essay4-submit').onclick=async()=>{
+    if(busy)return;
+    if(Object.values(parts()).some(x=>!x)){msg.textContent='Lengkapkan Isi, Huraian, Contoh dan Penegasan.';return;}
+    if(essayWordCount(box.value)<40){msg.textContent='Sila tulis sekurang-kurangnya 40 patah perkataan.';return;}
+    if(!confirm('Hantar untuk penilaian AI? Jawapan tidak boleh diubah selepas ini.'))return;
+    busy=true;essayClearTimers();
+    try{await studentApi.saveEssay(a.attemptId,box.value,data());await studentApi.submitEssay(a.attemptId,box.value,data());await essayRunEvaluation(a.attemptId,'finalize_stage4');}
+    catch(e){alert(e.message||'Unable to submit.');await essayAttemptPage(a.attemptId);}
+  };
+}
+
 function essayAttemptResultPage(a){
   const stage=Number(a.stage);
   const baseline=stage===0,stage1=stage===1,stage2=stage===2,stage3=stage===3;
@@ -3203,6 +3248,7 @@ async function essayAttemptPage(attemptId){
   if(Number(a.stage)===1)return essayStage1Editor(a);
   if(Number(a.stage)===2)return essayStage2Editor(a);
   if(Number(a.stage)===3)return essayStage3Editor(a);
+  if(Number(a.stage)===4)return essayStage4Editor(a);
   throw new Error('This Essay Training stage is not available yet.');
 }
 
