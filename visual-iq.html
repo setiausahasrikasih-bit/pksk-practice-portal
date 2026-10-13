@@ -80,9 +80,9 @@ function diagram(q){
    if(groups.length>=4&&groups.every(a=>a.length===4))return paint({kind:'diamonds',items:groups.slice(0,4)});
   }
   if(t.includes('Pola arah:')){
-   const m=t.match(/Pola arah:\s*([↑→↓←\s]+)\?/);
+   const m=t.match(/Pola arah:\s*([↑→↓←])\s*(?:\||→)\s*([↑→↓←])\s*(?:\||→)\s*([↑→↓←])\s*(?:\||→)\s*\?/u);
    const map={'↑':0,'→':90,'↓':180,'←':270};
-   if(m){const dir=m[1].trim().split(' → ').map(x=>x.trim()).filter(Boolean);if(dir.length===3)return paint({kind:'arrows',angles:[...dir.map(x=>map[x]),'?']});}
+   if(m)return paint({kind:'arrows',angles:[map[m[1]],map[m[2]],map[m[3]],'?']});
   }
   if(t.includes('Susunan bentuk:')){
    const m=t.match(/Susunan bentuk:\s*([▲■●◆⬟★\s]+)\?/);
