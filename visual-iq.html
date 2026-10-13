@@ -162,6 +162,17 @@ async function results(id){
  +(q.options||[]).map(o=>'<p><b>'+E(o.key)+'.</b> '+E(o.text_ms||o.text_en)+(o.id===q.correct_option_id?' <strong style="color:green">✓ Jawapan</strong>':'')+(o.id===q.selected_option_id?' <span class="pill">Pilihan anda</span>':'')+'</p>').join('')
  +'<p class="muted"><b>Penerangan:</b> '+E(q.explanation_ms||'')+'</p></article>').join('');
  document.getElementById('again').onclick=start;
+ const analytics=document.createElement('section');
+ analytics.className='card';
+ analytics.innerHTML='<h3>📊 Analisis Kemahiran IQ</h3><p class="muted">Sedang mengira penguasaan mengikut jenis soalan…</p>';
+ app.appendChild(analytics);
+ rpc('get_my_visual_iq_progress').then(p=>{
+  const categories=(p.categories||[]).slice().sort((a,b)=>a.percentage-b.percentage);
+  const areas=categories.filter(x=>Number(x.total)>=2&&Number(x.percentage)<70).map(x=>x.name);
+  analytics.innerHTML='<h3>📊 Analisis Kemahiran IQ</h3><p><b>Ketepatan keseluruhan: '+E(p.overallPercent)+'%</b> · '+Number(p.totalAnswered||0)+' soalan telah dicuba</p>'
+   +categories.map(x=>'<p style="display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding:7px 0;gap:10px"><span>'+E(x.name)+' <span class="muted">('+x.correct+'/'+x.total+')</span></span><b>'+Number(x.percentage)+'%</b></p>').join('')
+   +(areas.length?'<p class="muted"><b>Fokus latihan seterusnya:</b> '+areas.map(E).join(', ')+'</p>':'<p class="muted">Teruskan latihan untuk mengesahkan penguasaan anda.</p>');
+ }).catch(()=>{analytics.innerHTML='<p class="muted">Analisis terperinci belum tersedia; keputusan kuiz telah disimpan.</p>'});
  setStatus('');
 }
 async function boot(){
