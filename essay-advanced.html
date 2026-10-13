@@ -86,7 +86,7 @@ function homePage(){
   if(st.status==='locked')continue;
   let options=(home.topics||[]).filter(t=>t.stage===n);
   if(n!==8)options=options.filter(t=>Number(t.completed)===0);
-  if(n===7)options=options.slice(0,3); // Exam-style selection: exactly three titles.
+  if(n===7){const first=((Number(st.attempts)||0)*3)%Math.max(options.length,1);options=[...options.slice(first),...options.slice(0,first)].slice(0,3);} // Rotate among unseen questions.
   if(n===8)options.sort((a,b)=>Number(b.skill===home.weakness)-Number(a.skill===home.weakness));
   const label=n===8?'🎯 Fokus: '+E(home.weakness||'Latihan campuran'):n===7?'🕒 Pilih SATU daripada 3 tajuk':'📝 Tulis karangan seterusnya';
   body+='<section class="card"><h2>Tahap '+n+' · '+E(labels[n])+'</h2><p class="notice">'+label+'</p><div class="grid">'+options.map(t=>'<article class="card"><span class="tag">'+E(t.theme)+'</span>'+((n===8&&t.skill===home.weakness)?' <span class="tag green">Disyorkan</span>':'')+'<h3>'+E(t.title)+'</h3><p class="muted">'+E(t.prompt)+'</p><button class="btn primary" data-start="'+E(t.id)+'" data-stage="'+n+'">Pilih tajuk ini</button></article>').join('')+'</div></section>';
@@ -143,7 +143,7 @@ function pending(){
 }
 async function mark(){
  if(busy)return;busy=true;stop();app.className='card';app.innerHTML='<h2>⏳ Menilai karangan…</h2><p class="muted">Draf telah disimpan. Jangan hantar semula; pemarkahan mungkin mengambil sedikit masa.</p>';
- try{await evaluate(active.attemptId,active.stage);active=await rpc('get_my_essay_attempt',{p_attempt_id:active.attemptId});if(active.status==='completed'){await loadHome();await open(active.attemptId)}else pending();}
+ try{await evaluate(active.attemptId,active.stage);active=await rpc('get_my_essay_attempt',{p_attempt_id:active.attemptId});if(active.status==='completed'){const completedId=active.attemptId;await loadHome();await open(completedId)}else pending();}
  catch(e){show(e.message);active=await rpc('get_my_essay_attempt',{p_attempt_id:active.attemptId}).catch(()=>active);pending()}
  finally{busy=false}
 }
