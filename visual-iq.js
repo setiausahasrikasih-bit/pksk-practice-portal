@@ -67,7 +67,7 @@ function paint(d){
  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Rajah IQ visual" style="display:block;max-width:100%;width:min(100%,'+w+'px);height:auto;margin:10px auto 14px;background:white;border:1px solid #e5def0;border-radius:12px;padding:6px">'+body+'</svg>';
 }
 function renderText(value){
-  const text=String(value||'');const re=/\\[\\[VIQ:([\\s\\S]*?)\\]\\]/g;let out='',last=0,m;
+  const text=String(value||'');const re=/\[\[VIQ:([\s\S]*?)\]\]/g;let out='',last=0,m;
   while((m=re.exec(text))!==null){out+=E(text.slice(last,m.index));try{out+=paint(JSON.parse(m[1]));}catch(e){out+='<span class="muted">Rajah tidak tersedia</span>';}last=re.lastIndex;}
   return out+E(text.slice(last));
 }
