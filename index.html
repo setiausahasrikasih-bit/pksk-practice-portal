@@ -2870,6 +2870,8 @@ async function essayTrainingHome(){
       trainingBody=`<section class="performance-section"><div class="hub-section-head"><div><h2>Stage 0 · Writing Baseline</h2><p class="muted">Choose ONE unseen topic. No hints. 45 minutes. This establishes your real starting point.</p></div></div><div class="card"><div class="tracking-note">Write naturally. Do not use AI or model answers. You may submit below 100 words, but PKSK Pro will flag it.</div></div><div class="essay-topic-grid">${cards}</div></section>`;
     }
 
+  }else if(Number(p.currentStage||0)>=6){
+    trainingBody=`<section class="performance-section"><div class="hub-section-head"><div><h2>🚀 Independent Essay & PKSK Simulation</h2><p class="muted">Stage 5 completed. The next writing challenges are now accessible.</p></div></div><div class="card"><p>Stage 6 (Independent Essay), Stage 7 (Full PKSK Simulation), and Stage 8 (Personalised Repair) are available according to your mastery results.</p><a class="btn primary" href="/essay-advanced.html">Continue to Writing Stage 6–8 →</a></div></section>`;
   }else if(stage5.unlocked && Number(p.currentStage||0)>=5){
     trainingBody=essayStage5HomeMarkup(stage5);
   }else if(stage4.unlocked && Number(p.currentStage||0)>=4){
