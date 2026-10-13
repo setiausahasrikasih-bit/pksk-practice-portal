@@ -67,7 +67,7 @@ function paint(d){
  case 'grid':w=455;h=128;body=grid(d.left,12,21,27)+TXT(123,62,'−',26)+grid(d.right,150,21,27)+TXT(262,62,'=',26)+RECT(294,16,143,95,'#faf9ff','#cebee9')+TXT(366,65,'?',43);break;
  case 'cells':w=105;h=105;body=grid(d.mask,12,11,27);break;
  case 'boxes':body=boxes(d.rows);w=470;h=162;break;
- case 'diamonds':w=468;h=325;(d.items||[]).slice(0,4).forEach((a,i)=>body+=diamond(a,114+(i%2)*235,78+Math.floor(i/2)*166));break;
+ case 'diamonds':w=370;h=325;(d.items||[]).slice(0,4).forEach((a,i)=>body+=diamond(a,100+(i%2)*170,78+Math.floor(i/2)*166));break;
  case 'arrows':body=arrows(d.angles);w=445;h=170;break;
  case 'sequence':body=shapeRow(d.shapes);w=430;h=294;break;
  case 'odd':body=shapeRow(d.shapes,true);w=430;h=294;break;
