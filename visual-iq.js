@@ -23,9 +23,12 @@ function shape(kind,cx,cy,size=19){
   return '<polygon points="'+ps.join(' ')+'"'+stroke+'/>';
 }
 function diamond(a,cx,cy){
-  const p=Array.isArray(a)?a:['?','?','?','?'];let s='<polygon points="'+cx+','+(cy-60)+' '+(cx+67)+','+cy+' '+cx+','+(cy+60)+' '+(cx-67)+','+cy+'" fill="#fff9ff" stroke="#aa3f67" stroke-width="2.5"/>';
-  s+='<path d="M '+cx+' '+(cy-60)+' V '+(cy+60)+' M '+(cx-67)+' '+cy+' H '+(cx+67)+'" stroke="#aa3f67" stroke-width="2"/>';
-  [[cx-32,cy-26],[cx+32,cy-26],[cx-32,cy+28],[cx+32,cy+28]].forEach((pt,i)=>s+=TXT(pt[0],pt[1],p[i],20));return s;
+  // The label positions are inset far enough from sloping borders for two-digit numbers.
+  const p=Array.isArray(a)?a:['?','?','?','?'], halfWidth=76,halfHeight=62;
+  let s='<polygon points="'+cx+','+(cy-halfHeight)+' '+(cx+halfWidth)+','+cy+' '+cx+','+(cy+halfHeight)+' '+(cx-halfWidth)+','+cy+'" fill="#fff9ff" stroke="#aa3f67" stroke-width="2.5"/>';
+  s+='<path d="M '+cx+' '+(cy-halfHeight)+' V '+(cy+halfHeight)+' M '+(cx-halfWidth)+' '+cy+' H '+(cx+halfWidth)+'" stroke="#aa3f67" stroke-width="2"/>';
+  [[cx-30,cy-23],[cx+30,cy-23],[cx-30,cy+23],[cx+30,cy+23]].forEach((pt,i)=>s+=TXT(pt[0],pt[1],p[i],18));
+  return s;
 }
 function boxes(items){
   let s='';
@@ -44,12 +47,18 @@ function arrows(angles){
   });return s;
 }
 function shapeRow(spec,odd=false){
- let s='';const arr=Array.isArray(spec)?spec:[];const start=odd?66:43,step=odd?107:83,cy=odd?84:77;
- arr.slice(0,odd?4:6).forEach((kind,i)=>{
-   const x=start+step*i;s+=RECT(x-34,cy-37,68,75,'#faf9ff','#ded3f0');
-   if(kind==='?')s+=TXT(x,cy,'?',34);else s+=shape(String(kind),x,cy,22);
-   if(odd)s+=TXT(x,cy+54,String.fromCharCode(65+i),15);
- });return s;
+  let s='';
+  const arr=Array.isArray(spec)?spec:[], cols=odd?2:3, max=odd?4:6;
+  // Two balanced rows prevent six horizontally arranged tiles from being clipped
+  // or shrinking to unreadable size on smaller screens.
+  arr.slice(0,max).forEach((kind,i)=>{
+    const x=odd?140+(i%cols)*150:78+(i%cols)*136;
+    const y=82+Math.floor(i/cols)*124;
+    s+=RECT(x-47,y-43,94,86,'#faf9ff','#ded3f0');
+    if(kind==='?')s+=TXT(x,y,'?',32);else s+=shape(String(kind),x,y,25);
+    s+='<text x="'+x+'" y="'+(y+61)+'" text-anchor="middle" font-family="system-ui,sans-serif" font-size="16" font-weight="700" fill="#694f93">'+(odd?String.fromCharCode(65+i):i+1)+'</text>';
+  });
+  return s;
 }
 function paint(d){
  if(!d||typeof d!=='object')throw Error('Invalid diagram');
@@ -60,11 +69,11 @@ function paint(d){
  case 'boxes':body=boxes(d.rows);w=470;h=162;break;
  case 'diamonds':w=468;h=325;(d.items||[]).slice(0,4).forEach((a,i)=>body+=diamond(a,114+(i%2)*235,78+Math.floor(i/2)*166));break;
  case 'arrows':body=arrows(d.angles);w=445;h=170;break;
- case 'sequence':body=shapeRow(d.shapes);w=467;h=158;break;
- case 'odd':body=shapeRow(d.shapes,true);w=457;h=166;break;
+ case 'sequence':body=shapeRow(d.shapes);w=430;h=294;break;
+ case 'odd':body=shapeRow(d.shapes,true);w=430;h=294;break;
  default:throw Error('Unsupported diagram');
  }
- return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Rajah IQ visual" style="display:block;max-width:100%;width:min(100%,'+w+'px);height:auto;margin:10px auto 14px;background:white;border:1px solid #e5def0;border-radius:12px;padding:6px">'+body+'</svg>';
+ return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Rajah IQ: '+E(d.kind)+'" style="display:block;max-width:100%;width:min(100%,'+w+'px);height:auto;margin:10px auto 14px;background:white;border:1px solid #e5def0;border-radius:12px;padding:6px">'+body+'</svg>';
 }
 function renderText(value){
   const text=String(value||'');const re=/\[\[VIQ:([\s\S]*?)\]\]/g;let out='',last=0,m;
