@@ -1,0 +1,169 @@
+<!doctype html><html lang="ms"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#6244ac"><title>PKSK Pro • Penulisan Tahap 6–8</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#202440;background:#f8f7ff}*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top left,#f4e7ff,transparent 45%),#f8f7ff;min-height:100vh}
+header{background:white;border-bottom:1px solid #e6d9f5;padding:12px 20px;position:sticky;top:0;z-index:5}
+.head{max-width:1000px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{font-size:1.18rem;font-weight:900;color:#5439a2}.logo span{display:block;font-size:.77rem;color:#7d6b9e}
+main{max-width:1000px;margin:auto;padding:24px 16px 72px}
+.hero{border-radius:21px;background:linear-gradient(120deg,#6147b2,#a36ad3);color:white;padding:26px}
+h1{font-size:clamp(1.5rem,5vw,2.25rem);margin:8px 0}h2{margin:10px 0}h3{margin:6px 0}.hero p{margin:0}
+.card{background:white;border:1px solid #e7dff3;border-radius:19px;padding:20px;margin:15px 0;box-shadow:0 6px 22px #3a225d0b}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:12px}
+.grid .card{margin:0}.locked{opacity:.7}.muted{color:#686e85;font-size:.93rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;background:#eee7fa;color:#553b94;padding:12px 15px;border-radius:12px;font:700 .95rem system-ui,sans-serif;cursor:pointer;text-decoration:none}
+.btn.primary{background:#6544b3;color:white}.btn.warn{background:#ca6057;color:white}.btn:disabled{opacity:.45;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin:17px 0}
+.tag{display:inline-block;border-radius:20px;background:#eee7ff;color:#6942b1;padding:5px 10px;font-size:.78rem;font-weight:750}
+.tag.green{background:#e1f8ed;color:#186646}.tag.gold{background:#fff0d8;color:#9c5d1b}
+.numeral{font-size:2rem;font-weight:900;color:#6544b3}.notice{border-left:4px solid #6544b3;background:#f6f2ff;padding:12px;border-radius:8px}
+select,textarea{width:100%;padding:14px;border:2px solid #dcd4eb;border-radius:12px;font:inherit;background:white}
+textarea{min-height:340px;resize:vertical;line-height:1.85;color:#252844}
+label{display:block;font-weight:700;margin:12px 0 6px}
+.timing{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.time{font-size:1.4rem;font-weight:900;font-variant-numeric:tabular-nums;color:#6244ac}
+.danger{color:#b63648!important}
+#message{min-height:22px;color:#ad393c;font-weight:700;white-space:pre-wrap}
+.feedback{border-left:5px solid #70bc9b}.feedback strong{color:#2c674d}
+.feedback li{margin:7px 0}.paragraph{white-space:pre-wrap;line-height:1.7}
+.score{font-size:3.1rem;font-weight:900;color:#5435ad}
+.pills{display:flex;gap:8px;flex-wrap:wrap}.small{font-size:.82rem}
+@media(max-width:540px){main{padding:16px 10px 55px}.card,.hero{padding:15px}textarea{min-height:285px}.btn{padding:11px 12px}header{padding:10px}}
+</style></head>
+<body>
+<header><div class="head"><div class="logo">🎓 PKSK Pro<span>Artikulasi Penulisan • Tahap 6–8</span></div><a class="btn" href="/">← Quiz Hub</a></div></header>
+<main><section class="hero"><div>✍️ TRAIN • VALIDATE • OUTPERFORM</div><h1>Penulisan Tahap 6, 7 & 8</h1><p>Karangan bebas → Simulasi PKSK → Latihan pemulihan peribadi</p></section>
+<div id="app" class="card">Memuatkan latihan…</div><p id="message" role="status" aria-live="polite"></p>
+</main>
+<script>
+(()=>{'use strict';
+const URL='https://wwjtpfexvqaipvvupsai.supabase.co',KEY='sb_publishable_lsaVuFvTx6QlkMEb8a_nvQ_94YGD3F1',STORE='pksk_session_v1';
+const $=s=>document.querySelector(s),app=$('#app'),message=$('#message');
+const E=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let home=null,active=null,interval=null,autosave=null,dirty=false,busy=false,pageId='';
+const labels={5:'Guided Essay',6:'Independent Essay',7:'PKSK Simulation',8:'Personalised Essay Training'};
+const stepDesc={6:'Tulis karangan 100–450 patah perkataan tanpa petunjuk. Had masa 45 minit. Tiga karangan diperlukan untuk mengesahkan kemahiran.',7:'Simulasi peperiksaan sebenar: pilih satu daripada tiga tajuk, tulis sendiri dalam 45 minit dan semak pencapaian.',8:'Karangan latihan mengikut kelemahan yang dikenal pasti daripada markah terdahulu. Analisis → Latih → Uji semula.'};
+const show=s=>{message.textContent=s||'';if(s)message.scrollIntoView({block:'nearest',behavior:'smooth'})};
+const fmt=(s)=>String(Math.floor(Math.max(s,0)/60)).padStart(2,'0')+':'+String(Math.max(s,0)%60).padStart(2,'0');
+const wc=t=>(String(t||'').trim().match(/\S+/g)||[]).length;
+function stop(){if(interval)clearInterval(interval);if(autosave)clearInterval(autosave);interval=null;autosave=null}
+async function token(){
+ let s;try{s=JSON.parse(localStorage.getItem(STORE)||'null')}catch(_){}
+ if(!s?.access_token)throw Error('Sila log masuk PKSK Pro dahulu, kemudian buka semula halaman ini.');
+ const expiry=Number(s.expires_at_ms||((s.expires_at||0)*1000));
+ if(Date.now()+30000<expiry)return s.access_token;
+ if(!s.refresh_token)throw Error('Sesi tamat. Sila log masuk semula.');
+ const res=await fetch(URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});
+ const v=await res.json().catch(()=>({}));if(!res.ok||!v.access_token)throw Error('Sesi tamat. Sila log masuk semula.');
+ s={...v,expires_at_ms:v.expires_at?Number(v.expires_at)*1000:Date.now()+Number(v.expires_in||3600)*1000};
+ localStorage.setItem(STORE,JSON.stringify(s));return s.access_token;
+}
+async function post(endpoint,body,isFunc=false){
+ const access=await token();const ctrl=new AbortController(),tm=setTimeout(()=>ctrl.abort(),isFunc?135000:20000);
+ try{
+  const res=await fetch(URL+(isFunc?'/functions/v1/':'/rest/v1/rpc/')+endpoint,{
+   method:'POST',signal:ctrl.signal,headers:{apikey:KEY,Authorization:'Bearer '+access,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const v=await res.json().catch(()=>({}));
+  if(!res.ok)throw Error(v.error||v.message||'Pelayan tidak dapat dihubungi');
+  return v;
+ }finally{clearTimeout(tm)}
+}
+const rpc=(name,data={})=>post(name,data),evaluate=(id,stage)=>post('evaluate-essay',{attemptId:id,action:'finalize_stage'+stage},true);
+function statusBox(s){
+ const unlocked=s.status!=='locked',done=s.status==='completed';
+ return '<div class="card '+(unlocked?'':'locked')+'"><span class="tag '+(done?'green':unlocked?'gold':'')+'">Tahap '+s.stage+' · '+(done?'LULUS':unlocked?'SEDIA / BERJALAN':'TERKUNCI')+'</span><h3>'+E(labels[s.stage])+'</h3><p class="muted">'+E(stepDesc[s.stage])+'</p><div class="small">'+Number(s.attempts||0)+' karangan dinilai · Purata '+(s.averageScore==null?'—':Number(s.averageScore).toFixed(1)+'%')+'</div></div>';
+}
+function homePage(){
+ stop();active=null;pageId='';dirty=false;show('');
+ const stage=(home.stages||[]),advanced=stage.filter(x=>x.stage>=6),activeItems=home.active||[];
+ const stageFor=number=>stage.find(x=>x.stage===number)||{stage:number,status:'locked',attempts:0};
+ let body='<section class="grid">'+advanced.map(statusBox).join('')+'</section>';
+ if(activeItems.length){
+  body+='<div class="card"><h2>📄 Karangan belum selesai</h2>'+activeItems.map(x=>'<div class="actions"><span class="tag">Tahap '+x.stage+' · '+E(x.status)+'</span><button class="btn primary" data-resume="'+E(x.attemptId)+'">Sambung / Semak</button></div>').join('')+'</div>';
+ }
+ for(const n of [6,7,8]){
+  const st=stageFor(n);
+  if(st.status==='locked')continue;
+  let options=(home.topics||[]).filter(t=>t.stage===n);
+  if(n!==8)options=options.filter(t=>Number(t.completed)===0);
+  if(n===7)options=options.slice(0,3); // Exam-style selection: exactly three titles.
+  if(n===8)options.sort((a,b)=>Number(b.skill===home.weakness)-Number(a.skill===home.weakness));
+  const label=n===8?'🎯 Fokus: '+E(home.weakness||'Latihan campuran'):n===7?'🕒 Pilih SATU daripada 3 tajuk':'📝 Tulis karangan seterusnya';
+  body+='<section class="card"><h2>Tahap '+n+' · '+E(labels[n])+'</h2><p class="notice">'+label+'</p><div class="grid">'+options.map(t=>'<article class="card"><span class="tag">'+E(t.theme)+'</span>'+((n===8&&t.skill===home.weakness)?' <span class="tag green">Disyorkan</span>':'')+'<h3>'+E(t.title)+'</h3><p class="muted">'+E(t.prompt)+'</p><button class="btn primary" data-start="'+E(t.id)+'" data-stage="'+n+'">Pilih tajuk ini</button></article>').join('')+'</div></section>';
+ }
+ const recent=(home.recent||[]).filter(x=>x.stage>=6);
+ if(recent.length)body+='<section class="card"><h3>Keputusan terdahulu</h3>'+recent.slice(0,8).map(x=>'<p><button class="btn" data-resume="'+E(x.attemptId)+'">'+E(x.title)+' · '+Number(x.score||0).toFixed(1)+'%</button></p>').join('')+'</section>';
+ app.className='';app.innerHTML=body||'<div class="card">Tiada latihan tersedia.</div>';
+ app.querySelectorAll('[data-start]').forEach(b=>b.onclick=async()=>{b.disabled=true;show('');try{const a=await rpc('start_advanced_essay_attempt',{p_topic_id:b.dataset.start,p_stage:Number(b.dataset.stage)});await open(a.attemptId);}catch(e){show(e.message);b.disabled=false}});
+ app.querySelectorAll('[data-resume]').forEach(b=>b.onclick=()=>open(b.dataset.resume).catch(e=>show(e.message)));
+}
+async function loadHome(){home=await rpc('get_my_advanced_essay_home');homePage();}
+function remaining(){return Math.max(0,2700-Math.floor((Date.now()-new Date(active.startedAt).getTime())/1000))}
+function tick(){let e=$('#time');if(!e||!active)return;const n=remaining();e.textContent=fmt(n);e.classList.toggle('danger',n<300);if(n===0){const label=$('#overdue');if(label)label.textContent='Masa telah tamat. Karangan masih boleh dihantar tetapi tidak memenuhi syarat penguasaan masa.'}}
+async function open(id){
+ stop();show('');pageId=id;active=await rpc('get_my_essay_attempt',{p_attempt_id:id});
+ if(![6,7,8].includes(Number(active.stage)))throw Error('Bukan latihan Tahap 6–8');
+ if(active.status==='completed')return result();
+ if(['submitted','evaluating','failed'].includes(active.status))return pending();
+ dirty=false;
+ const topic=active.topic||{};
+ app.className='card';app.innerHTML='<div class="actions"><button id="back" class="btn">← Kembali</button><span class="tag">Tahap '+active.stage+' · '+E(labels[active.stage])+'</span></div>'
+ +'<div class="timing"><span class="tag">Satu tajuk · Tiada petunjuk</span><span class="time">⏱ <span id="time">45:00</span></span></div>'
+ +'<h2>'+E(topic.title)+'</h2><div class="notice">'+E(topic.prompt)+'</div>'
+ +'<p class="muted">Tulis dalam Bahasa Melayu menggunakan idea sendiri. Minimum 100 patah perkataan. 45 minit dari waktu mula. Baca semula sebelum hantar.</p>'
+ +'<label for="essay">Karangan anda</label><textarea id="essay" placeholder="Mulakan karangan di sini..." spellcheck="true"></textarea>'
+ +'<div class="timing"><b id="counter">0 / 100 patah perkataan minimum</b><span id="saved" class="muted small">Draf auto-simpan</span></div>'
+ +'<p class="danger" id="overdue"></p><div class="actions"><button id="save" class="btn">Simpan Draf</button><button id="submit" class="btn primary">Hantar untuk penilaian</button></div>';
+ $('#essay').value=active.essayText||'';const count=()=>$('#counter').textContent=wc($('#essay').value)+' patah perkataan (minimum 100, maksimum 450)';
+ count();$('#essay').oninput=()=>{dirty=true;count();$('#saved').textContent='Belum disimpan'};
+ $('#save').onclick=()=>save().catch(e=>show(e.message));
+ $('#submit').onclick=submit;
+ $('#back').onclick=async()=>{if(dirty)await save().catch(e=>{show(e.message);throw e});await loadHome()};
+ tick();interval=setInterval(tick,1000);autosave=setInterval(()=>{if(dirty&&!busy)save().catch(e=>show('Auto-simpan gagal: '+e.message))},18000);
+}
+async function save(){
+ if(!active||active.status!=='in_progress'||busy)return;
+ const text=$('#essay')?.value||'';busy=true;
+ try{await rpc('save_essay_attempt_draft',{p_attempt_id:active.attemptId,p_text:text,p_response_data:null});active.essayText=text;dirty=false;const label=$('#saved');if(label)label.textContent='✓ Draf disimpan';}
+ finally{busy=false}
+}
+async function submit(){
+ if(busy)return;const text=$('#essay').value,words=wc(text);
+ if(words<100||words>450)return show('Karangan mesti antara 100 hingga 450 patah perkataan. Sekarang: '+words);
+ if(!confirm('Hantar karangan ini untuk pemarkahan AI? Selepas hantar, jawapan tidak boleh diedit.'))return;
+ stop();show('Menyimpan dan menghantar…');$('#submit').disabled=true;
+ try{
+  await rpc('submit_advanced_essay_attempt',{p_attempt_id:active.attemptId,p_text:text});dirty=false;
+  active=await rpc('get_my_essay_attempt',{p_attempt_id:active.attemptId});await mark();
+ }catch(e){show(e.message);$('#submit').disabled=false;interval=setInterval(tick,1000)}
+}
+function pending(){
+ stop();app.className='card';app.innerHTML='<h2>Karangan selamat disimpan</h2><p class="muted">AI marker belum selesai. Tidak perlu menulis semula.</p><p>Status: <span class="tag">'+E(active.status)+'</span></p><div class="actions"><button id="retry" class="btn primary">Cuba Semak Semula</button><button id="back" class="btn">Kembali</button></div>';
+ $('#retry').onclick=mark;$('#back').onclick=loadHome;
+}
+async function mark(){
+ if(busy)return;busy=true;stop();app.className='card';app.innerHTML='<h2>⏳ Menilai karangan…</h2><p class="muted">Draf telah disimpan. Jangan hantar semula; pemarkahan mungkin mengambil sedikit masa.</p>';
+ try{await evaluate(active.attemptId,active.stage);active=await rpc('get_my_essay_attempt',{p_attempt_id:active.attemptId});if(active.status==='completed'){await loadHome();await open(active.attemptId)}else pending();}
+ catch(e){show(e.message);active=await rpc('get_my_essay_attempt',{p_attempt_id:active.attemptId}).catch(()=>active);pending()}
+ finally{busy=false}
+}
+function result(){
+ stop();const a=active,f=a.feedback||{},scores=a.scores||{},ev=f.evaluation||{};
+ const metrics=[['Kehendak soalan',scores.relevance],['Isi & huraian',scores.development],['Struktur',scores.structure],['Tatabahasa',scores.grammar],['Kosa kata',scores.vocabulary],['Contoh',scores.exampleQuality],['Kawalan masa',scores.examControl]];
+ app.className='card';app.innerHTML='<div class="actions"><button id="back" class="btn">← Latihan</button><span class="tag green">Dinilai • Tahap '+a.stage+'</span></div>'
+ +'<h2>'+E(a.topic?.title)+'</h2><div class="score">'+Number(a.scoreTotal||0).toFixed(1)+'%</div>'
+ +'<p class="muted">'+Number(a.wordCount||0)+' patah perkataan · '+Math.round(Number(a.durationSeconds||0)/60)+' minit</p>'
+ +'<p class="notice">'+E(ev.summary||'Penilaian selesai.')+'</p>'
+ +'<div class="grid">'+metrics.map(([name,value])=>'<div class="card"><span class="muted">'+name+'</span><h3>'+Number(value||0).toFixed(0)+'%</h3></div>').join('')+'</div>'
+ +'<div class="grid"><section class="card feedback"><h3>Kekuatan</h3><ul>'+(f.strengths||[]).map(x=>'<li>'+E(x)+'</li>').join('')+'</ul></section>'
+ +'<section class="card"><h3>Perlu dibaiki</h3><ul>'+(f.improvements||[]).map(x=>'<li>'+E(x)+'</li>').join('')+'</ul></section></div>'
+ +'<section class="card"><h3>Ulasan mengikut perenggan</h3>'+(ev.paragraphAnalysis||[]).map(x=>'<p><b>'+E(x.part)+'</b>: '+E(x.assessment)+'<span class="muted"> → '+E(x.improved)+'</span></p>').join('')+'</section>'
+ +'<section class="card"><h3>Karangan asal</h3><div class="paragraph">'+E(a.essayText)+'</div></section>'
+ +'<section class="card"><h3>Contoh pembaikan (selepas tamat)</h3><p class="muted">Bahan pembelajaran sahaja. Jangan salin untuk cubaan seterusnya.</p><div class="paragraph">'+E(f.excellentText||'Tidak tersedia')+'</div></section>'
+ +'<button id="next" class="btn primary">Teruskan latihan</button>';
+ $('#back').onclick=loadHome;$('#next').onclick=loadHome;show('');
+}
+window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue=''}});
+(async()=>{try{await loadHome()}catch(e){app.className='card';app.innerHTML='<h2>Log masuk diperlukan</h2><p>Log masuk ke PKSK Pro menggunakan akaun pelajar dahulu.</p><a class="btn primary" href="/">Ke PKSK Pro</a>';show(e.message)}})();
+})();
+</script></body></html>
