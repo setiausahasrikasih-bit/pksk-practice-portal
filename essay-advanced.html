@@ -86,10 +86,32 @@ function homePage(){
   if(st.status==='locked')continue;
   let options=(home.topics||[]).filter(t=>t.stage===n);
   if(n!==8)options=options.filter(t=>Number(t.completed)===0);
-  if(n===7){const first=((Number(st.attempts)||0)*3)%Math.max(options.length,1);options=[...options.slice(first),...options.slice(0,first)].slice(0,3);} // Rotate among unseen questions.
+  if(n===7){
+   // Show three plausible exam choices from distinct themes AND task demands.
+   // Rotate the starting point each completed simulation and exclude previously completed titles.
+   const seed=(Number(st.attempts)||0)*3;
+   const start=seed%Math.max(options.length,1);
+   const pool=[...options.slice(start),...options.slice(0,start)];
+   const chosen=[],usedThemes=new Set(),usedTypes=new Set();
+   for(const t of pool){
+    if(chosen.length===3)break;
+    if(usedThemes.has(t.theme)||usedTypes.has(t.taskType))continue;
+    chosen.push(t);usedThemes.add(t.theme);usedTypes.add(t.taskType);
+   }
+   for(const t of pool){
+    if(chosen.length===3)break;
+    if(chosen.some(s=>s.id===t.id)||usedThemes.has(t.theme))continue;
+    chosen.push(t);usedThemes.add(t.theme);
+   }
+   for(const t of pool){
+    if(chosen.length===3)break;
+    if(!chosen.some(s=>s.id===t.id))chosen.push(t);
+   }
+   options=chosen;
+  }
   if(n===8)options.sort((a,b)=>Number(b.skill===home.weakness)-Number(a.skill===home.weakness));
   const label=n===8?'🎯 Fokus: '+E(home.weakness||'Latihan campuran'):n===7?'🕒 Pilih SATU daripada 3 tajuk':'📝 Tulis karangan seterusnya';
-  body+='<section class="card"><h2>Tahap '+n+' · '+E(labels[n])+'</h2><p class="notice">'+label+'</p><div class="grid">'+options.map(t=>'<article class="card"><span class="tag">'+E(t.theme)+'</span>'+((n===8&&t.skill===home.weakness)?' <span class="tag green">Disyorkan</span>':'')+'<h3>'+E(t.title)+'</h3><p class="muted">'+E(t.prompt)+'</p><button class="btn primary" data-start="'+E(t.id)+'" data-stage="'+n+'">Pilih tajuk ini</button></article>').join('')+'</div></section>';
+  body+='<section class="card"><h2>Tahap '+n+' · '+E(labels[n])+'</h2><p class="notice">'+label+'</p><div class="grid">'+options.map(t=>'<article class="card"><span class="tag">'+E(t.theme)+'</span> <span class="tag">'+E(t.taskType||'KBAT')+'</span>'+((n===8&&t.skill===home.weakness)?' <span class="tag green">Disyorkan</span>':'')+'<h3>'+E(t.title)+'</h3><p class="muted">'+E(t.prompt)+'</p><button class="btn primary" data-start="'+E(t.id)+'" data-stage="'+n+'">Pilih tajuk ini</button></article>').join('')+'</div></section>';
  }
  const recent=(home.recent||[]).filter(x=>x.stage>=6);
  if(recent.length)body+='<section class="card"><h3>Keputusan terdahulu</h3>'+recent.slice(0,8).map(x=>'<p><button class="btn" data-resume="'+E(x.attemptId)+'">'+E(x.title)+' · '+Number(x.score||0).toFixed(1)+'%</button></p>').join('')+'</section>';
