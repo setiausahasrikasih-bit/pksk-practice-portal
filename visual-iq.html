@@ -23,7 +23,7 @@ header{background:white;border-bottom:3px solid #dec6ff;position:sticky;top:0;z-
 .answer.selected{border-color:#7954cb;background:#f4edff}.answer:disabled{cursor:wait;opacity:.75}.answer .key{display:grid;place-items:center;background:#eae0ff;color:#6745ad;min-width:35px;height:35px;border-radius:9px;font-weight:900}
 .answer .choice{font-weight:650;flex:1;min-width:0;white-space:normal;overflow-wrap:anywhere}.answer .choice svg{margin-left:0!important;margin-right:0!important}.answer svg{max-width:100%;height:auto}
 .nav{display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-start}.nav button{width:35px;height:35px;padding:0;border-radius:9px;border:1px solid #cfc6e1;background:#f3eff9;font-weight:800;cursor:pointer}.nav .here{background:#6542b3;color:white}.nav .done{border-color:#58b388;background:#e3f9ec}
-.review-row{border-left:5px solid #e66d71}.review-row.ok{border-left-color:#4caa80}.score{font-size:3rem;font-weight:900;color:#6342b1}
+.review-row{border-left:5px solid #e66d71}.review-row.ok{border-left-color:#4caa80}.review-choice{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid #f2eef8;min-width:0}.review-choice .review-choice-content{min-width:0;flex:1}.review-choice svg{display:inline-block!important;max-width:105px!important;width:100%!important;margin:0!important}.score{font-size:3rem;font-weight:900;color:#6342b1}
 .translation{margin:8px 0;color:#73758c;font-size:.87rem;font-weight:500}
 #status{min-height:18px;font-weight:650;color:#ad4242}
 @media(max-width:560px){.card{padding:16px}.hero{padding:21px}.header-inner{padding:10px 14px}.answers{gap:9px}.btn{padding:11px 13px}.nav{justify-content:center}.question-title{font-size:1.02rem;line-height:1.55}.diagram{margin:8px 0}.answer{padding:10px}.answer .key{min-width:31px;height:31px}}
@@ -159,7 +159,7 @@ async function results(id){
  app.innerHTML='<h2>🏆 Keputusan Cabaran IQ Visual</h2><div class="score">'+Math.round(Number(r.percentage)||0)+'%</div><p><b>'+Number(r.correctCount||0)+' / '+Number(r.attemptedCount||0)+'</b> betul · '+Math.round(Number(r.elapsedSeconds||0)/60)+' minit</p>'
  +'<div class="actions"><button id="again" class="btn primary">Cuba Set Baharu</button><a class="btn" href="/">Quiz Hub</a></div>'
  +(r.questions||[]).map(q=>'<article class="card review-row '+(q.is_correct?'ok':'')+'"><b>Soalan '+q.position+' · '+(q.is_correct?'✓ Betul':'✕ Salah')+'</b><p>'+stripped(q)+'</p><div class="diagram">'+diagram(q)+'</div>'
- +(q.options||[]).map(o=>'<p><b>'+E(o.key)+'.</b> '+E(o.text_ms||o.text_en)+(o.id===q.correct_option_id?' <strong style="color:green">✓ Jawapan</strong>':'')+(o.id===q.selected_option_id?' <span class="pill">Pilihan anda</span>':'')+'</p>').join('')
+ +(q.options||[]).map(o=>'<div class="review-choice"><b>'+E(o.key)+'.</b><span class="review-choice-content">'+(answerDiagram(o)||E(o.text_ms||o.text_en))+'</span>'+(o.id===q.correct_option_id?' <strong style="color:green">✓ Jawapan</strong>':'')+(o.id===q.selected_option_id?' <span class="pill">Pilihan anda</span>':'')+'</div>').join('')
  +'<p class="muted"><b>Penerangan:</b> '+E(q.explanation_ms||'')+'</p></article>').join('');
  document.getElementById('again').onclick=start;
  const analytics=document.createElement('section');
