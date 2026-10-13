@@ -71,7 +71,7 @@ async function mount(ctx){
   else if(x.type==='timeline'){correct=g.i;info=x.events[correct][0]+' — '+x.events[correct][1]+' ialah peristiwa seterusnya.';}
   else if(x.type==='build'){
    if(g.selected===null){message='Pilih kad jawapan dahulu!';draw();return;}
-   chosen=slot;correct=g.selected;info='Kad '+x.slots[g.selected][1]+' perlu dipadankan dengan sumbangan yang betul.';
+   chosen=slot;correct=g.selected;info='Padankan jawapan Jawi dengan situasi atau petunjuk yang tepat.';
   }else return;
   const ok=chosen===correct;if(!ok)g.wrong++;
   g.feedback={chosen,correct,ok,info};message='';draw();
