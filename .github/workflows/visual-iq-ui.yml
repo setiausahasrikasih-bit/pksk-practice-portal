@@ -1,0 +1,27 @@
+name: Visual IQ UI Regression
+
+on:
+  push:
+    paths:
+      - "visual-iq.js"
+      - "visual-iq.html"
+      - "visual-iq-layout-test.cjs"
+      - ".github/workflows/visual-iq-ui.yml"
+  pull_request:
+    paths:
+      - "visual-iq.js"
+      - "visual-iq.html"
+      - "visual-iq-layout-test.cjs"
+  workflow_dispatch:
+
+jobs:
+  svg-and-layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate responsive Visual IQ layouts
+        run: node visual-iq-layout-test.cjs
