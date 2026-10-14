@@ -44,7 +44,7 @@ async function mount(ctx){
   (expanded?rev.map((r,i)=>'<div class="y4e-review '+(r.correct?'correct':'wrong')+'"><b>#'+(i+1)+' · Unit '+esc(r.unit.split('_u').pop())+' '+(r.correct?'✅':'❌')+'</b><h3>'+esc(r.question)+'</h3><p>Jawapan kamu: '+(r.selected===null?'Tidak dijawab':esc(r.options[Number(r.selected)]))+'</p><p><b>Jawapan betul:</b> '+esc(r.options[r.answerIndex])+'</p><p class="muted">'+esc(r.explanation)+' (m/s '+esc(r.page)+')</p></div>').join(''):'');
  }
  function draw(){el.innerHTML='<div class="y4e">'+hero()+(mode==='catalog'?home():mode==='paper'?paper():result())+'</div>';if(mode==='paper')runClock();}
- async function goHome(){stop();el.innerHTML='<div class="y4e-panel">⏳ Memuatkan set peperiksaan…</div>';catalog=await api('learning_exam_catalog',{});mode='catalog';draw();}
+ async function goHome(){stop();el.innerHTML='<div class="y4e-panel">⏳ Memuatkan set peperiksaan…</div>';catalog=(await api('learning_exam_catalog',{})).filter(s=>s.id<=3);mode='catalog';draw();}
  async function start(s,newAttempt=false){
   stop();el.innerHTML='<div class="y4e-panel">⏳ Memuatkan 50 soalan…</div>';
   const data=await api('learning_exam_start',{p_set_id:s,p_new:newAttempt});
