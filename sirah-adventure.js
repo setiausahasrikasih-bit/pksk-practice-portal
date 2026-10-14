@@ -136,7 +136,7 @@ async function mount(ctx){
    rest('learning_mission_progress?select=mission,completed,stars&student_id=eq.'+student+'&unit_code=eq.'+U)
   ]);
   if(!unit?.length)throw Error('Pelajaran Sirah belum tersedia untuk akaun ini');
-  M=unit[0].missions||[];G=unit[0].games||[];Q=q||[];A=a||[];P=p||[];
+  M=unit[0].missions||[];G=unit[0].games||[];Q=(q||[]).filter(item=>/^S4P[234]Q\d{2}$/.test(item.id));A=a||[];P=p||[];
   if(M.length!==6||G.length!==7||Q.length!==36)throw Error('Kandungan Sirah belum lengkap. Sila semak 6 misi dan 36 soalan.');
   draw();
  }catch(err){root.innerHTML='<div class="sr-panel"><h2>Unit belum dapat dibuka</h2><p>'+esc(err.message||String(err))+'</p><button class="sr-btn" onclick="location.reload()">Cuba Lagi</button></div>';}
