@@ -7132,10 +7132,22 @@ async function learningPage(){
   await window.PKSK_TAJWID_FINAL_EXAM.mount({container,profile,rpc:learningApi.rpc});return;
  }
  if(isSirahList){
-  if(!available.has('sirah_t4_p2')){go(base);return;}
-  const card='<article class="card" style="display:flex;flex-direction:column;align-items:flex-start;min-width:0;margin:0;min-height:330px;background:linear-gradient(130deg,#fff2dc,#e9fbea,#e6efff);border:1px solid #c5b8e9;border-radius:24px;padding:23px"><div style="font-size:3.7rem">🌟📜</div><h2>Pelajaran 2 — Rasul Ulul Azmi</h2><div dir="rtl" lang="ms-Arab" style="align-self:stretch;text-align:right;font-family:serif;font-size:2rem;line-height:1.9">رسول اولوا العزم</div><p class="muted" style="flex:1">Nabi Nuh • Nabi Ibrahim • Nabi Musa • Nabi Isa • iktibar daripada kisah mereka</p><p>📖 6 misi · 🎮 7 permainan · ✍️ 36 soalan Jawi · 🔤 bantuan Rumi</p><a data-link href="'+base+'/sirah/p2" class="btn primary" style="margin-top:8px;align-self:flex-start">🚀 Mula Belajar</a></article>';
-  shell(breadcrumb('🌟 Sirah')+intro.replace('Pilih subjek dan mulakan pengembaraan ilmu.','Sirah Tahun 4 · ikut bab dan muka surat buku teks yang dimuat naik.')+'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,315px),1fr));gap:17px">'+card+'</div></section>',profile.role);
+  const chapters=[
+   {id:2,emoji:'🌟📜',title:'Pelajaran 2 — Rasul Ulul Azmi',jawi:'رسول اولوا العزم',desc:'Nabi Nuh • Ibrahim • Musa • Isa • ketabahan para Rasul',bg:'linear-gradient(130deg,#fff2dc,#e9fbea,#e6efff)'},
+   {id:3,emoji:'🛡️🏆',title:'Pelajaran 3 — Mubasysyirin bil Jannah',jawi:'مبشرين بالجنة',desc:'Zubair bin al-Awwam • Abu Ubaidah al-Jarrah • keberanian • amanah',bg:'linear-gradient(130deg,#e7f3ff,#f7e7ff,#fff1de)'},
+   {id:4,emoji:'🌸🕊️',title:'Pelajaran 4 — Muslimatul Mujahidat',jawi:'مسلمة المجاهدة',desc:'Khadijah binti Khuwailid • Aisyah binti Abu Bakar • pengorbanan • ilmu dan akhlak',bg:'linear-gradient(130deg,#ffe8f4,#fff2dd,#e9f9f1)'}
+  ].filter(x=>available.has('sirah_t4_p'+x.id));
+  if(!chapters.length){go(base);return;}
+  const cards=chapters.map(x=>'<article class="card" style="display:flex;flex-direction:column;align-items:flex-start;min-width:0;margin:0;min-height:335px;background:'+x.bg+';border:1px solid #c5b8e9;border-radius:24px;padding:23px"><div style="font-size:3.7rem">'+x.emoji+'</div><h2>'+escapeHtml(x.title)+'</h2><div dir="rtl" lang="ms-Arab" style="align-self:stretch;text-align:right;font-family:serif;font-size:2rem;line-height:1.9">'+escapeHtml(x.jawi)+'</div><p class="muted" style="flex:1">'+escapeHtml(x.desc)+'</p><p>📖 6 misi · 🎮 7 permainan · ✍️ 36 soalan Jawi</p><a data-link href="'+base+'/sirah/p'+x.id+'" class="btn primary" style="margin-top:8px;align-self:flex-start">🚀 Mula Belajar</a></article>').join('');
+  const examCard=chapters.length===3?'<div class="card" style="margin:18px 0;background:linear-gradient(115deg,#e2f8ff,#e9dfff,#fff1cc);border:1px solid #cdb2ee;padding:22px"><h2>🏆 Sirah Final Exam · Pelajaran 2–4</h2><p>3 set · 50 soalan setiap set · 60 minit · semakan jawapan dan prestasi mengikut pelajaran</p><a href="'+base+'/sirah/exams" data-link class="btn primary">🚀 Masuk Dewan Peperiksaan Sirah</a></div>':'';
+  shell(breadcrumb('🌟 Sirah')+intro.replace('Pilih subjek dan mulakan pengembaraan ilmu.','Sirah Tahun 4 · Pelajaran 2, 3 dan 4 sahaja, mengikut buku teks.')+'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,315px),1fr));gap:17px">'+cards+'</div>'+examCard+'</section>',profile.role);
   return;
+ }
+ if(isSirahExam){
+  if(![2,3,4].every(n=>available.has('sirah_t4_p'+n))){go(base+'/sirah');return;}
+  shell('<div style="max-width:1100px;margin:auto"><a href="'+base+'/sirah" data-link class="btn ghost">← Kembali ke Sirah</a></div><div id="learning-root"><div class="card">⏳ Menyediakan Peperiksaan Sirah…</div></div>',profile.role);
+  const container=document.querySelector('#learning-root');if(!container)throw new Error('Sirah exam container not found');
+  await window.PKSK_SIRAH_FINAL_EXAM.mount({container,profile,rpc:learningApi.rpc});return;
  }
  if(isFekahList){
   const allLessons=[
