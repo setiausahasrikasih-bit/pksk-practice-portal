@@ -26,9 +26,11 @@ if(!document.getElementById('srstyles')){const st=document.createElement('style'
 async function mount(ctx){
  const U=ctx.unitCode||'sirah_t4_p2',lessonNumber=Number(U.split('_p').pop());
  const info=({
-   2:{title:'Rasul Ulul Azmi',jawi:'رسول اولوا العزم',icon:'🌟',desc:'Kisah Nabi Nuh, Ibrahim, Musa dan Isa • sabar dan tabah'}
+   2:{title:'Rasul Ulul Azmi',jawi:'رسول اولوا العزم',icon:'🌟',desc:'Kisah Nabi Nuh, Ibrahim, Musa dan Isa • sabar dan tabah'},
+   3:{title:'Mubasysyirin bil Jannah',jawi:'مبشرين بالجنة',icon:'🛡️',desc:'Kisah Zubair bin al-Awwam dan Abu Ubaidah al-Jarrah'},
+   4:{title:'Muslimatul Mujahidat',jawi:'مسلمة المجاهدة',icon:'🌸',desc:'Kisah Khadijah binti Khuwailid dan Aisyah binti Abu Bakar'}
  })[lessonNumber];
- if(!info||!/^sirah_t4_p2$/.test(U))throw Error('Pelajaran Sirah tidak disokong.');
+ if(!info||!/^sirah_t4_p[234]$/.test(U))throw Error('Pelajaran Sirah tidak disokong.');
  const learnerName=esc(ctx.profile.display_nickname||ctx.profile.display_name||'Pelajar');
  const root=ctx.container,admin=ctx.profile.role==='admin',rest=(p,o)=>ctx.authedJson('/rest/v1/'+p,o||{method:'GET'}),rpc=(n,a)=>ctx.rpc(n,a);
  let student=ctx.profile.user_id,M=[],G=[],Q=[],A=[],P=[],view='home',mission=1,card=0,reveal=false,rumiHelp=false,g={},quiz=[],qi=0,qResult=null,qBusy=false,score=0,label='',message='',busy=false;
@@ -39,7 +41,7 @@ async function mount(ctx){
  const bar=(n,t)=>'<div class="sr-bar"><div style="width:'+Math.round(t?n/t*100:0)+'%"></div></div>';
  function top(){return '<div class="sr-hero"><div><span class="sr-chip">📜 SIRAH ADVENTURE • PELAJARAN '+lessonNumber+'</span><h1>'+esc(info.jawi)+'</h1><p>Pelajaran '+lessonNumber+' · '+esc(info.title)+' · '+esc(info.desc)+'</p></div><div class="mascot">'+info.icon+'</div></div><div class="sr-stats"><div class="sr-stat"><b>'+completed()+'/6</b><small>Misi siap</small></div><div class="sr-stat"><b>'+mastered()+'/'+Q.length+'</b><small>Soalan dikuasai</small></div><div class="sr-stat"><b>⭐ '+stars()+'</b><small>Bintang</small></div></div>';}
  function home(){return '<div class="sr-panel"><h2>Hai, '+(admin?'Ibu / Ayah':learnerName)+'! 👋</h2><p>Jom kuasai ilmu Sirah! Baca nota Jawi mengikut buku teks, cuba permainan interaktif, dan lihat penerangan Rumi apabila diperlukan.</p><p class="sr-muted">🤝 Baca Jawi dahulu. Tekan Lihat Rumi apabila perlukan bantuan. Ayat al-Quran ditulis dalam bahasa Arab.</p></div>'+
- '<div class="sr-grid">'+M.map(x=>{const p=P.find(z=>z.mission===x.n);return '<div class="sr-card"><div style="font-size:2.5rem">'+esc(x.icon)+'</div><h3>Misi '+x.n+': '+esc(x.title)+'</h3><p>'+esc(x.subtitle)+'</p><span class="sr-chip">'+(p?.completed?'✅ Selesai · ⭐ '+p.stars:'🚀 Belum selesai')+'</span><div class="sr-actions"><button class="sr-btn light" data-action="notes" data-m="'+x.n+'">📖 Nota</button><button class="sr-btn orange" data-action="game" data-m="'+x.n+'">🎮 Main!</button>'+(!admin?'<button class="sr-btn green" data-action="quiz" data-m="'+x.n+'">✍️ Latihan</button>':'')+'</div></div>';}).join('')+'</div><div class="sr-panel" style="margin-top:17px"><h3>🗝️ BONUS — Peti Warisan</h3><p>Kumpul enam bintang Sirah dan buka khazanah kisah para Rasul!</p>'+btn('🔑 Mula Cabaran Bonus','bonus','orange')+'</div>'+(admin?adminStats():'');}
+ '<div class="sr-grid">'+M.map(x=>{const p=P.find(z=>z.mission===x.n);return '<div class="sr-card"><div style="font-size:2.5rem">'+esc(x.icon)+'</div><h3>Misi '+x.n+': '+esc(x.title)+'</h3><p>'+esc(x.subtitle)+'</p><span class="sr-chip">'+(p?.completed?'✅ Selesai · ⭐ '+p.stars:'🚀 Belum selesai')+'</span><div class="sr-actions"><button class="sr-btn light" data-action="notes" data-m="'+x.n+'">📖 Nota</button><button class="sr-btn orange" data-action="game" data-m="'+x.n+'">🎮 Main!</button>'+(!admin?'<button class="sr-btn green" data-action="quiz" data-m="'+x.n+'">✍️ Latihan</button>':'')+'</div></div>';}).join('')+'</div><div class="sr-panel" style="margin-top:17px"><h3>🗝️ BONUS — Peti Warisan</h3><p>Kumpul enam bintang dan buka khazanah kisah para tokoh Islam!</p>'+btn('🔑 Mula Cabaran Bonus','bonus','orange')+'</div>'+(admin?adminStats():'');}
  function adminStats(){return '<div class="sr-panel"><h3>📊 Prestasi Pelajar</h3>'+M.map(x=>{const ids=new Set(Q.filter(q=>q.mission===x.n).map(q=>q.id)),aa=A.filter(a=>ids.has(a.question_id));return '<p>Misi '+x.n+': '+aa.length+' jawapan · '+(aa.length?Math.round(aa.filter(a=>a.is_correct).length/aa.length*100)+'% betul':'Belum cuba')+'</p>';}).join('')+'</div>';}
  function note(){const x=m().cards[card];return nav()+'<div class="sr-panel"><span class="sr-chip">📖 Misi '+mission+' · Kad '+(card+1)+'/'+m().cards.length+' · Buku teks m/s '+esc(x.page)+'</span>'+bar(card+1,m().cards.length)+'<div class="sr-flash"><div class="sr-emoji">'+esc(m().icon)+'</div><div class="sr-jawi" dir="rtl" lang="ms-Arab">'+esc(x.q)+'</div>'+(rumiHelp?'<div class="sr-rumi" lang="ms">'+esc(x.a)+'</div>':'<p class="sr-muted">Cuba baca tulisan Jawi terlebih dahulu.</p>')+'</div><div class="sr-actions">'+(card?btn('← Sebelum','prev','light'):'')+btn(rumiHelp?'🙈 Sembunyikan Rumi':'🔤 Lihat Rumi','rumi','orange')+(card<m().cards.length-1?btn('Kad seterusnya →','next','green'):btn('🎮 Jom Main','game','orange'))+'</div></div>';}
  function start(n){mission=n;const x=game();g={i:0,choice:null,feedback:null,wrong:0,selected:null,placed:new Set(),trail:[],won:false};if(x.type==='timeline')g.shuffled=shuffle(x.events.map((a,i)=>({a,i})));if(x.type==='build')g.tokens=shuffle(x.slots.map((a,i)=>({a,i})));view='game';message='';draw();}
@@ -135,7 +137,7 @@ async function mount(ctx){
   ]);
   if(!unit?.length)throw Error('Pelajaran Sirah belum tersedia untuk akaun ini');
   M=unit[0].missions||[];G=unit[0].games||[];Q=q||[];A=a||[];P=p||[];
-  if(M.length!==6||G.length!==7||Q.length!==36)throw Error('Kandungan Sirah belum lengkap.');
+  if(M.length!==6||G.length!==7||Q.length!==36)throw Error('Kandungan Sirah belum lengkap. Sila semak 6 misi dan 36 soalan.');
   draw();
  }catch(err){root.innerHTML='<div class="sr-panel"><h2>Unit belum dapat dibuka</h2><p>'+esc(err.message||String(err))+'</p><button class="sr-btn" onclick="location.reload()">Cuba Lagi</button></div>';}
 }
